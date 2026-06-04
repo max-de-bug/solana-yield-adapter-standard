@@ -1,0 +1,65 @@
+---
+title: Testing
+description: How to test your yield adapter
+---
+
+# Testing
+
+## Unit Tests (Localnet)
+
+```bash
+anchor test
+```
+
+Runs against a local Solana test validator. Tests cover:
+- Registry governance lifecycle
+- Dispatcher routing logic
+- Individual adapter deposit/withdraw/value flows
+- Error cases and edge conditions
+
+## Mainnet-Fork Tests
+
+```bash
+./scripts/run-mainnet-fork-tests.sh
+```
+
+The script:
+1. Builds all Anchor programs
+2. Starts `solana-test-validator` with cloned mainnet programs
+3. Deploys your programs to the forked environment
+4. Runs integration tests against real on-chain state
+
+### Cloned Programs
+
+| Program | ID | Purpose |
+|---|---|---|
+| Kamino K-Lend | `KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD` | Lending protocol |
+| MarginFi v2 | `MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA` | Lending protocol |
+| Drift v2 | `dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH` | Perp/insurance |
+| SPL Token | `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA` | Token operations |
+
+### Writing Fork Tests
+
+```typescript
+describe("kamino-fork", () => {
+  it("deposits into live Kamino market", async () => {
+    // Uses real Kamino program state cloned from mainnet
+    // Test against actual reserve accounts and pool state
+  });
+});
+```
+
+<Warning>
+Mainnet-fork tests require a stable internet connection to clone program state. They may take longer to start than local tests.
+</Warning>
+
+## Test Structure
+
+```
+tests/
+├── helpers/
+│   └── index.ts          # Shared utilities
+├── registry.test.ts      # Registry governance tests
+├── dispatcher.test.ts    # Dispatcher routing tests
+└── adapters/             # Per-adapter integration tests
+```

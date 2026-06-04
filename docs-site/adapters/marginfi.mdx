@@ -1,0 +1,31 @@
+---
+title: MarginFi USDC
+description: Reference adapter for MarginFi v2 USDC lending
+---
+
+# MarginFi USDC Adapter
+
+<Info>
+**Protocol**: MarginFi v2  
+**Program ID**: `MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA`  
+**Model**: Lending account with JIT risk engine  
+**Underlying**: USDC  
+**Status**: ✅ Live
+</Info>
+
+## Overview
+
+The MarginFi adapter integrates with [MarginFi's](https://marginfi.com) overcollateralized lending protocol. MarginFi uses a Just-In-Time (JIT) risk engine that evaluates positions in real-time.
+
+## Protocol-Specific Notes
+
+- MarginFi's risk engine operates JIT — no manual "refresh" instruction needed
+- `remaining_accounts` must include bank and oracle accounts for risk checks
+- Uses `lending_account_deposit` and `lending_account_withdraw` CPI calls
+
+## PDA Seeds
+
+```
+vault_state:     ["marginfi_vault_state"]
+vault_authority: ["marginfi_vault_authority"]
+```

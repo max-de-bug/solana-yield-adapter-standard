@@ -1,0 +1,53 @@
+---
+title: Error Codes
+description: Complete error code reference
+---
+
+# Error Codes
+
+## Standard Adapter Errors (6000-6099)
+
+Defined in `yield-adapter-trait`. All adapters use these.
+
+| Code | Name | Description |
+|---|---|---|
+| 6000 | `ZeroDepositAmount` | Deposit amount must be > 0 |
+| 6001 | `ZeroWithdrawAmount` | Withdrawal amount must be > 0 |
+| 6002 | `InsufficientReceiptBalance` | Not enough receipt tokens |
+| 6003 | `AdapterNotActive` | Adapter is paused/inactive |
+| 6004 | `MintMismatch` | Token mint doesn't match expected |
+| 6005 | `AdapterProgramMismatch` | Wrong adapter program |
+| 6006 | `ArithmeticOverflow` | Math overflow |
+| 6007 | `ProtocolCpiError` | CPI to protocol failed |
+| 6008 | `Unauthorized` | Not authorized |
+| 6009 | `PositionNotInitialized` | Position account missing |
+| 6010 | `InvalidMetadata` | Bad adapter metadata |
+
+## Dispatcher Errors (6100-6199)
+
+| Code | Name | Description |
+|---|---|---|
+| 6100 | `DispatcherPaused` | Dispatcher is emergency-paused |
+| 6101 | `AdapterNotApproved` | Adapter not in registry |
+| 6102 | `ZeroAmount` | Amount must be > 0 |
+| 6103 | `Unauthorized` | Not dispatcher authority |
+| 6104 | `AdapterCpiError` | Adapter CPI failed |
+| 6105 | `RegistryMismatch` | Wrong registry program |
+
+## Registry Errors (6200-6299)
+
+| Code | Name | Description |
+|---|---|---|
+| 6200 | `Unauthorized` | Not governance authority |
+| 6201 | `NameTooLong` | Adapter name > 32 chars |
+| 6202 | `UriTooLong` | Metadata URI > 200 chars |
+| 6203 | `InvalidStatus` | Wrong status for operation |
+| 6204 | `AlreadyRegistered` | Adapter already exists |
+| 6205 | `NoPendingTransfer` | No pending governance transfer |
+| 6206 | `NotPendingAuthority` | Not the pending authority |
+
+## Protocol-Specific Errors (7000+)
+
+| Code | Adapter | Name | Description |
+|---|---|---|---|
+| 7000 | Drift | `CooldownNotElapsed` | 13-day unstaking period hasn't passed |

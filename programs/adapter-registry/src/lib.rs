@@ -1,0 +1,59 @@
+//! # Adapter Registry
+//!
+//! A governance-gated on-chain registry for the Solana Yield Adapter Standard.
+//!
+//! ## Lifecycle
+//!
+//! 1. **Propose** — Anyone can propose a new adapter by submitting its program ID and metadata.
+//! 2. **Approve** — Only the governance authority can approve a proposed adapter.
+//! 3. **Revoke**  — The governance authority can revoke an adapter at any time.
+//!
+//! ## Governance
+//!
+//! The registry is controlled by a single governance authority (initially the deployer).
+//! Governance can be transferred to a multisig, DAO, or other program via `transfer_governance`.
+
+use anchor_lang::prelude::*;
+
+pub mod error;
+pub mod instructions;
+pub mod state;
+
+use instructions::*;
+
+declare_id!("CeyDkRgegNUz2TeFfFjRdL89G9EGGDymiqHoJkeFGcZ4");
+
+#[program]
+pub mod adapter_registry {
+    use super::*;
+
+    /// Initialize the registry with a governance authority.
+    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+        instructions::initialize::handler(ctx)
+    }
+
+    /// Propose a new adapter for inclusion in the registry.
+    /// Anyone can call this instruction.
+    pub fn propose_adapter(
+        ctx: Context<ProposeAdapter>,
+        name: String,
+        metadata_uri: String,
+    ) -> Result<()> {
+        instructions::propose_adapter::handler(ctx, name, metadata_uri)
+    }
+
+    /// Approve a proposed adapter. Governance-gated.
+    pub fn approve_adapter(ctx: Context<ApproveAdapter>) -> Result<()> {
+        instructions::approve_adapter::handler(ctx)
+    }
+
+    /// Revoke an approved adapter. Governance-gated.
+    pub fn revoke_adapter(ctx: Context<RevokeAdapter>) -> Result<()> {
+        instructions::revoke_adapter::handler(ctx)
+    }
+
+    /// Transfer governance authority to a new address.
+    pub fn transfer_governance(ctx: Context<TransferGovernance>) -> Result<()> {
+        instructions::transfer_governance::handler(ctx)
+    }
+}

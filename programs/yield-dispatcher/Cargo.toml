@@ -1,0 +1,29 @@
+[package]
+name = "yield-dispatcher"
+version = "1.0.0"
+description = "Core dispatcher/router for the Solana Yield Adapter Standard"
+edition = "2021"
+license = "Apache-2.0"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "yield_dispatcher"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+default = []
+
+[dependencies]
+anchor-lang = { workspace = true, features = ["init-if-needed"] }
+anchor-spl = { workspace = true }
+yield-adapter-trait = { path = "../../crates/yield-adapter-trait" }
+adapter-registry = { path = "../adapter-registry", features = ["cpi"] }
+adapter-kamino = { path = "../adapter-kamino", features = ["cpi"] }
+adapter-marginfi = { path = "../adapter-marginfi", features = ["cpi"] }
+adapter-jupiter = { path = "../adapter-jupiter", features = ["cpi"] }
+adapter-maple = { path = "../adapter-maple", features = ["cpi"] }
+adapter-drift = { path = "../adapter-drift", features = ["cpi"] }

@@ -1,0 +1,30 @@
+---
+title: Jupiter LP
+description: Reference adapter for Jupiter Perpetuals JLP pool
+---
+
+# Jupiter LP Adapter
+
+<Info>
+**Protocol**: Jupiter Perpetuals  
+**Model**: JLP (Jupiter Liquidity Provider) pool  
+**Underlying**: USDC  
+**Status**: ✅ Live
+</Info>
+
+## Overview
+
+The Jupiter adapter integrates with [Jupiter's](https://jup.ag) perpetuals liquidity pool (JLP). Users provide USDC liquidity to the perp market and earn trading fees.
+
+## Protocol-Specific Notes
+
+- JLP pool earns fees from perpetual trading activity
+- Uses `add_liquidity` and `remove_liquidity` CPI calls
+- Compute budget may need to be increased for complex routing
+
+## PDA Seeds
+
+```
+vault_state:     ["jupiter_vault_state"]
+vault_authority: ["jupiter_vault_authority"]
+```

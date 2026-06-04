@@ -1,0 +1,32 @@
+{
+  "name": "solana-yield-adapter-standard",
+  "version": "1.0.0",
+  "description": "A reference implementation for a Solana Yield Adapter Standard with dispatcher, registry, and five reference adapters",
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "bash scripts/build-sbf.sh && bash scripts/build-idls.sh",
+    "build:idls": "bash scripts/build-idls.sh",
+    "test": "anchor test --validator legacy --skip-build",
+    "test:fork": "bash scripts/run-mainnet-fork-tests.sh",
+    "lint": "cargo clippy --workspace -- -D warnings",
+    "fmt": "cargo fmt --all",
+    "fmt:check": "cargo fmt --all -- --check",
+    "deploy:devnet": "bash scripts/deploy-devnet.sh",
+    "docs:dev": "cd docs-site && npx mintlify dev",
+    "clean": "anchor clean && rm -rf node_modules"
+  },
+  "dependencies": {
+    "@anchor-lang/core": "1.0.1",
+    "@solana/web3.js": "^1.95.8",
+    "@solana/spl-token": "^0.4.13"
+  },
+  "devDependencies": {
+    "@types/bn.js": "^5.1.5",
+    "@types/chai": "^4.3.16",
+    "@types/mocha": "^10.0.7",
+    "chai": "^4.4.1",
+    "mocha": "^10.7.0",
+    "ts-mocha": "^10.0.0",
+    "typescript": "^5.5.0"
+  }
+}

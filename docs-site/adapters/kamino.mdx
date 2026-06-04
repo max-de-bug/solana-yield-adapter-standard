@@ -1,0 +1,56 @@
+---
+title: Kamino USDC
+description: Reference adapter for Kamino Finance K-Lend USDC vault
+---
+
+# Kamino USDC Adapter
+
+<Info>
+**Protocol**: Kamino Finance (K-Lend)  
+**Program ID**: `KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD`  
+**Model**: Share-based vault (kToken receipt tokens)  
+**Underlying**: USDC  
+**Status**: ✅ Live
+</Info>
+
+## Overview
+
+The Kamino adapter integrates with [Kamino Finance's](https://kamino.finance) K-Lend lending markets. Deposits are converted to kToken receipt tokens that appreciate in value as the lending pool earns interest.
+
+## How It Works
+
+### Deposit Flow
+1. User calls `deposit(amount)` with USDC
+2. Adapter calculates proportional kToken shares
+3. USDC is transferred to the adapter vault
+4. Vault state is updated with new totals
+
+### Withdraw Flow
+1. User calls `withdraw(shares)` with kToken amount
+2. Adapter calculates proportional USDC value
+3. USDC is transferred from vault to user via PDA authority
+4. Vault state is decremented
+
+### Value Query
+`current_value()` returns the share price: `total_underlying × 1e9 ÷ total_shares`
+
+## Accounts
+
+| Account | Type | Description |
+|---|---|---|
+| `vault_state` | `KaminoVaultState` | PDA tracking vault totals |
+| `vault_token_account` | `TokenAccount` | Vault's USDC holdings |
+| `vault_authority` | PDA | Signs vault transfers |
+
+## PDA Seeds
+
+```
+vault_state:     ["kamino_vault_state"]
+vault_authority: ["kamino_vault_authority"]
+```
+
+## Protocol-Specific Notes
+
+- Kamino's K-Lend uses isolated markets with configurable risk parameters
+- The share price increases as the lending pool earns interest from borrowers
+- In a full CPI integration, the adapter would call `deposit_reserve_liquidity` and `redeem_reserve_collateral` on the Kamino program

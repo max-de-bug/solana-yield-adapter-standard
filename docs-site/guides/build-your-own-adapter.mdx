@@ -1,0 +1,234 @@
+---
+title: Build Your Own Adapter
+description: Ship a conformant yield adapter in under one day using this reference repo
+---
+
+# Build your own adapter
+
+<Info>
+**Goal:** An experienced Solana/Anchor developer can ship a **conformant reference adapter** in **under one day** by copying patterns from this repository—not by integrating a live protocol on day one.
+</Info>
+
+## Time budget
+
+| Phase | Duration | Output |
+|-------|----------|--------|
+| Scaffold + trait dependency | 15 min | Compiling Anchor workspace |
+| Vault + position state | 30 min | `MyVaultState` + `AdapterPosition` PDAs |
+| `deposit` / `withdraw` / `current_value` | 2–3 h | Three instructions + events |
+| Tests (local) | 1–2 h | deposit → value → withdraw |
+| Registry proposal | 10 min | On-chain `propose_adapter` |
+| **Optional:** protocol CPI | 1–2+ weeks | Production integration |
+
+## Prerequisites
+
+- Rust 1.75+, Solana CLI **2.2.20**, Anchor CLI **1.0.1**
+- Node.js 18+ for TypeScript tests
+- Read [Adapter Standard](/adapter-standard) and skim [`adapter-kamino`](https://github.com/your-org/solana-yield-adapter-standard/tree/main/programs/adapter-kamino) (golden reference)
+
+<Steps>
+  <Step title="1. Scaffold (15 min)">
+    ```bash
+    anchor init my-yield-adapter
+    cd my-yield-adapter
+    ```
+
+    Add the trait crate (path or git after you publish this repo):
+
+    ```toml
+    # programs/my-yield-adapter/Cargo.toml
+    [dependencies]
+    anchor-lang = "1.0.1"
+    anchor-spl = "1.0.1"
+    yield-adapter-trait = { path = "../crates/yield-adapter-trait" }
+    ```
+
+    ```bash
+    npm install @anchor-lang/core@1.0.1
+    ```
+  </Step>
+
+  <Step title="2. Vault state (15 min)">
+    Create `programs/my-yield-adapter/src/state.rs`:
+
+    ```rust
+    use anchor_lang::prelude::*;
+
+    yield_adapter_trait::define_adapter_position!();
+
+    #[account]
+    #[derive(Debug, InitSpace)]
+    pub struct MyVaultState {
+        pub authority: Pubkey,
+        pub underlying_mint: Pubkey,
+        pub total_underlying: u64,
+        pub total_shares: u64,
+        pub is_active: bool,
+        pub bump: u8,
+    }
+
+    pub const VAULT_STATE_SEED: &[u8] = b"my_vault_state";
+    pub const VAULT_AUTHORITY_SEED: &[u8] = b"my_vault_authority";
+    ```
+
+    <Warning>
+    Use **unique** PDA seed prefixes (`my_vault_state`, not `kamino_vault_state`). The `define_adapter_position!` macro must expand **inside your adapter program** so Anchor assigns the correct program owner to position accounts.
+    </Warning>
+  </Step>
+
+  <Step title="3. Deposit (45 min)">
+    Required accounts: `user`, `vault_state`, `user_position` (init_if_needed), `user_token_account`, `vault_token_account`, `token_program`, `system_program`.
+
+    ```rust
+    use yield_adapter_trait::{
+        shares_for_deposit, DepositEvent, YieldAdapterError, ADAPTER_POSITION_SEED,
+    };
+
+    // In handler:
+    let shares = shares_for_deposit(
+        amount,
+        vault.total_underlying,
+        vault.total_shares,
+    )?;
+
+    // SPL transfer user → vault, then update vault totals and position.receipt_token_balance
+    emit!(DepositEvent {
+        user: ctx.accounts.user.key(),
+        adapter: crate::ID,
+        amount,
+        receipt_amount: shares,
+        timestamp: clock.unix_timestamp,
+    });
+    ```
+
+    See `programs/adapter-kamino/src/instructions/deposit.rs` for the full account constraints.
+  </Step>
+
+  <Step title="4. Withdraw (45 min)">
+    Args: **shares to burn** (receipt tokens), not underlying amount.
+
+    ```rust
+    use yield_adapter_trait::user_position_underlying_value;
+
+    let underlying = user_position_underlying_value(
+        shares_to_burn,
+        vault.total_underlying,
+        vault.total_shares,
+    )?;
+
+    // Transfer underlying vault → user with vault_authority PDA signer
+    emit!(WithdrawEvent { /* amount: underlying, receipt_burned: shares_to_burn */ });
+    ```
+  </Step>
+
+  <Step title="5. current_value (30 min)">
+    <Warning>
+    `CurrentValueEvent.value` MUST be the caller's position in **underlying token units**, not the global share price.
+    </Warning>
+
+    ```rust
+    use yield_adapter_trait::user_position_underlying_value;
+
+    let value = user_position_underlying_value(
+        position.receipt_token_balance,
+        vault.total_underlying,
+        vault.total_shares,
+    )?;
+
+    emit!(CurrentValueEvent {
+        user: ctx.accounts.user.key(),
+        adapter: crate::ID,
+        value,
+        timestamp: clock.unix_timestamp,
+    });
+    ```
+
+    `current_value` must not burn shares or transfer tokens.
+  </Step>
+
+  <Step title="6. Tests (1–2 h)">
+    Copy `tests/helpers/adapter.ts` patterns:
+
+    ```typescript
+    await program.methods.deposit(new BN(1_000_000)).accounts({
+      user: authority.publicKey,
+      vaultState: vaultStatePda,
+      userPosition: adapterUserPositionPda(authority.publicKey, program.programId),
+      userTokenAccount,
+      vaultTokenAccount,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      systemProgram: SystemProgram.programId,
+    }).rpc();
+    ```
+
+    Minimum cases:
+
+    - First deposit 1:1 shares
+    - Withdraw partial shares
+    - `current_value` after deposit (underlying &gt; 0)
+    - `deposit(0)` fails
+    - `withdraw` over balance fails
+
+    Details: [Testing guide](/guides/testing).
+  </Step>
+
+  <Step title="7. Register (10 min)">
+    ```typescript
+    await registryProgram.methods
+      .proposeAdapter("My Adapter", "https://example.com/adapter.json")
+      .accounts({ /* registryState, adapterEntry, adapterProgram, underlyingMint */ })
+      .rpc();
+    ```
+
+    Governance calls `approve_adapter`. Until approved, the [dispatcher](/dispatcher) rejects CPI.
+
+    See [Registry](/registry).
+  </Step>
+
+  <Step title="8. Optional — protocol CPI (production)">
+    After the reference vault works, replace the SPL-only path with CPI into your protocol's deposit/withdraw instructions. Pass `remaining_accounts` for the protocol program; study Kamino's `protocol.rs` in this repo for **attestation-only** fork patterns vs full CPI.
+
+    Protocol-specific errors: codes **7000+**.
+  </Step>
+</Steps>
+
+## Conformance checklist
+
+<Check>Exactly three instructions: `deposit`, `withdraw`, `current_value`</Check>
+<Check>`DepositEvent`, `WithdrawEvent`, `CurrentValueEvent` on every success path</Check>
+<Check>`current_value` reports per-user underlying value</Check>
+<Check>`AdapterPosition` PDA per user (`ADAPTER_POSITION_SEED` + user pubkey)</Check>
+<Check>All math uses `checked_*`</Check>
+<Check>`amount > 0` on deposit and withdraw</Check>
+<Check>`is_active` on mutating instructions</Check>
+<Check>`user_token_account.mint == vault.underlying_mint`</Check>
+<Check>Vault outbound transfers signed by vault authority **PDA**</Check>
+<Check>Tests: deposit → current_value → withdraw</Check>
+<Check>`cargo clippy --workspace -- -D warnings` clean</Check>
+
+## Common pitfalls
+
+| Pitfall | Fix |
+|---------|-----|
+| Share price in `CurrentValueEvent` | Use `user_position_underlying_value` on the user's `receipt_token_balance` |
+| `AdapterPosition` owned by wrong program | Use `yield_adapter_trait::define_adapter_position!()` in **your** `state.rs` |
+| Stale TypeScript client | Run `bash scripts/build-idls.sh` after changing accounts |
+| Withdraw by underlying amount | Standard withdraw burns **shares**; compute underlying pro-rata |
+| Skipping events | Every deposit/withdraw/value query must emit the standard event |
+
+## Golden reference
+
+| File | Why |
+|------|-----|
+| `programs/adapter-kamino/src/instructions/*.rs` | Simplest full adapter |
+| `crates/yield-adapter-trait/src/lib.rs` | Events, errors, math helpers |
+| `tests/helpers/adapter.ts` | Reusable integration flow |
+| `programs/adapter-drift/` | Extra constraint (cooldown) example |
+| `programs/adapter-maple/` | Simulated yield accrual example |
+
+## Next steps
+
+- [Reference vs production](/guides/reference-implementation) — scope for bounty vs mainnet
+- [Testing](/guides/testing) — local and mainnet-fork
+- [Deployment](/guides/deployment) — devnet programs
+- [Adapter Standard](/adapter-standard) — normative spec

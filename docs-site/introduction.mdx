@@ -1,0 +1,48 @@
+---
+title: Introduction
+description: A standardized interface for yield-bearing protocols on Solana
+---
+
+# Solana Yield Adapter Standard
+
+The **Solana Yield Adapter Standard** defines a minimal, composable interface for interacting with yield-bearing protocols on Solana. Think of it as an **ERC-4626 for Solana**.
+
+## The Problem
+
+Every DeFi protocol on Solana has its own unique interface:
+- Aggregators must write custom integration code for each protocol
+- Wallets can't display yield positions in a standardized way
+- New protocols face adoption friction due to integration overhead
+
+## The Solution
+
+Three instructions. That's it.
+
+| Instruction | Description |
+|---|---|
+| `deposit(amount)` | Deposit underlying tokens into the yield source |
+| `withdraw(amount)` | Withdraw underlying tokens from the yield source |
+| `current_value()` | Query the current value of a position |
+
+## What's Included
+
+<CardGroup cols={2}>
+  <Card title="Core Dispatcher" icon="route" href="/dispatcher">
+    A router that validates adapters and tracks user positions
+  </Card>
+  <Card title="Adapter Registry" icon="list-check" href="/registry">
+    Governance-gated on-chain approval for adapters
+  </Card>
+  <Card title="5 Reference Adapters" icon="puzzle-piece" href="/adapters/kamino">
+    Kamino, MarginFi, Jupiter, Maple, and Drift
+  </Card>
+  <Card title="Developer Guide" icon="book" href="/guides/build-your-own-adapter">
+    Ship your own adapter in less than a day
+  </Card>
+</CardGroup>
+
+## Quick Links
+
+- [Adapter Standard Specification](/adapter-standard) — The formal spec
+- [Build Your Own Adapter](/guides/build-your-own-adapter) — Step-by-step guide
+- [GitHub Repository](https://github.com/your-org/solana-yield-adapter-standard) — Source code

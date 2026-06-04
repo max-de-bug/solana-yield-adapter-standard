@@ -1,0 +1,50 @@
+---
+title: Drift Insurance Fund
+description: Reference adapter for Drift Protocol Insurance Fund staking
+---
+
+# Drift Insurance Fund Adapter
+
+<Warning>
+Drift Protocol experienced a security incident in April 2026. The adapter targets the `protocol-v2` program specification. Check Drift's official channels for current protocol status.
+</Warning>
+
+<Info>
+**Protocol**: Drift Protocol v2  
+**Program ID**: `dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH`  
+**Model**: Insurance fund staking with 13-day cooldown  
+**Underlying**: USDC  
+**Status**: 🔶 Reference
+</Info>
+
+## Overview
+
+The Drift adapter integrates with [Drift Protocol's](https://drift.trade) Insurance Fund. Users stake USDC to backstop the protocol and earn staking rewards.
+
+## 13-Day Cooldown
+
+The Drift Insurance Fund enforces a **13-day unstaking cooldown**:
+
+1. User calls `withdraw()` → cooldown timer starts
+2. 13 days must elapse before funds can be released
+3. Adapter tracks `last_unstake_request` timestamp
+4. Subsequent withdrawals check `elapsed >= 13 days`
+
+```rust
+pub const UNSTAKE_COOLDOWN_SECONDS: i64 = 13 * 24 * 60 * 60; // 1,123,200s
+```
+
+This is enforced on-chain and cannot be bypassed.
+
+## Protocol-Specific Error Codes
+
+| Code | Name | Description |
+|---|---|---|
+| `7000` | `CooldownNotElapsed` | 13-day unstaking period hasn't passed |
+
+## PDA Seeds
+
+```
+vault_state:     ["drift_vault_state"]
+vault_authority: ["drift_vault_authority"]
+```

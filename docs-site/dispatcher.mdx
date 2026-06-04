@@ -1,0 +1,57 @@
+---
+title: Dispatcher
+description: The core router for the Yield Adapter Standard
+---
+
+# Yield Dispatcher
+
+The dispatcher acts as a **unified entry point** for all yield operations. Users interact with the dispatcher, which validates adapters and routes calls to the correct adapter program.
+
+## Instructions
+
+### `initialize`
+
+Creates the global `DispatcherState` PDA.
+
+```typescript
+await program.methods.initialize().accounts({
+  authority: wallet.publicKey,
+  dispatcherState: dispatcherStatePda,
+  registryProgram: registryProgramId,
+  systemProgram: SystemProgram.programId,
+}).rpc();
+```
+
+### `deposit`
+
+Routes a deposit to a registered adapter.
+
+### `withdraw`
+
+Routes a withdrawal from a registered adapter.
+
+### `current_value`
+
+Queries the current value of a user's position.
+
+## State
+
+### DispatcherState
+
+| Field | Type | Description |
+|---|---|---|
+| `authority` | `Pubkey` | Governance authority |
+| `registry_program_id` | `Pubkey` | Trusted registry |
+| `total_deposits` | `u64` | Total deposits routed |
+| `total_withdrawals` | `u64` | Total withdrawals routed |
+| `is_paused` | `bool` | Emergency pause flag |
+
+### UserPosition
+
+| Field | Type | Description |
+|---|---|---|
+| `owner` | `Pubkey` | Position owner |
+| `adapter_program_id` | `Pubkey` | Target adapter |
+| `deposited_amount` | `u64` | Cumulative deposits |
+| `withdrawn_amount` | `u64` | Cumulative withdrawals |
+| `receipt_token_balance` | `u64` | Current receipt balance |

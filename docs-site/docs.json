@@ -1,0 +1,78 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Solana Yield Adapter Standard",
+  "colors": {
+    "primary": "#9945FF",
+    "light": "#14F195",
+    "dark": "#9945FF",
+    "background": {
+      "dark": "#0E1117"
+    }
+  },
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/your-org/solana-yield-adapter-standard"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Get Started",
+    "url": "/quickstart"
+  },
+  "anchors": [
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/your-org/solana-yield-adapter-standard"
+    },
+    {
+      "name": "Adapter Registry",
+      "icon": "list-check",
+      "url": "https://explorer.solana.com"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": ["introduction", "quickstart", "architecture"]
+    },
+    {
+      "group": "Core Concepts",
+      "pages": ["adapter-standard", "dispatcher", "registry"]
+    },
+    {
+      "group": "Reference Adapters",
+      "pages": [
+        "adapters/kamino",
+        "adapters/marginfi",
+        "adapters/jupiter",
+        "adapters/maple",
+        "adapters/drift"
+      ]
+    },
+    {
+      "group": "Developer Guide",
+      "pages": [
+        "guides/build-your-own-adapter",
+        "guides/reference-implementation",
+        "guides/testing",
+        "guides/deployment",
+        "guides/mintlify-publishing"
+      ]
+    },
+    {
+      "group": "Reference",
+      "pages": ["reference/idl", "reference/errors", "reference/events"]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/your-org/solana-yield-adapter-standard",
+    "x": "https://x.com/your-org"
+  }
+}

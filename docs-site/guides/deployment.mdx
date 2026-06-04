@@ -1,0 +1,72 @@
+---
+title: Deployment
+description: Deploy the Yield Adapter Standard to devnet and mainnet
+---
+
+# Deployment
+
+## Devnet
+
+```bash
+./scripts/deploy-devnet.sh
+```
+
+The deployment script handles:
+1. **Keypair generation** — Creates program keypairs in `deploy-keypairs/`
+2. **Building** — Runs `anchor build` for all programs
+3. **Deployment** — Deploys registry first, then dispatcher
+4. **Verification** — Confirms programs are live on-chain
+
+<Info>
+After deployment, update `Anchor.toml` `[programs.devnet]` with the new program IDs output by the script.
+</Info>
+
+## Mainnet
+
+For mainnet deployment:
+
+```bash
+# Configure for mainnet
+solana config set --url mainnet-beta
+
+# Build with mainnet program IDs
+anchor build
+
+# Deploy (ensure proper key management)
+anchor deploy --provider.cluster mainnet-beta
+```
+
+<Warning>
+**Mainnet deployment checklist:**
+- Use a hardware wallet or multisig for the deployer
+- Audit all programs before mainnet deployment
+- Set up monitoring for program events
+- Transfer governance to a multisig after deployment
+</Warning>
+
+## Post-Deployment
+
+After deploying:
+
+1. **Initialize the registry**
+```typescript
+await registryProgram.methods.initialize().accounts({...}).rpc();
+```
+
+2. **Initialize the dispatcher**
+```typescript
+await dispatcherProgram.methods.initialize().accounts({...}).rpc();
+```
+
+3. **Register adapters**
+```typescript
+await registryProgram.methods.proposeAdapter("Kamino USDC", "...").accounts({...}).rpc();
+await registryProgram.methods.approveAdapter().accounts({...}).rpc();
+```
+
+4. **Transfer governance** to a multisig or DAO
+```typescript
+await registryProgram.methods.transferGovernance().accounts({
+  newAuthority: multisigAddress,
+}).rpc();
+```

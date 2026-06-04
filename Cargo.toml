@@ -1,0 +1,24 @@
+[workspace]
+members = [
+    "crates/yield-adapter-trait",
+    "programs/yield-dispatcher",
+    "programs/adapter-registry",
+    "programs/adapter-kamino",
+    "programs/adapter-marginfi",
+    "programs/adapter-jupiter",
+    "programs/adapter-maple",
+    "programs/adapter-drift",
+]
+resolver = "2"
+
+[workspace.dependencies]
+anchor-lang = "=1.0.1"
+anchor-spl = "=1.0.1"
+
+[profile.release]
+overflow-checks = true
+lto = "fat"
+codegen-units = 1
+
+[profile.release.build-override]
+opt-level = 3

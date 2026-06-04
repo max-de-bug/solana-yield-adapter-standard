@@ -1,0 +1,57 @@
+---
+title: Reference vs Production
+description: What this repo implements—and what production adapters must add
+---
+
+# Reference implementation scope
+
+<Info>
+Superteam Ukraine bounty deliverable: a **reference** standard and five **reference** adapters—not live protocol integrations.
+</Info>
+
+## Implemented today
+
+| Component | Role |
+|-----------|------|
+| **Dispatcher** | Routes `deposit` / `withdraw` / `current_value` to approved adapters via CPI |
+| **Registry** | Governance: propose → approve → revoke |
+| **Trait crate** | Events, errors, share math, `define_adapter_position!` |
+| **Five adapters** | Share-based SPL vaults named after Kamino, MarginFi, Jupiter, Maple, Drift |
+| **Tests** | 16 local + 20 mainnet-fork integration tests |
+
+## Not implemented (by design)
+
+<Warning>
+Do not present this repo as production yield routing into Kamino, MarginFi, Jupiter, Maple, or Drift without adding real protocol CPI.
+</Warning>
+
+- **No live protocol CPI** — USDC moves between user ATAs and adapter vault ATAs only.
+- **Maple** — EVM-primary; Solana adapter uses **simulated APY** on vault NAV for demonstration.
+- **Drift** — **13-day cooldown** is tracked on `AdapterPosition`, not enforced by Drift program instructions.
+
+## What fork tests prove
+
+Fork tests show:
+
+1. All five adapters complete **deposit → current_value → withdraw**.
+2. Selected **mainnet program IDs** exist on a cloned validator.
+3. **USDC** flows work with a fork fixture account.
+
+They do **not** prove parity with live mainnet positions inside those protocols.
+
+## Path to a production adapter
+
+<Steps>
+  <Step title="Conform to the standard">
+    Implement the three instructions, events, and share model from [Adapter Standard](/adapter-standard).
+  </Step>
+  <Step title="Add protocol CPI">
+    Replace or wrap local vault logic with CPI into the target program’s deposit/withdraw accounts.
+  </Step>
+  <Step title="Test on fork">
+    Clone the protocol program and realistic accounts in `solana-test-validator` (see [Testing](/guides/testing)).
+  </Step>
+  <Step title="Register">
+    `propose_adapter` → governance `approve_adapter` on devnet/mainnet ([Registry](/registry)).
+  </Step>
+</Steps>

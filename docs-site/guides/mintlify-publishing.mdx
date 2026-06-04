@@ -1,0 +1,117 @@
+---
+title: Publish Docs on Mintlify
+description: Connect this repo to Mintlify and ship professional documentation
+---
+
+# Publish documentation on Mintlify
+
+This project’s docs live in **`docs-site/`** at the repo root. Mintlify reads `docs-site/docs.json` and deploys on every push to your production branch.
+
+## Prerequisites
+
+- A **public GitHub repository** with this codebase
+- Admin access to the repo (to install the Mintlify GitHub App)
+- Optional: a custom domain (e.g. `docs.yourproject.com`)
+
+## 1. Create a Mintlify project
+
+1. Sign in at [Mintlify](https://app.mintlify.com/) (Google or GitHub).
+2. **New docs** → **Import from GitHub**.
+3. Install the Mintlify GitHub App and select **`solana-yield-adapter-standard`** (your fork/org copy).
+4. Set **docs directory** to:
+
+   ```text
+   docs-site
+   ```
+
+5. Set **production branch** to `main` (or your default branch).
+6. Confirm Mintlify detects `docs.json` (schema `https://mintlify.com/docs.json`).
+
+Mintlify will run a first deploy. The dashboard shows the preview URL (e.g. `https://your-project.mintlify.app`).
+
+## 2. Configure the site
+
+Edit `docs-site/docs.json` before or after connect:
+
+| Field | What to set |
+|-------|-------------|
+| `name` | Product name shown in the header |
+| `topbarLinks` / `anchors` / `footerSocials` | Replace `your-org` with your real GitHub org |
+| `navigation` | Page order and groups (already structured) |
+| `colors` / `logo` | Brand; add `docs-site/logo/dark.svg` and `light.svg` if missing |
+
+<Warning>
+Replace every `https://github.com/your-org/solana-yield-adapter-standard` URL in `docs.json` and MDX files **before** sharing the docs publicly.
+</Warning>
+
+### Custom domain (optional)
+
+1. Mintlify dashboard → **Settings** → **Domains**.
+2. Add your subdomain and create the **CNAME** record your DNS provider shows.
+3. Wait for TLS provisioning (usually minutes).
+
+## 3. Local preview (best practice)
+
+Always preview MDX changes locally before pushing:
+
+```bash
+cd docs-site
+npx mintlify@latest dev
+```
+
+Or from the repo root:
+
+```bash
+npm run docs:dev
+```
+
+Open `http://localhost:3000`. Hot reload applies to MDX and `docs.json`.
+
+## 4. Content workflow
+
+<Steps>
+  <Step title="Canonical source">
+    Treat **`docs-site/**/*.mdx`** as the public documentation source of truth.
+  </Step>
+  <Step title="Bounty markdown copies">
+    Keep **`docs/ADAPTER_STANDARD.md`** and **`docs/BUILD_YOUR_OWN_ADAPTER.md`** for the Superteam submission (markdown requirement). Sync from MDX when the spec or guide changes.
+  </Step>
+  <Step title="PR previews">
+    After GitHub connect, Mintlify opens **preview deployments** on pull requests—use them for review before merge.
+  </Step>
+  <Step title="Production deploy">
+    Merge to `main` → automatic production deploy. Pin the live URL in `README.md` and `SUBMISSION.md`.
+  </Step>
+</Steps>
+
+## 5. Professional documentation checklist
+
+<Check>Every page has `title` and `description` in frontmatter (SEO + sidebar)</Check>
+<Check>Use `<Steps>`, `<Warning>`, `<Info>`, `<Check>` for scannable guides</Check>
+<Check>Code blocks specify language (`rust`, `bash`, `typescript`)</Check>
+<Check>Link between spec → architecture → build guide → testing → deployment</Check>
+<Check>Reference adapters document **reference vs production** scope</Check>
+<Check>Quickstart commands match `package.json` (`npm run build`, `npm test`, `npm run test:fork`)</Check>
+
+## 6. Strengthen the “Build your own adapter” guide
+
+The flagship guide is [`/guides/build-your-own-adapter`](/guides/build-your-own-adapter). It should:
+
+- Match the **real** trait helpers (`shares_for_deposit`, `user_position_underlying_value`, `define_adapter_position!`)
+- Emit **per-user** `CurrentValueEvent.value` in underlying units (not global share price)
+- Include a **time budget** table (&lt; 1 day) and conformance checklist
+- Point to Kamino adapter source as the golden reference
+
+## 7. Troubleshooting
+
+| Issue | Fix |
+|-------|-----|
+| Build fails on Mintlify | Run `npx mintlify@latest dev` locally; fix broken MDX or invalid `docs.json` |
+| Wrong root path | Dashboard → set docs folder to `docs-site` only |
+| Broken internal links | Use paths without `.mdx` (e.g. `/guides/testing`) |
+| Logo 404 | Add files under `docs-site/logo/` or remove `logo` from `docs.json` |
+
+## Links
+
+- [Mintlify documentation](https://mintlify.com/docs)
+- [Mintlify dashboard](https://app.mintlify.com/)

@@ -1,0 +1,70 @@
+---
+title: Adapter Standard
+description: The formal specification for yield adapter programs
+---
+
+# Adapter Standard v1.0
+
+## Required Instructions
+
+Every compliant adapter MUST implement exactly three instructions:
+
+### `deposit`
+
+```rust
+pub fn deposit(ctx: Context<Deposit>, amount: u64) -> Result<()>
+```
+
+<ParamField path="amount" type="u64" required>
+  Amount of underlying tokens to deposit. Must be greater than zero.
+</ParamField>
+
+**Behavior**:
+1. Validate `amount > 0`
+2. Transfer underlying tokens from user to adapter vault
+3. Calculate receipt tokens proportional to current share price
+4. Update vault state
+5. Emit `DepositEvent`
+
+### `withdraw`
+
+```rust
+pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()>
+```
+
+<ParamField path="amount" type="u64" required>
+  Amount of receipt/share tokens to burn. Must be greater than zero.
+</ParamField>
+
+### `current_value`
+
+```rust
+pub fn current_value(ctx: Context<CurrentValue>) -> Result<()>
+```
+
+Read-only query. Emits `CurrentValueEvent` with the current share price.
+
+## Share Price Model
+
+```
+share_price     = total_underlying × 1e9 ÷ total_shares
+shares_out      = deposit_amount × 1e9 ÷ share_price
+underlying_out  = shares_burned × share_price ÷ 1e9
+```
+
+<Info>
+The 1e9 scaling factor provides 9 decimal places of precision.
+</Info>
+
+## Error Code Ranges
+
+| Range | Purpose |
+|---|---|
+| `6000–6099` | Standard adapter errors |
+| `6100–6199` | Dispatcher errors |
+| `6200–6299` | Registry errors |
+| `7000+` | Protocol-specific errors |
+
+## Conformance
+
+An adapter is conformant if it passes all items in the [conformance checklist](/guides/build-your-own-adapter#checklist).

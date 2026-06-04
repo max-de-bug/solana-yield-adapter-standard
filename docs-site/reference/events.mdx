@@ -1,0 +1,88 @@
+---
+title: Events
+description: Standardized event reference for all adapters
+---
+
+# Events
+
+All adapters emit standardized events for off-chain indexing and monitoring.
+
+## DepositEvent
+
+Emitted when a deposit is executed.
+
+```rust
+#[event]
+pub struct DepositEvent {
+    pub user: Pubkey,        // Depositor's public key
+    pub adapter: Pubkey,     // Adapter program ID
+    pub amount: u64,         // Underlying tokens deposited
+    pub receipt_amount: u64, // Receipt tokens received
+    pub timestamp: i64,      // Unix timestamp
+}
+```
+
+## WithdrawEvent
+
+Emitted when a withdrawal is executed.
+
+```rust
+#[event]
+pub struct WithdrawEvent {
+    pub user: Pubkey,
+    pub adapter: Pubkey,
+    pub amount: u64,         // Underlying tokens withdrawn
+    pub receipt_burned: u64, // Receipt tokens burned
+    pub timestamp: i64,
+}
+```
+
+## CurrentValueEvent
+
+Emitted when a value query is executed.
+
+```rust
+#[event]
+pub struct CurrentValueEvent {
+    pub user: Pubkey,
+    pub adapter: Pubkey,
+    pub value: u64,          // Share price (scaled by 1e9)
+    pub timestamp: i64,
+}
+```
+
+## Dispatcher Events
+
+### DispatchDepositEvent
+```rust
+pub struct DispatchDepositEvent {
+    pub user: Pubkey,
+    pub adapter_program_id: Pubkey,
+    pub amount: u64,
+    pub timestamp: i64,
+}
+```
+
+### DispatchWithdrawEvent
+```rust
+pub struct DispatchWithdrawEvent {
+    pub user: Pubkey,
+    pub adapter_program_id: Pubkey,
+    pub amount: u64,
+    pub timestamp: i64,
+}
+```
+
+## Listening to Events
+
+### TypeScript
+
+```typescript
+program.addEventListener("DepositEvent", (event, slot) => {
+  console.log(`Deposit: ${event.amount} by ${event.user}`);
+});
+```
+
+### Using Logs
+
+Events are also emitted as base64-encoded data in transaction logs, parseable by any Solana indexer (e.g., Helius, Triton).

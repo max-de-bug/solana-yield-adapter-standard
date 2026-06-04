@@ -1,0 +1,35 @@
+---
+title: Maple Syrup
+description: Reference adapter for Maple Finance syrupUSDC pools
+---
+
+# Maple Syrup Adapter
+
+<Warning>
+**Reference Implementation**: Maple Finance operates primarily on EVM chains. This adapter demonstrates correct interface compliance using a local vault model that mirrors the syrupUSDC share mechanism.
+</Warning>
+
+<Info>
+**Protocol**: Maple Finance  
+**Model**: syrupUSDC share-based lending pool  
+**Underlying**: USDC  
+**Status**: 🔶 Reference (mock CPI)
+</Info>
+
+## Overview
+
+The Maple adapter implements the standard interface for [Maple Finance's](https://maple.finance) syrupUSDC lending pools. Since Maple's Solana presence is limited, this adapter uses a simulated vault model.
+
+## Why Include a Mock?
+
+This adapter serves as a **template** for teams building adapters for protocols that:
+- Are deploying to Solana from other chains
+- Have upcoming Solana integrations
+- Need a working reference while the protocol CPI is under development
+
+## PDA Seeds
+
+```
+vault_state:     ["maple_vault_state"]
+vault_authority: ["maple_vault_authority"]
+```
