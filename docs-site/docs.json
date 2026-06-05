@@ -2,77 +2,76 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "Solana Yield Adapter Standard",
+  "description": "Reference implementation of a standardized deposit, withdraw, and current_value interface for Solana yield protocols.",
   "colors": {
     "primary": "#9945FF",
     "light": "#14F195",
-    "dark": "#9945FF",
-    "background": {
-      "dark": "#0E1117"
+    "dark": "#9945FF"
+  },
+  "navbar": {
+    "links": [
+      {
+        "type": "github",
+        "href": "https://github.com/max-de-bug/solana-yield-adapter-standard"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Get Started",
+      "href": "/quickstart"
     }
   },
-  "logo": {
-    "dark": "/logo/dark.svg",
-    "light": "/logo/light.svg"
+  "navigation": {
+    "anchors": [
+      {
+        "anchor": "GitHub",
+        "icon": "github",
+        "href": "https://github.com/max-de-bug/solana-yield-adapter-standard"
+      },
+      {
+        "anchor": "Registry (devnet)",
+        "icon": "list-check",
+        "href": "https://explorer.solana.com/address/CeyDkRgegNUz2TeFfFjRdL89G9EGGDymiqHoJkeFGcZ4?cluster=devnet"
+      }
+    ],
+    "groups": [
+      {
+        "group": "Getting Started",
+        "pages": ["index", "quickstart", "architecture"]
+      },
+      {
+        "group": "Core Concepts",
+        "pages": ["adapter-standard", "dispatcher", "registry"]
+      },
+      {
+        "group": "Reference Adapters",
+        "pages": [
+          "adapters/kamino",
+          "adapters/marginfi",
+          "adapters/jupiter",
+          "adapters/maple",
+          "adapters/drift"
+        ]
+      },
+      {
+        "group": "Developer Guide",
+        "pages": [
+          "guides/build-your-own-adapter",
+          "guides/reference-implementation",
+          "guides/testing",
+          "guides/deployment",
+          "guides/mintlify-publishing"
+        ]
+      },
+      {
+        "group": "Reference",
+        "pages": ["reference/idl", "reference/errors", "reference/events"]
+      }
+    ]
   },
-  "favicon": "/favicon.svg",
-  "topbarLinks": [
-    {
-      "name": "GitHub",
-      "url": "https://github.com/your-org/solana-yield-adapter-standard"
+  "footer": {
+    "socials": {
+      "github": "https://github.com/max-de-bug/solana-yield-adapter-standard"
     }
-  ],
-  "topbarCtaButton": {
-    "name": "Get Started",
-    "url": "/quickstart"
-  },
-  "anchors": [
-    {
-      "name": "GitHub",
-      "icon": "github",
-      "url": "https://github.com/your-org/solana-yield-adapter-standard"
-    },
-    {
-      "name": "Adapter Registry",
-      "icon": "list-check",
-      "url": "https://explorer.solana.com"
-    }
-  ],
-  "navigation": [
-    {
-      "group": "Getting Started",
-      "pages": ["introduction", "quickstart", "architecture"]
-    },
-    {
-      "group": "Core Concepts",
-      "pages": ["adapter-standard", "dispatcher", "registry"]
-    },
-    {
-      "group": "Reference Adapters",
-      "pages": [
-        "adapters/kamino",
-        "adapters/marginfi",
-        "adapters/jupiter",
-        "adapters/maple",
-        "adapters/drift"
-      ]
-    },
-    {
-      "group": "Developer Guide",
-      "pages": [
-        "guides/build-your-own-adapter",
-        "guides/reference-implementation",
-        "guides/testing",
-        "guides/deployment",
-        "guides/mintlify-publishing"
-      ]
-    },
-    {
-      "group": "Reference",
-      "pages": ["reference/idl", "reference/errors", "reference/events"]
-    }
-  ],
-  "footerSocials": {
-    "github": "https://github.com/your-org/solana-yield-adapter-standard",
-    "x": "https://x.com/your-org"
   }
 }
