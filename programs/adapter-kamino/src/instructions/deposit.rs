@@ -7,7 +7,7 @@ use yield_adapter_trait::{
 };
 
 use crate::protocol;
-use crate::state::{KaminoVaultState, VAULT_STATE_SEED};
+use crate::state::{KaminoVaultState, VAULT_AUTHORITY_SEED, VAULT_STATE_SEED};
 
 #[derive(Accounts)]
 pub struct Deposit<'info> {
@@ -38,9 +38,14 @@ pub struct Deposit<'info> {
     )]
     pub user_token_account: Account<'info, TokenAccount>,
 
+    /// CHECK: Vault authority PDA.
+    #[account(seeds = [VAULT_AUTHORITY_SEED], bump)]
+    pub vault_authority: UncheckedAccount<'info>,
+
     #[account(
         mut,
         constraint = vault_token_account.mint == vault_state.underlying_mint @ YieldAdapterError::MintMismatch,
+        constraint = vault_token_account.owner == vault_authority.key() @ YieldAdapterError::Unauthorized,
     )]
     pub vault_token_account: Account<'info, TokenAccount>,
 

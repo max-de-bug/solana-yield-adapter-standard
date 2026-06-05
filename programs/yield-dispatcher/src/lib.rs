@@ -7,6 +7,7 @@
 use anchor_lang::prelude::*;
 
 pub mod adapter_cpi;
+pub mod adapter_validation;
 pub mod error;
 pub mod events;
 pub mod instructions;

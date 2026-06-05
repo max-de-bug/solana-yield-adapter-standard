@@ -4,6 +4,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{Token, TokenAccount};
 
 use crate::adapter_cpi::{cpi_withdraw, AdapterWithdrawAccounts};
+use crate::adapter_validation;
 use crate::error::DispatcherError;
 use crate::events::DispatchWithdrawEvent;
 use crate::state::{DispatcherState, UserPosition, DISPATCHER_STATE_SEED, USER_POSITION_SEED};
@@ -53,21 +54,48 @@ pub struct Withdraw<'info> {
     #[account(
         mut,
         constraint = user_token_account.owner == user.key(),
+        constraint = user_token_account.mint == adapter_entry.underlying_mint
+            @ DispatcherError::AdapterCpiError,
     )]
     pub user_token_account: Account<'info, TokenAccount>,
 
-    /// CHECK: Adapter vault state PDA.
-    #[account(mut)]
+    /// CHECK: Canonical adapter vault state PDA.
+    #[account(
+        mut,
+        constraint = adapter_validation::is_adapter_vault_state(
+            &adapter_vault_state.to_account_info(),
+            &adapter_program.key(),
+        ) @ DispatcherError::AdapterCpiError,
+    )]
     pub adapter_vault_state: UncheckedAccount<'info>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = adapter_vault.mint == adapter_entry.underlying_mint
+            @ DispatcherError::AdapterCpiError,
+        constraint = adapter_vault.owner == adapter_vault_authority.key()
+            @ DispatcherError::AdapterCpiError,
+    )]
     pub adapter_vault: Account<'info, TokenAccount>,
 
-    /// CHECK: Adapter vault authority PDA (protocol-specific seed).
+    /// CHECK: Canonical adapter vault authority PDA.
+    #[account(
+        constraint = adapter_validation::is_adapter_vault_authority(
+            &adapter_vault_authority.to_account_info(),
+            &adapter_program.key(),
+        ) @ DispatcherError::AdapterCpiError,
+    )]
     pub adapter_vault_authority: UncheckedAccount<'info>,
 
-    /// CHECK: Adapter `AdapterPosition` PDA for this user.
-    #[account(mut)]
+    /// CHECK: Canonical adapter user position PDA.
+    #[account(
+        mut,
+        constraint = adapter_validation::is_adapter_user_position(
+            &adapter_user_position.to_account_info(),
+            &adapter_program.key(),
+            &user.key(),
+        ) @ DispatcherError::AdapterCpiError,
+    )]
     pub adapter_user_position: UncheckedAccount<'info>,
 
     pub token_program: Program<'info, Token>,

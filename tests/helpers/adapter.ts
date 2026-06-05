@@ -282,6 +282,7 @@ export async function runAdapterDepositWithdrawFlow(
       vaultState: vaultStatePda,
       userPosition: userPositionPda,
       userTokenAccount,
+      vaultAuthority: vaultAuthorityPda,
       vaultTokenAccount,
       tokenProgram: TOKEN_PROGRAM,
       systemProgram: SystemProgram.programId,

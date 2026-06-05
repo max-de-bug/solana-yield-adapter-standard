@@ -38,10 +38,18 @@ pub struct Withdraw<'info> {
     )]
     pub user_position: Account<'info, AdapterPosition>,
 
-    #[account(mut, constraint = user_token_account.owner == user.key())]
+    #[account(
+        mut,
+        constraint = user_token_account.owner == user.key(),
+        constraint = user_token_account.mint == vault_state.underlying_mint @ YieldAdapterError::MintMismatch,
+    )]
     pub user_token_account: Account<'info, TokenAccount>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = vault_token_account.mint == vault_state.underlying_mint @ YieldAdapterError::MintMismatch,
+        constraint = vault_token_account.owner == vault_authority.key() @ YieldAdapterError::Unauthorized,
+    )]
     pub vault_token_account: Account<'info, TokenAccount>,
 
     /// CHECK: Vault authority PDA.

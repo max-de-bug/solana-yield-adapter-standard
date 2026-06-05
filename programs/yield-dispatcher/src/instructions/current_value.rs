@@ -5,6 +5,7 @@ use anchor_lang::prelude::*;
 use crate::adapter_cpi::{
     cpi_current_value, read_position_receipt, read_vault_totals, AdapterCurrentValueAccounts,
 };
+use crate::adapter_validation;
 use crate::error::DispatcherError;
 use crate::events::DispatchCurrentValueEvent;
 use crate::state::{DispatcherState, UserPosition, DISPATCHER_STATE_SEED, USER_POSITION_SEED};
@@ -47,11 +48,24 @@ pub struct CurrentValue<'info> {
     #[account(constraint = adapter_program.key() == adapter_entry.adapter_program_id)]
     pub adapter_program: UncheckedAccount<'info>,
 
-    /// CHECK: Adapter vault state PDA.
-    #[account(mut)]
+    /// CHECK: Canonical adapter vault state PDA.
+    #[account(
+        mut,
+        constraint = adapter_validation::is_adapter_vault_state(
+            &adapter_vault_state.to_account_info(),
+            &adapter_program.key(),
+        ) @ DispatcherError::AdapterCpiError,
+    )]
     pub adapter_vault_state: UncheckedAccount<'info>,
 
-    /// CHECK: Adapter `AdapterPosition` PDA for this user.
+    /// CHECK: Canonical adapter user position PDA.
+    #[account(
+        constraint = adapter_validation::is_adapter_user_position(
+            &adapter_user_position.to_account_info(),
+            &adapter_program.key(),
+            &user.key(),
+        ) @ DispatcherError::AdapterCpiError,
+    )]
     pub adapter_user_position: UncheckedAccount<'info>,
 }
 

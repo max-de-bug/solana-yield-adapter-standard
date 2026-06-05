@@ -8,33 +8,17 @@ use adapter_marginfi::program::AdapterMarginfi;
 use anchor_lang::prelude::*;
 
 use crate::error::DispatcherError;
+use yield_adapter_trait::{read_adapter_position_receipt, read_reference_vault_totals};
 
 /// Read global vault totals from any reference adapter vault state account.
 pub fn read_vault_totals(vault_state: &AccountInfo) -> Result<(u64, u64)> {
-    let data = vault_state.try_borrow_data()?;
-    require!(data.len() >= 88, DispatcherError::AdapterCpiError);
-    let total_underlying = u64::from_le_bytes(
-        data[72..80]
-            .try_into()
-            .map_err(|_| DispatcherError::AdapterCpiError)?,
-    );
-    let total_shares = u64::from_le_bytes(
-        data[80..88]
-            .try_into()
-            .map_err(|_| DispatcherError::AdapterCpiError)?,
-    );
-    Ok((total_underlying, total_shares))
+    read_reference_vault_totals(vault_state).map_err(|_| DispatcherError::AdapterCpiError.into())
 }
 
 /// Read receipt balance from an adapter `AdapterPosition` account.
 pub fn read_position_receipt(user_position: &AccountInfo) -> Result<u64> {
-    let data = user_position.try_borrow_data()?;
-    require!(data.len() >= 96, DispatcherError::AdapterCpiError);
-    Ok(u64::from_le_bytes(
-        data[88..96]
-            .try_into()
-            .map_err(|_| DispatcherError::AdapterCpiError)?,
-    ))
+    read_adapter_position_receipt(user_position)
+        .map_err(|_| DispatcherError::AdapterCpiError.into())
 }
 
 pub struct AdapterDepositAccounts<'info> {
@@ -44,6 +28,7 @@ pub struct AdapterDepositAccounts<'info> {
     pub user_position: AccountInfo<'info>,
     pub user_token_account: AccountInfo<'info>,
     pub vault_token_account: AccountInfo<'info>,
+    pub vault_authority: AccountInfo<'info>,
     pub token_program: AccountInfo<'info>,
     pub system_program: AccountInfo<'info>,
 }
@@ -65,6 +50,7 @@ pub fn cpi_deposit<'info>(
                     vault_state: accounts.vault_state,
                     user_position: accounts.user_position,
                     user_token_account: accounts.user_token_account,
+                    vault_authority: accounts.vault_authority,
                     vault_token_account: accounts.vault_token_account,
                     token_program: accounts.token_program,
                     system_program: accounts.system_program,
@@ -81,6 +67,7 @@ pub fn cpi_deposit<'info>(
                     vault_state: accounts.vault_state,
                     user_position: accounts.user_position,
                     user_token_account: accounts.user_token_account,
+                    vault_authority: accounts.vault_authority,
                     vault_token_account: accounts.vault_token_account,
                     token_program: accounts.token_program,
                     system_program: accounts.system_program,
@@ -97,6 +84,7 @@ pub fn cpi_deposit<'info>(
                     vault_state: accounts.vault_state,
                     user_position: accounts.user_position,
                     user_token_account: accounts.user_token_account,
+                    vault_authority: accounts.vault_authority,
                     vault_token_account: accounts.vault_token_account,
                     token_program: accounts.token_program,
                     system_program: accounts.system_program,
@@ -113,6 +101,7 @@ pub fn cpi_deposit<'info>(
                     vault_state: accounts.vault_state,
                     user_position: accounts.user_position,
                     user_token_account: accounts.user_token_account,
+                    vault_authority: accounts.vault_authority,
                     vault_token_account: accounts.vault_token_account,
                     token_program: accounts.token_program,
                     system_program: accounts.system_program,
@@ -129,6 +118,7 @@ pub fn cpi_deposit<'info>(
                     vault_state: accounts.vault_state,
                     user_position: accounts.user_position,
                     user_token_account: accounts.user_token_account,
+                    vault_authority: accounts.vault_authority,
                     vault_token_account: accounts.vault_token_account,
                     token_program: accounts.token_program,
                     system_program: accounts.system_program,

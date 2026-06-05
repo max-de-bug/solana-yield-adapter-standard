@@ -375,3 +375,58 @@ pub fn accrue_time_based_yield(
     *last_sync_ts = now;
     Ok(())
 }
+
+// ---------------------------------------------------------------------------
+// Account reads — shared layout across reference adapters (Borsh, not byte offsets)
+// ---------------------------------------------------------------------------
+
+/// Common vault header: identical field order on all reference adapter vault PDAs.
+#[derive(AnchorSerialize, AnchorDeserialize)]
+pub struct ReferenceVaultHead {
+    pub authority: Pubkey,
+    pub underlying_mint: Pubkey,
+    pub total_underlying: u64,
+    pub total_shares: u64,
+}
+
+/// Layout of [`AdapterPosition`] for cross-program reads (discriminator skipped).
+#[derive(AnchorSerialize, AnchorDeserialize)]
+pub struct AdapterPositionData {
+    pub owner: Pubkey,
+    pub adapter_program_id: Pubkey,
+    pub deposited_amount: u64,
+    pub withdrawn_amount: u64,
+    pub receipt_token_balance: u64,
+    pub last_updated: i64,
+    pub last_withdraw_request: i64,
+    pub bump: u8,
+}
+
+const VAULT_HEAD_SIZE: usize = 32 + 32 + 8 + 8;
+const POSITION_DATA_SIZE: usize = 32 + 32 + 8 + 8 + 8 + 8 + 8 + 1;
+
+/// Read `total_underlying` and `total_shares` from any reference adapter vault account.
+pub fn read_reference_vault_totals(account: &AccountInfo) -> Result<(u64, u64)> {
+    let data = account.try_borrow_data()?;
+    require!(
+        data.len() >= 8 + VAULT_HEAD_SIZE,
+        YieldAdapterError::InvalidMetadata
+    );
+    let mut slice: &[u8] = &data[8..];
+    let head = ReferenceVaultHead::deserialize(&mut slice)
+        .map_err(|_| YieldAdapterError::InvalidMetadata)?;
+    Ok((head.total_underlying, head.total_shares))
+}
+
+/// Read `receipt_token_balance` from an adapter position account.
+pub fn read_adapter_position_receipt(account: &AccountInfo) -> Result<u64> {
+    let data = account.try_borrow_data()?;
+    require!(
+        data.len() >= 8 + POSITION_DATA_SIZE,
+        YieldAdapterError::PositionNotInitialized
+    );
+    let mut slice: &[u8] = &data[8..];
+    let position = AdapterPositionData::deserialize(&mut slice)
+        .map_err(|_| YieldAdapterError::PositionNotInitialized)?;
+    Ok(position.receipt_token_balance)
+}
