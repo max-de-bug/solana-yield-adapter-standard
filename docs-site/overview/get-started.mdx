@@ -1,0 +1,28 @@
+---
+title: Get started
+sidebarTitle: Get started
+description: Clone, build, test, and read the spec
+---
+
+<Steps>
+  <Step title="Clone and build">
+    ```bash
+    git clone https://github.com/max-de-bug/solana-yield-adapter-standard.git
+    cd solana-yield-adapter-standard
+    npm install && npm run build
+    ```
+  </Step>
+  <Step title="Run tests">
+    ```bash
+    npm test              # 16 local integration tests
+    npm run test:fork     # 20 mainnet-fork tests
+    ```
+  </Step>
+  <Step title="Read the spec">
+    Start with the [Adapter Standard](/adapter-standard), then follow [Build Your Own Adapter](/guides/build-your-own-adapter).
+  </Step>
+</Steps>
+
+<Card title="Full setup guide" icon="bolt" href="/quickstart">
+  Prerequisites, devnet deploy, and troubleshooting.
+</Card>

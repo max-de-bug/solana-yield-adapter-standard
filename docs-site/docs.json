@@ -1,8 +1,8 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Solana Yield Adapter Standard",
-  "description": "A standardized deposit, withdraw, and current_value interface for Solana yield protocols — with dispatcher, registry, and five reference adapters.",
+  "name": "SYAS",
+  "description": "Solana Yield Adapter Standard — deposit, withdraw, and current_value for every yield protocol.",
   "colors": {
     "primary": "#9945FF",
     "light": "#14F195",
@@ -14,13 +14,13 @@
   },
   "favicon": "/favicon.svg",
   "banner": {
-    "content": "Reference implementation — adapters use local SPL vaults, not live protocol CPI. [Learn more](/guides/reference-implementation)",
+    "content": "**Reference implementation** — local SPL vaults, not live protocol CPI. [Scope →](/guides/reference-implementation)",
     "dismissible": true
   },
   "navbar": {
     "links": [
       {
-        "label": "Explorer",
+        "label": "Devnet",
         "href": "https://explorer.solana.com/address/CeyDkRgegNUz2TeFfFjRdL89G9EGGDymiqHoJkeFGcZ4?cluster=devnet"
       },
       {
@@ -35,51 +35,92 @@
     }
   },
   "navigation": {
-    "anchors": [
+    "global": {
+      "anchors": [
+        {
+          "anchor": "GitHub",
+          "icon": "github",
+          "href": "https://github.com/max-de-bug/solana-yield-adapter-standard"
+        },
+        {
+          "anchor": "Registry",
+          "icon": "list-check",
+          "href": "https://explorer.solana.com/address/CeyDkRgegNUz2TeFfFjRdL89G9EGGDymiqHoJkeFGcZ4?cluster=devnet"
+        }
+      ]
+    },
+    "tabs": [
       {
-        "anchor": "GitHub",
-        "icon": "github",
-        "href": "https://github.com/max-de-bug/solana-yield-adapter-standard"
-      },
-      {
-        "anchor": "Registry (devnet)",
-        "icon": "list-check",
-        "href": "https://explorer.solana.com/address/CeyDkRgegNUz2TeFfFjRdL89G9EGGDymiqHoJkeFGcZ4?cluster=devnet"
-      }
-    ],
-    "groups": [
-      {
-        "group": "Getting Started",
-        "pages": ["index", "quickstart", "architecture"]
-      },
-      {
-        "group": "Core Concepts",
-        "pages": ["adapter-standard", "dispatcher", "registry"]
-      },
-      {
-        "group": "Reference Adapters",
-        "pages": [
-          "adapters/kamino",
-          "adapters/marginfi",
-          "adapters/jupiter",
-          "adapters/maple",
-          "adapters/drift"
+        "tab": "Documentation",
+        "icon": "book-open",
+        "groups": [
+          {
+            "group": "Overview",
+            "icon": "house",
+            "root": "index",
+            "expanded": true,
+            "pages": [
+              "overview/one-interface",
+              "overview/whats-in-repo",
+              "overview/at-a-glance",
+              "overview/get-started",
+              "overview/documentation-map"
+            ]
+          },
+          {
+            "group": "Setup",
+            "icon": "rocket",
+            "pages": ["quickstart", "architecture"]
+          },
+          {
+            "group": "Core Concepts",
+            "icon": "layers",
+            "pages": ["adapter-standard", "dispatcher", "registry"]
+          },
+          {
+            "group": "Reference Adapters",
+            "icon": "puzzle-piece",
+            "pages": [
+              "adapters/kamino",
+              "adapters/marginfi",
+              "adapters/jupiter",
+              "adapters/maple",
+              "adapters/drift"
+            ]
+          },
+          {
+            "group": "Developer Guide",
+            "icon": "hammer",
+            "pages": [
+              "guides/build-your-own-adapter",
+              "guides/reference-implementation",
+              "guides/testing",
+              "guides/deployment"
+            ]
+          }
         ]
       },
       {
-        "group": "Developer Guide",
-        "pages": [
-          "guides/build-your-own-adapter",
-          "guides/reference-implementation",
-          "guides/testing",
-          "guides/deployment"
+        "tab": "API Reference",
+        "icon": "square-terminal",
+        "groups": [
+          {
+            "group": "Programs",
+            "icon": "code",
+            "pages": ["adapter-standard", "dispatcher", "registry"]
+          },
+          {
+            "group": "IDL & Events",
+            "icon": "file-code",
+            "pages": ["reference/idl", "reference/events", "reference/errors"]
+          }
         ]
-      },
-      {
-        "group": "API Reference",
-        "pages": ["reference/idl", "reference/errors", "reference/events"]
       }
     ]
+  },
+  "contextual": {
+    "options": ["copy", "view", "chatgpt", "claude"],
+    "display": "header"
   },
   "footer": {
     "socials": {
@@ -89,8 +130,8 @@
       {
         "header": "Documentation",
         "items": [
+          { "label": "Overview", "href": "/" },
           { "label": "Quick Start", "href": "/quickstart" },
-          { "label": "Adapter Standard", "href": "/adapter-standard" },
           { "label": "Build Your Adapter", "href": "/guides/build-your-own-adapter" }
         ]
       },
