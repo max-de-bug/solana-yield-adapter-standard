@@ -1,48 +1,87 @@
 ---
-title: Introduction
-description: A standardized interface for yield-bearing protocols on Solana
+title: Solana Yield Adapter Standard
+description: A composable, ERC-4626-inspired interface for yield-bearing protocols on Solana
 ---
 
-# Solana Yield Adapter Standard
+<Note>
+This repository is a **reference implementation** submitted for the Superteam Ukraine bounty. Adapters demonstrate the standard with local SPL vaults — production deployments require protocol-specific CPI.
+</Note>
 
-The **Solana Yield Adapter Standard** defines a minimal, composable interface for interacting with yield-bearing protocols on Solana. Think of it as an **ERC-4626 for Solana**.
+## One interface. Every yield source.
 
-## The Problem
+Aggregators, wallets, and vaults today integrate each Solana yield protocol with bespoke account layouts and instruction shapes. The **Yield Adapter Standard** unifies that surface into three instructions any compliant adapter must expose.
 
-Every DeFi protocol on Solana has its own unique interface:
-- Aggregators must write custom integration code for each protocol
-- Wallets can't display yield positions in a standardized way
-- New protocols face adoption friction due to integration overhead
-
-## The Solution
-
-Three instructions. That's it.
-
-| Instruction | Description |
+| Instruction | Purpose |
 |---|---|
-| `deposit(amount)` | Deposit underlying tokens into the yield source |
-| `withdraw(amount)` | Withdraw underlying tokens from the yield source |
-| `current_value()` | Query the current value of a position |
+| `deposit(amount)` | Move underlying tokens into a yield position |
+| `withdraw(amount)` | Burn receipt shares and return underlying |
+| `current_value()` | Report the caller's position value in underlying units |
 
-## What's Included
+```mermaid
+flowchart LR
+    User["User / dApp"] --> Dispatcher["Yield Dispatcher"]
+    Dispatcher --> Registry["Adapter Registry"]
+    Dispatcher --> Adapter["Approved Adapter"]
+    Adapter --> Vault["Vault + Position PDAs"]
+```
+
+## What's in this repo
 
 <CardGroup cols={2}>
-  <Card title="Core Dispatcher" icon="route" href="/dispatcher">
-    A router that validates adapters and tracks user positions
+  <Card title="Yield Dispatcher" icon="route" href="/dispatcher">
+    Single entry point that validates registry approval and CPIs into adapters.
   </Card>
-  <Card title="Adapter Registry" icon="list-check" href="/registry">
-    Governance-gated on-chain approval for adapters
+  <Card title="Adapter Registry" icon="shield-check" href="/registry">
+    Governance-gated propose → approve → revoke lifecycle for adapters.
   </Card>
-  <Card title="5 Reference Adapters" icon="puzzle-piece" href="/adapters/kamino">
-    Kamino, MarginFi, Jupiter, Maple, and Drift
+  <Card title="Five Reference Adapters" icon="puzzle-piece" href="/adapters/kamino">
+    Kamino, MarginFi, Jupiter, Maple, and Drift — share-based SPL vault patterns.
   </Card>
-  <Card title="Developer Guide" icon="book" href="/guides/build-your-own-adapter">
-    Ship your own adapter in less than a day
+  <Card title="Trait Crate" icon="code" href="/adapter-standard">
+  Shared events, errors, math helpers, and `define_adapter_position!` macro.
   </Card>
 </CardGroup>
 
-## Quick Links
+## At a glance
 
-- [Adapter Standard Specification](/adapter-standard) — The formal spec
-- [Build Your Own Adapter](/guides/build-your-own-adapter) — Step-by-step guide
-- [GitHub Repository](https://github.com/max-de-bug/solana-yield-adapter-standard) — Source code
+| Metric | Value |
+|---|---|
+| Programs | 7 (dispatcher, registry, 5 adapters) |
+| Test coverage | 16 local + 20 mainnet-fork integration tests |
+| Toolchain | Anchor 1.0.1 · Solana 2.2.20 |
+| Registry (devnet) | [`CeyDkRge…`](https://explorer.solana.com/address/CeyDkRgegNUz2TeFfFjRdL89G9EGGDymiqHoJkeFGcZ4?cluster=devnet) |
+
+## Get started
+
+<Steps>
+  <Step title="Clone and build">
+    ```bash
+    git clone https://github.com/max-de-bug/solana-yield-adapter-standard.git
+    cd solana-yield-adapter-standard
+    npm install && npm run build
+    ```
+  </Step>
+  <Step title="Run tests">
+    ```bash
+    npm test              # 16 local integration tests
+    npm run test:fork     # 20 mainnet-fork tests
+    ```
+  </Step>
+  <Step title="Read the spec">
+    Start with the [Adapter Standard](/adapter-standard), then follow [Build Your Own Adapter](/guides/build-your-own-adapter).
+  </Step>
+</Steps>
+
+## Documentation map
+
+<CardGroup cols={3}>
+  <Card title="Architecture" icon="diagram-project" href="/architecture">
+    How dispatcher, registry, and adapters fit together.
+  </Card>
+  <Card title="Quick Start" icon="bolt" href="/quickstart">
+    Prerequisites, build, test, and devnet deploy in minutes.
+  </Card>
+  <Card title="Reference Scope" icon="circle-info" href="/guides/reference-implementation">
+    What this repo proves vs. what production requires.
+  </Card>
+</CardGroup>

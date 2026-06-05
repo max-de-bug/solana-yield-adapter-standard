@@ -1,50 +1,65 @@
 ---
-title: Drift Insurance Fund
-description: Reference adapter for Drift Protocol Insurance Fund staking
+title: Drift Adapter
+description: Reference adapter — Insurance Fund staking with 13-day cooldown tracking
 ---
 
-# Drift Insurance Fund Adapter
-
 <Warning>
-Drift Protocol experienced a security incident in April 2026. The adapter targets the `protocol-v2` program specification. Check Drift's official channels for current protocol status.
+This adapter tracks a **13-day unstaking cooldown** on `AdapterPosition` — it does not enforce Drift Protocol's on-chain insurance fund rules. Check [Drift](https://drift.trade) official channels for current protocol status.
 </Warning>
 
-<Info>
-**Protocol**: Drift Protocol v2  
-**Program ID**: `dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH`  
-**Model**: Insurance fund staking with 13-day cooldown  
-**Underlying**: USDC  
-**Status**: 🔶 Reference
-</Info>
+| | |
+|---|---|
+| **Inspired by** | [Drift Protocol](https://drift.trade) v2 Insurance Fund |
+| **Mainnet protocol ID** | `dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH` |
+| **Adapter program (devnet)** | `CVfb8T9tf9WEeus4mKWsxTehVezeY9TGwYsSc3JmxWYz` |
+| **Underlying** | USDC |
+| **Model** | Staking vault + cooldown constraint |
 
 ## Overview
 
-The Drift adapter integrates with [Drift Protocol's](https://drift.trade) Insurance Fund. Users stake USDC to backstop the protocol and earn staking rewards.
+Drift's Insurance Fund lets stakers backstop the protocol and earn rewards. This reference adapter adds a **protocol-specific constraint** on top of the standard interface: withdrawals fail until a 13-day cooldown elapses after the first unstake request.
 
-## 13-Day Cooldown
-
-The Drift Insurance Fund enforces a **13-day unstaking cooldown**:
-
-1. User calls `withdraw()` → cooldown timer starts
-2. 13 days must elapse before funds can be released
-3. Adapter tracks `last_unstake_request` timestamp
-4. Subsequent withdrawals check `elapsed >= 13 days`
+## 13-day cooldown
 
 ```rust
 pub const UNSTAKE_COOLDOWN_SECONDS: i64 = 13 * 24 * 60 * 60; // 1,123,200s
 ```
 
-This is enforced on-chain and cannot be bypassed.
+<Steps>
+  <Step title="User calls withdraw">
+    First withdraw sets `last_unstake_request` on `AdapterPosition`.
+  </Step>
+  <Step title="Cooldown enforced">
+    Subsequent withdraws check `clock.unix_timestamp - last_unstake_request >= UNSTAKE_COOLDOWN_SECONDS`.
+  </Step>
+  <Step title="Error on early exit">
+    Returns `CooldownNotElapsed` (error code `7000`) if cooldown not met.
+  </Step>
+</Steps>
 
-## Protocol-Specific Error Codes
+## Protocol-specific error
 
 | Code | Name | Description |
 |---|---|---|
-| `7000` | `CooldownNotElapsed` | 13-day unstaking period hasn't passed |
+| `7000` | `CooldownNotElapsed` | 13-day unstaking period has not passed |
 
-## PDA Seeds
+## PDA seeds
 
 ```
 vault_state:     ["drift_vault_state"]
 vault_authority: ["drift_vault_authority"]
+user_position:   ["adapter_position", user_pubkey]
 ```
+
+## Production path
+
+A production Drift adapter would CPI into insurance fund stake/unstake instructions and respect Drift's own cooldown and account layout.
+
+<CardGroup cols={2}>
+  <Card title="Error codes" icon="triangle-exclamation" href="/reference/errors">
+    Full error reference including `7000+`.
+  </Card>
+  <Card title="Source code" icon="github" href="https://github.com/max-de-bug/solana-yield-adapter-standard/tree/main/programs/adapter-drift">
+    `programs/adapter-drift/`
+  </Card>
+</CardGroup>

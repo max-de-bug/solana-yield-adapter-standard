@@ -1,65 +1,93 @@
 ---
 title: Testing
-description: How to test your yield adapter
+description: Local integration tests and mainnet-fork validation
 ---
 
-# Testing
+The test suite validates registry governance, dispatcher routing, and all five adapters end-to-end. Run locally before every PR.
 
-## Unit Tests (Localnet)
+## Test matrix
+
+| Command | Tests | Environment | Duration |
+|---|---|---|---|
+| `npm test` | 16 | Local validator | ~2 min |
+| `npm run test:fork` | 20 | Cloned mainnet programs | ~5–15 min (first run) |
+
+<Tip>
+`npm test` uses `anchor test --validator legacy --skip-build`. Run `npm run build` first if programs changed.
+</Tip>
+
+## Local tests
 
 ```bash
-anchor test
+npm run build
+npm test
 ```
 
-Runs against a local Solana test validator. Tests cover:
-- Registry governance lifecycle
-- Dispatcher routing logic
-- Individual adapter deposit/withdraw/value flows
-- Error cases and edge conditions
+### Coverage
 
-## Mainnet-Fork Tests
-
-```bash
-./scripts/run-mainnet-fork-tests.sh
-```
-
-The script:
-1. Builds all Anchor programs
-2. Starts `solana-test-validator` with cloned mainnet programs
-3. Deploys your programs to the forked environment
-4. Runs integration tests against real on-chain state
-
-### Cloned Programs
-
-| Program | ID | Purpose |
+| Suite | File | What it verifies |
 |---|---|---|
-| Kamino K-Lend | `KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD` | Lending protocol |
-| MarginFi v2 | `MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA` | Lending protocol |
-| Drift v2 | `dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH` | Perp/insurance |
+| Registry | `tests/registry.test.ts` | propose → approve → revoke lifecycle |
+| Dispatcher | `tests/dispatcher.test.ts` | Routing, pause, registry rejection |
+| Adapters | `tests/adapters/*.test.ts` | deposit → `current_value` → withdraw per adapter |
+| Errors | Across suites | Zero amounts, insufficient balance, revoked adapters |
+
+### Test helpers
+
+Reusable wiring lives in `tests/helpers/`:
+
+- `adapter.ts` — adapter deposit/withdraw/value account builders
+- Shared token mints, PDAs, and program clients
+
+Copy these patterns when adding a sixth adapter.
+
+## Mainnet-fork tests
+
+```bash
+npm run test:fork
+```
+
+The script (`scripts/run-mainnet-fork-tests.sh`):
+
+1. Builds all programs and IDLs
+2. Starts `solana-test-validator` with `--clone` for mainnet programs
+3. Deploys your programs to the fork
+4. Runs the full test suite against cloned state
+
+### Cloned programs
+
+| Program | Mainnet ID | Purpose |
+|---|---|---|
+| Kamino K-Lend | `KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD` | Lending protocol bytecode |
+| MarginFi v2 | `MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA` | Lending protocol bytecode |
+| Drift v2 | `dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH` | Perp / insurance bytecode |
+| Jupiter Perps | `PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu` | Perp pool bytecode |
 | SPL Token | `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA` | Token operations |
 
-### Writing Fork Tests
+<Warning>
+Fork tests prove **deployment plumbing and USDC flows** against cloned bytecode. They do **not** prove live mainnet position parity inside those protocols. See [Reference vs Production](/guides/reference-implementation).
+</Warning>
+
+## Writing new tests
+
+Minimum cases for any adapter:
 
 ```typescript
-describe("kamino-fork", () => {
-  it("deposits into live Kamino market", async () => {
-    // Uses real Kamino program state cloned from mainnet
-    // Test against actual reserve accounts and pool state
-  });
+it("deposit → current_value → withdraw", async () => {
+  await deposit(1_000_000);
+  const value = await currentValue();
+  expect(value).to.be.gt(0);
+  await withdraw(shares);
+});
+
+it("rejects zero deposit", async () => {
+  await expect(deposit(0)).to.be.rejected;
 });
 ```
 
-<Warning>
-Mainnet-fork tests require a stable internet connection to clone program state. They may take longer to start than local tests.
-</Warning>
+## Linting
 
-## Test Structure
-
-```
-tests/
-├── helpers/
-│   └── index.ts          # Shared utilities
-├── registry.test.ts      # Registry governance tests
-├── dispatcher.test.ts    # Dispatcher routing tests
-└── adapters/             # Per-adapter integration tests
+```bash
+npm run lint    # cargo clippy --workspace -- -D warnings
+npm run fmt     # cargo fmt --all
 ```

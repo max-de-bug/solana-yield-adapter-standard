@@ -1,30 +1,49 @@
 ---
-title: Jupiter LP
-description: Reference adapter for Jupiter Perpetuals JLP pool
+title: Jupiter Adapter
+description: Reference adapter — Jupiter Perpetuals JLP liquidity pattern
 ---
 
-# Jupiter LP Adapter
+<Note>
+**Reference implementation.** Local SPL vault — no CPI into Jupiter Perps `add_liquidity` / `remove_liquidity`.
+</Note>
 
-<Info>
-**Protocol**: Jupiter Perpetuals  
-**Model**: JLP (Jupiter Liquidity Provider) pool  
-**Underlying**: USDC  
-**Status**: ✅ Live
-</Info>
+| | |
+|---|---|
+| **Inspired by** | [Jupiter Perpetuals](https://jup.ag/perps) JLP pool |
+| **Mainnet protocol ID** | `PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu` |
+| **Adapter program (devnet)** | `2acqkTDi2VQ4FCZVDB8PeMVLVWnREogE5HA2GxvHdWxu` |
+| **Underlying** | USDC |
+| **Model** | JLP-style share pool |
 
 ## Overview
 
-The Jupiter adapter integrates with [Jupiter's](https://jup.ag) perpetuals liquidity pool (JLP). Users provide USDC liquidity to the perp market and earn trading fees.
+Jupiter's perpetuals liquidity pool (JLP) lets LPs earn trading fees from perp activity. This adapter names and structures accounts after that model while using the standard share-vault math from `yield-adapter-trait`.
 
-## Protocol-Specific Notes
+## Instruction summary
 
-- JLP pool earns fees from perpetual trading activity
-- Uses `add_liquidity` and `remove_liquidity` CPI calls
-- Compute budget may need to be increased for complex routing
+| Instruction | Input | Effect |
+|---|---|---|
+| `deposit` | Underlying amount | Mint pool shares; transfer USDC to vault |
+| `withdraw` | Receipt shares | Burn shares; return underlying |
+| `current_value` | — | User's underlying position value |
 
-## PDA Seeds
+## PDA seeds
 
 ```
 vault_state:     ["jupiter_vault_state"]
 vault_authority: ["jupiter_vault_authority"]
+user_position:   ["adapter_position", user_pubkey]
 ```
+
+## Production path
+
+Live integration requires CPI into Jupiter Perps with pool state accounts and potentially elevated compute budget for routing complexity. Fork tests clone `PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu` for environment validation.
+
+<CardGroup cols={2}>
+  <Card title="Architecture" icon="diagram-project" href="/architecture">
+    How adapters plug into the dispatcher.
+  </Card>
+  <Card title="Source code" icon="github" href="https://github.com/max-de-bug/solana-yield-adapter-standard/tree/main/programs/adapter-jupiter">
+    `programs/adapter-jupiter/`
+  </Card>
+</CardGroup>

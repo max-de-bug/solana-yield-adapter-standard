@@ -1,34 +1,38 @@
 ---
 title: Quick Start
-description: Get up and running with the Yield Adapter Standard in 5 minutes
+description: Clone, build, test, and deploy the Yield Adapter Standard in under 10 minutes
 ---
 
-# Quick Start
+Get from zero to a passing test suite with the commands below. For toolchain details, see the [GitHub README](https://github.com/max-de-bug/solana-yield-adapter-standard#prerequisites).
 
 ## Prerequisites
 
-<Steps>
-  <Step title="Install Rust">
+<AccordionGroup>
+  <Accordion title="Rust 1.75+">
     ```bash
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    rustup default stable
     ```
-  </Step>
-  <Step title="Install Solana CLI">
+  </Accordion>
+  <Accordion title="Solana CLI 2.2.20">
     ```bash
     sh -c "$(curl -sSfL https://release.solana.com/v2.2.20/install)"
+    solana --version
     ```
-  </Step>
-  <Step title="Install Anchor CLI">
+  </Accordion>
+  <Accordion title="Anchor CLI 1.0.1">
     ```bash
     cargo install --git https://github.com/coral-xyz/anchor avm --force
-    avm install 1.0.1
-    avm use 1.0.1
-    agave-install init 2.2.20
+    avm install 1.0.1 && avm use 1.0.1
+  agave-install init 2.2.20
     ```
-  </Step>
-</Steps>
+  </Accordion>
+  <Accordion title="Node.js 18+">
+    Required for TypeScript integration tests and npm scripts.
+  </Accordion>
+</AccordionGroup>
 
-## Build
+## Clone and build
 
 ```bash
 git clone https://github.com/max-de-bug/solana-yield-adapter-standard.git
@@ -37,33 +41,64 @@ npm install
 npm run build
 ```
 
-## Test
+<Tip>
+`npm run build` runs `scripts/build-sbf.sh` (all seven programs) then `scripts/build-idls.sh` (IDL artifacts under `target/idl/`).
+</Tip>
+
+## Run tests
+
+<Tabs>
+  <Tab title="Local (recommended)">
+    ```bash
+    npm test
+    ```
+
+    Runs **16 integration tests** against a local validator:
+
+    - Registry governance lifecycle
+    - Dispatcher routing and pause
+    - All five adapters: deposit → `current_value` → withdraw
+    - Error paths (zero amounts, insufficient balance)
+  </Tab>
+  <Tab title="Mainnet fork">
+    ```bash
+    npm run test:fork
+    ```
+
+    Runs **20 integration tests** on a validator with cloned mainnet programs (Kamino, MarginFi, Drift, Jupiter Perps, SPL Token).
+
+    <Warning>
+    Requires network access to clone program state. First run may take several minutes.
+    </Warning>
+  </Tab>
+</Tabs>
+
+## Deploy to devnet
 
 ```bash
-# Unit tests
-anchor test
-
-# Mainnet-fork tests
-./scripts/run-mainnet-fork-tests.sh
+npm run deploy:devnet
+# or: ./scripts/deploy-devnet.sh
 ```
 
-## Deploy to Devnet
-
-```bash
-./scripts/deploy-devnet.sh
-```
+The script generates keypairs, builds programs, deploys to devnet, and prints program IDs to paste into `Anchor.toml`.
 
 <Info>
-The deploy script generates keypairs, builds programs, deploys to devnet, and outputs the program IDs to update in `Anchor.toml`.
+**Already deployed (devnet):** Registry at [`CeyDkRgegNUz2TeFfFjRdL89G9EGGDymiqHoJkeFGcZ4`](https://explorer.solana.com/address/CeyDkRgegNUz2TeFfFjRdL89G9EGGDymiqHoJkeFGcZ4?cluster=devnet). Dispatcher and adapters are configured in `Anchor.toml` — redeploy with the script if you need your own cluster.
 </Info>
 
-## What's Next?
+## Next steps
 
 <CardGroup cols={2}>
   <Card title="Architecture" icon="diagram-project" href="/architecture">
-    Understand how the components fit together
+    Understand dispatcher, registry, and adapter interactions.
   </Card>
-  <Card title="Build Your Own" icon="hammer" href="/guides/build-your-own-adapter">
-    Create a custom adapter for your protocol
+  <Card title="Build Your Adapter" icon="hammer" href="/guides/build-your-own-adapter">
+    Ship a conformant adapter in under one day.
+  </Card>
+  <Card title="Testing Guide" icon="vial" href="/guides/testing">
+    Local vs. fork test matrix and writing new tests.
+  </Card>
+  <Card title="Adapter Standard" icon="file-contract" href="/adapter-standard">
+    Normative specification for compliant adapters.
   </Card>
 </CardGroup>

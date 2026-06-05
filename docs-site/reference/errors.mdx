@@ -1,53 +1,69 @@
 ---
 title: Error Codes
-description: Complete error code reference
+description: Complete error code reference across trait, dispatcher, registry, and adapters
 ---
 
-# Error Codes
+Errors are namespaced by numeric range so integrators can branch on category without parsing program-specific strings.
 
-## Standard Adapter Errors (6000-6099)
+## Standard adapter errors (`6000–6099`)
 
-Defined in `yield-adapter-trait`. All adapters use these.
+Defined in `crates/yield-adapter-trait`. All adapters reuse these.
 
-| Code | Name | Description |
+| Code | Name | When |
 |---|---|---|
-| 6000 | `ZeroDepositAmount` | Deposit amount must be > 0 |
-| 6001 | `ZeroWithdrawAmount` | Withdrawal amount must be > 0 |
-| 6002 | `InsufficientReceiptBalance` | Not enough receipt tokens |
-| 6003 | `AdapterNotActive` | Adapter is paused/inactive |
-| 6004 | `MintMismatch` | Token mint doesn't match expected |
-| 6005 | `AdapterProgramMismatch` | Wrong adapter program |
-| 6006 | `ArithmeticOverflow` | Math overflow |
-| 6007 | `ProtocolCpiError` | CPI to protocol failed |
-| 6008 | `Unauthorized` | Not authorized |
-| 6009 | `PositionNotInitialized` | Position account missing |
+| 6000 | `ZeroDepositAmount` | `deposit(0)` |
+| 6001 | `ZeroWithdrawAmount` | `withdraw(0)` |
+| 6002 | `InsufficientReceiptBalance` | Burn exceeds position balance |
+| 6003 | `AdapterNotActive` | Vault `is_active == false` |
+| 6004 | `MintMismatch` | Token mint ≠ vault underlying mint |
+| 6005 | `AdapterProgramMismatch` | Wrong adapter program in accounts |
+| 6006 | `ArithmeticOverflow` | Share math overflow |
+| 6007 | `ProtocolCpiError` | Reserved for production CPI failures |
+| 6008 | `Unauthorized` | Signer lacks authority |
+| 6009 | `PositionNotInitialized` | `AdapterPosition` missing |
 | 6010 | `InvalidMetadata` | Bad adapter metadata |
 
-## Dispatcher Errors (6100-6199)
+## Dispatcher errors (`6100–6199`)
 
-| Code | Name | Description |
+| Code | Name | When |
 |---|---|---|
-| 6100 | `DispatcherPaused` | Dispatcher is emergency-paused |
-| 6101 | `AdapterNotApproved` | Adapter not in registry |
-| 6102 | `ZeroAmount` | Amount must be > 0 |
-| 6103 | `Unauthorized` | Not dispatcher authority |
-| 6104 | `AdapterCpiError` | Adapter CPI failed |
-| 6105 | `RegistryMismatch` | Wrong registry program |
+| 6100 | `DispatcherPaused` | `is_paused == true` |
+| 6101 | `AdapterNotApproved` | Registry status ≠ Approved |
+| 6102 | `ZeroAmount` | Zero deposit/withdraw amount |
+| 6103 | `Unauthorized` | Non-authority calls admin ix |
+| 6104 | `AdapterCpiError` | Adapter CPI returned error |
+| 6105 | `RegistryMismatch` | Wrong registry program ID |
 
-## Registry Errors (6200-6299)
+## Registry errors (`6200–6299`)
 
-| Code | Name | Description |
+| Code | Name | When |
 |---|---|---|
-| 6200 | `Unauthorized` | Not governance authority |
-| 6201 | `NameTooLong` | Adapter name > 32 chars |
-| 6202 | `UriTooLong` | Metadata URI > 200 chars |
+| 6200 | `Unauthorized` | Non-governance action |
+| 6201 | `NameTooLong` | Name &gt; 32 chars |
+| 6202 | `UriTooLong` | URI &gt; 200 chars |
 | 6203 | `InvalidStatus` | Wrong status for operation |
-| 6204 | `AlreadyRegistered` | Adapter already exists |
-| 6205 | `NoPendingTransfer` | No pending governance transfer |
-| 6206 | `NotPendingAuthority` | Not the pending authority |
+| 6204 | `AlreadyRegistered` | Duplicate adapter entry |
+| 6205 | `NoPendingTransfer` | No pending governance handoff |
+| 6206 | `NotPendingAuthority` | Signer is not pending authority |
 
-## Protocol-Specific Errors (7000+)
+## Protocol-specific errors (`7000+`)
 
-| Code | Adapter | Name | Description |
+Reserve this range for adapter-specific constraints. Document each code in the adapter's docs page.
+
+| Code | Adapter | Name | When |
 |---|---|---|---|
-| 7000 | Drift | `CooldownNotElapsed` | 13-day unstaking period hasn't passed |
+| 7000 | Drift | `CooldownNotElapsed` | Withdraw before 13-day cooldown |
+
+## Handling in clients
+
+```typescript
+try {
+  await program.methods.deposit(amount).accounts({...}).rpc();
+} catch (e) {
+  if (e.error?.errorCode?.code === "AdapterNotApproved") {
+    // Adapter revoked or never approved
+  }
+}
+```
+
+Source: `crates/yield-adapter-trait/src/lib.rs`, `programs/yield-dispatcher/src/error.rs`, `programs/adapter-registry/src/error.rs`.

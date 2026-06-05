@@ -1,53 +1,70 @@
 ---
 title: Architecture
-description: How the Yield Adapter Standard components work together
+description: System design — dispatcher, registry, trait crate, and reference adapters
 ---
 
-# Architecture
+The Yield Adapter Standard separates **routing**, **governance**, and **protocol logic** into distinct on-chain programs plus a shared Rust crate.
 
-The Yield Adapter Standard consists of four main components:
-
-## System Overview
+## System overview
 
 ```mermaid
-graph TD
-    A["User / dApp"] --> B["Yield Dispatcher"]
-    B --> C["Adapter Registry"]
-    C --> D["Adapter Entry PDAs"]
-    B --> E["Kamino Adapter"]
-    B --> F["MarginFi Adapter"]
-    B --> G["Jupiter Adapter"]
-    B --> H["Maple Adapter"]
-    B --> I["Drift Adapter"]
-    E --> J["Kamino K-Lend"]
-    F --> K["MarginFi v2"]
-    G --> L["Jupiter Perps"]
-    H --> M["Local Vault (Mock)"]
-    I --> N["Drift Protocol v2"]
+graph TB
+    subgraph Clients
+        A["Wallet / Vault / Aggregator"]
+    end
+    subgraph Core
+        B["Yield Dispatcher"]
+        C["Adapter Registry"]
+    end
+    subgraph Adapters["Reference Adapters"]
+        E["Kamino"]
+        F["MarginFi"]
+        G["Jupiter"]
+        H["Maple"]
+        I["Drift"]
+    end
+  A --> B
+    B --> C
+    B --> E & F & G & H & I
+    E & F & G & H & I --> V["SPL Vault + AdapterPosition PDAs"]
 ```
+
+<Note>
+Reference adapters in this repo route USDC through **local SPL vaults**. Dashed protocol CPI in diagrams represents the **production path**, not current behavior. See [Reference vs Production](/guides/reference-implementation).
+</Note>
 
 ## Components
 
-### Yield Adapter Trait
+### Yield Adapter Trait (`crates/yield-adapter-trait`)
 
-A shared Rust crate (not a program) that defines:
-- **Account structures**: `AdapterMetadata`, `AdapterPosition`
-- **Events**: `DepositEvent`, `WithdrawEvent`, `CurrentValueEvent`
-- **Errors**: `YieldAdapterError` (codes 6000-6099)
-- **Math helpers**: `calculate_share_price`, `underlying_to_shares`, `shares_to_underlying`
+A shared library — not a deployable program — that every adapter depends on:
+
+| Export | Purpose |
+|---|---|
+| `DepositEvent`, `WithdrawEvent`, `CurrentValueEvent` | Standardized indexing surface |
+| `YieldAdapterError` | Codes `6000–6099` |
+| `shares_for_deposit`, `user_position_underlying_value` | Overflow-safe share math |
+| `define_adapter_position!` | Per-user `AdapterPosition` PDA in the adapter's program scope |
 
 ### Yield Dispatcher
 
-The router program that:
-1. Validates adapters against the registry
-2. Routes `deposit` / `withdraw` / `current_value` calls to adapters
-3. Tracks per-user, per-adapter positions via `UserPosition` PDAs
-4. Emits dispatch events for off-chain indexing
-5. Supports emergency pause by governance
+Program ID (devnet): `7oUKys5XKMzD2NmFCZyLDyTF2Hm1VH3qX8jVfZEY4f3r`
+
+Responsibilities:
+
+1. Verify the target adapter is **Approved** in the registry
+2. CPI `deposit` / `withdraw` / `current_value` on the adapter program
+3. Maintain `UserPosition` PDAs (dispatcher-level accounting)
+4. Emit `DispatchDepositEvent` / `DispatchWithdrawEvent` for indexers
+5. Support emergency pause by governance authority
+
+[Full dispatcher reference →](/dispatcher)
 
 ### Adapter Registry
 
-A governance-gated registry that manages adapter lifecycle:
+Program ID (devnet): `CeyDkRgegNUz2TeFfFjRdL89G9EGGDymiqHoJkeFGcZ4`
+
+Governance-gated adapter lifecycle:
 
 ```mermaid
 stateDiagram-v2
@@ -57,34 +74,59 @@ stateDiagram-v2
     Revoked --> [*]
 ```
 
-### Reference Adapters
+Anyone may **propose**; only governance may **approve** or **revoke**. The dispatcher rejects CPI to non-approved adapters.
 
-Five production-grade implementations demonstrating the standard:
+[Full registry reference →](/registry)
 
-| Adapter | Protocol | Key Feature |
+### Reference adapters
+
+Five Anchor programs named after major Solana yield protocols. Each implements the same three-instruction surface with protocol-specific PDA seeds and optional constraints (e.g. Drift cooldown tracking).
+
+| Adapter | Devnet program ID | Notable trait |
 |---|---|---|
-| Kamino | K-Lend | kToken receipt tokens |
-| MarginFi | marginfi-v2 | JIT risk engine |
-| Jupiter | JLP Pool | Perp liquidity |
-| Maple | syrupUSDC | EVM-primary (mock CPI) |
-| Drift | Insurance Fund | 13-day cooldown |
+| Kamino | `BzuVWb3UgCW6axee6ZNb812D268XrWkJsE7mxkX9b3Kp` | Golden reference — simplest full implementation |
+| MarginFi | `FrCvyyGSukMZcLhpU7EneuhfPmqS5p8E2ysnFdwHhopR` | Standard share vault |
+| Jupiter | `2acqkTDi2VQ4FCZVDB8PeMVLVWnREogE5HA2GxvHdWxu` | JLP-themed naming |
+| Maple | `Ft2Yvaiqwsjvo1yyYEWvt12YCsDB4kjGBd7vrF8RwwjU` | Simulated yield accrual |
+| Drift | `CVfb8T9tf9WEeus4mKWsxTehVezeY9TGwYsSc3JmxWYz` | 13-day cooldown on position |
 
-## Data Flow
+## Deposit flow
 
 <Steps>
-  <Step title="User calls Dispatcher">
-    User calls `dispatcher.deposit(adapter_id, amount)`
+  <Step title="Client calls dispatcher">
+    `deposit(adapter_program_id, amount)` with user token accounts and adapter accounts.
   </Step>
-  <Step title="Registry validation">
-    Dispatcher checks the adapter is approved in the Registry
+  <Step title="Registry check">
+    Dispatcher loads `AdapterEntry` and requires `status == Approved`.
   </Step>
-  <Step title="Token transfer">
-    Underlying tokens are transferred from user to adapter vault
+  <Step title="Adapter CPI">
+    Dispatcher CPIs `adapter.deposit(amount)`. Adapter transfers underlying user → vault, mints receipt shares to `AdapterPosition`.
   </Step>
-  <Step title="Position tracking">
-    Dispatcher creates/updates a `UserPosition` PDA
+  <Step title="Dispatcher accounting">
+    Dispatcher updates `UserPosition` and emits `DispatchDepositEvent`.
   </Step>
-  <Step title="Event emission">
-    Standardized events are emitted for off-chain indexing
+  <Step title="Indexing">
+    Clients listen for `DepositEvent` (adapter) and `DispatchDepositEvent` (dispatcher).
   </Step>
 </Steps>
+
+## Account model
+
+Each adapter maintains:
+
+- **`VaultState`** — global `total_underlying`, `total_shares`, mint, authority
+- **`AdapterPosition`** — per-user `receipt_token_balance` (PDA: `ADAPTER_POSITION_SEED` + user)
+- **`vault_token_account`** — SPL ATA owned by vault authority PDA
+
+The dispatcher maintains its own **`UserPosition`** per `(user, adapter_program_id)` for routed-volume tracking.
+
+## Further reading
+
+<CardGroup cols={2}>
+  <Card title="Adapter Standard" icon="file-contract" href="/adapter-standard">
+    Normative instruction and event specification.
+  </Card>
+  <Card title="Build Your Adapter" icon="hammer" href="/guides/build-your-own-adapter">
+    Step-by-step guide with conformance checklist.
+  </Card>
+</CardGroup>

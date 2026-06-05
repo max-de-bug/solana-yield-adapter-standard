@@ -1,56 +1,63 @@
 ---
-title: Kamino USDC
-description: Reference adapter for Kamino Finance K-Lend USDC vault
+title: Kamino Adapter
+description: Golden reference adapter — K-Lend USDC share vault pattern
 ---
 
-# Kamino USDC Adapter
+<Note>
+**Reference implementation.** This program demonstrates the standard with a local SPL vault. It does **not** CPI into Kamino K-Lend on mainnet.
+</Note>
 
-<Info>
-**Protocol**: Kamino Finance (K-Lend)  
-**Program ID**: `KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD`  
-**Model**: Share-based vault (kToken receipt tokens)  
-**Underlying**: USDC  
-**Status**: ✅ Live
-</Info>
+| | |
+|---|---|
+| **Inspired by** | [Kamino Finance](https://kamino.finance) K-Lend |
+| **Mainnet protocol ID** | `KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD` |
+| **Adapter program (devnet)** | `BzuVWb3UgCW6axee6ZNb812D268XrWkJsE7mxkX9b3Kp` |
+| **Underlying** | USDC |
+| **Model** | Share-based vault (kToken-style receipt shares) |
 
-## Overview
+## Why Kamino is the golden reference
 
-The Kamino adapter integrates with [Kamino Finance's](https://kamino.finance) K-Lend lending markets. Deposits are converted to kToken receipt tokens that appreciate in value as the lending pool earns interest.
+Start here when building your own adapter. `programs/adapter-kamino/` is the smallest complete implementation of:
 
-## How It Works
+- `deposit` / `withdraw` / `current_value`
+- `define_adapter_position!` for per-user PDAs
+- Vault authority PDA signing outbound transfers
+- Token mint constraints on deposit and withdraw
 
-### Deposit Flow
-1. User calls `deposit(amount)` with USDC
-2. Adapter calculates proportional kToken shares
-3. USDC is transferred to the adapter vault
-4. Vault state is updated with new totals
+## Instruction summary
 
-### Withdraw Flow
-1. User calls `withdraw(shares)` with kToken amount
-2. Adapter calculates proportional USDC value
-3. USDC is transferred from vault to user via PDA authority
-4. Vault state is decremented
-
-### Value Query
-`current_value()` returns the share price: `total_underlying × 1e9 ÷ total_shares`
-
-## Accounts
-
-| Account | Type | Description |
+| Instruction | Input | Effect |
 |---|---|---|
-| `vault_state` | `KaminoVaultState` | PDA tracking vault totals |
-| `vault_token_account` | `TokenAccount` | Vault's USDC holdings |
-| `vault_authority` | PDA | Signs vault transfers |
+| `deposit` | Underlying amount | Mint receipt shares; transfer USDC user → vault |
+| `withdraw` | Receipt shares | Burn shares; transfer pro-rata USDC vault → user |
+| `current_value` | — | Emit user's underlying balance (not global share price) |
 
-## PDA Seeds
+## Key accounts
+
+| Account | Description |
+|---|---|
+| `vault_state` | `KaminoVaultState` PDA — `total_underlying`, `total_shares` |
+| `user_position` | Per-user `AdapterPosition` — `receipt_token_balance` |
+| `vault_token_account` | SPL token account owned by vault authority PDA |
+| `vault_authority` | PDA signer for outbound vault transfers |
+
+## PDA seeds
 
 ```
 vault_state:     ["kamino_vault_state"]
 vault_authority: ["kamino_vault_authority"]
+user_position:   ["adapter_position", user_pubkey]
 ```
 
-## Protocol-Specific Notes
+## Production path
 
-- Kamino's K-Lend uses isolated markets with configurable risk parameters
-- The share price increases as the lending pool earns interest from borrowers
-- In a full CPI integration, the adapter would call `deposit_reserve_liquidity` and `redeem_reserve_collateral` on the Kamino program
+A production Kamino adapter would CPI `deposit_reserve_liquidity` and `redeem_reserve_collateral` on the K-Lend program, passing reserve and market accounts via `remaining_accounts`. Fork tests in this repo clone the Kamino program ID to validate deployment plumbing — not live position parity.
+
+<CardGroup cols={2}>
+  <Card title="Build Your Adapter" icon="hammer" href="/guides/build-your-own-adapter">
+    Step-by-step guide using Kamino as template.
+  </Card>
+  <Card title="Source code" icon="github" href="https://github.com/max-de-bug/solana-yield-adapter-standard/tree/main/programs/adapter-kamino">
+    `programs/adapter-kamino/`
+  </Card>
+</CardGroup>

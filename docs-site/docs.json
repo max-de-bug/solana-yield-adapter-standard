@@ -2,14 +2,27 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "Solana Yield Adapter Standard",
-  "description": "Reference implementation of a standardized deposit, withdraw, and current_value interface for Solana yield protocols.",
+  "description": "A standardized deposit, withdraw, and current_value interface for Solana yield protocols — with dispatcher, registry, and five reference adapters.",
   "colors": {
     "primary": "#9945FF",
     "light": "#14F195",
-    "dark": "#9945FF"
+    "dark": "#7B3FE4"
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "favicon": "/favicon.svg",
+  "banner": {
+    "content": "Reference implementation — adapters use local SPL vaults, not live protocol CPI. [Learn more](/guides/reference-implementation)",
+    "dismissible": true
   },
   "navbar": {
     "links": [
+      {
+        "label": "Explorer",
+        "href": "https://explorer.solana.com/address/CeyDkRgegNUz2TeFfFjRdL89G9EGGDymiqHoJkeFGcZ4?cluster=devnet"
+      },
       {
         "type": "github",
         "href": "https://github.com/max-de-bug/solana-yield-adapter-standard"
@@ -17,7 +30,7 @@
     ],
     "primary": {
       "type": "button",
-      "label": "Get Started",
+      "label": "Quick Start",
       "href": "/quickstart"
     }
   },
@@ -59,12 +72,11 @@
           "guides/build-your-own-adapter",
           "guides/reference-implementation",
           "guides/testing",
-          "guides/deployment",
-          "guides/mintlify-publishing"
+          "guides/deployment"
         ]
       },
       {
-        "group": "Reference",
+        "group": "API Reference",
         "pages": ["reference/idl", "reference/errors", "reference/events"]
       }
     ]
@@ -72,6 +84,29 @@
   "footer": {
     "socials": {
       "github": "https://github.com/max-de-bug/solana-yield-adapter-standard"
-    }
+    },
+    "links": [
+      {
+        "header": "Documentation",
+        "items": [
+          { "label": "Quick Start", "href": "/quickstart" },
+          { "label": "Adapter Standard", "href": "/adapter-standard" },
+          { "label": "Build Your Adapter", "href": "/guides/build-your-own-adapter" }
+        ]
+      },
+      {
+        "header": "Resources",
+        "items": [
+          {
+            "label": "GitHub",
+            "href": "https://github.com/max-de-bug/solana-yield-adapter-standard"
+          },
+          {
+            "label": "Registry (devnet)",
+            "href": "https://explorer.solana.com/address/CeyDkRgegNUz2TeFfFjRdL89G9EGGDymiqHoJkeFGcZ4?cluster=devnet"
+          }
+        ]
+      }
+    ]
   }
 }

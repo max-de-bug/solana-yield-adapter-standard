@@ -1,59 +1,64 @@
 ---
 title: Events
-description: Standardized event reference for all adapters
+description: Standardized on-chain events for indexing and monitoring
 ---
 
-# Events
+All adapters emit the same three events. The dispatcher emits additional routing events. Index either adapter-level events (position detail) or dispatcher events (routing volume).
 
-All adapters emit standardized events for off-chain indexing and monitoring.
+## Adapter events
 
-## DepositEvent
+### `DepositEvent`
 
-Emitted when a deposit is executed.
+Emitted on successful `deposit`.
 
 ```rust
 #[event]
 pub struct DepositEvent {
-    pub user: Pubkey,        // Depositor's public key
-    pub adapter: Pubkey,     // Adapter program ID
-    pub amount: u64,         // Underlying tokens deposited
-    pub receipt_amount: u64, // Receipt tokens received
-    pub timestamp: i64,      // Unix timestamp
+    pub user: Pubkey,
+    pub adapter: Pubkey,
+    pub amount: u64,           // Underlying deposited
+    pub receipt_amount: u64,   // Shares minted
+    pub timestamp: i64,
 }
 ```
 
-## WithdrawEvent
+### `WithdrawEvent`
 
-Emitted when a withdrawal is executed.
+Emitted on successful `withdraw`.
 
 ```rust
 #[event]
 pub struct WithdrawEvent {
     pub user: Pubkey,
     pub adapter: Pubkey,
-    pub amount: u64,         // Underlying tokens withdrawn
-    pub receipt_burned: u64, // Receipt tokens burned
+    pub amount: u64,           // Underlying returned
+    pub receipt_burned: u64,   // Shares burned
     pub timestamp: i64,
 }
 ```
 
-## CurrentValueEvent
+### `CurrentValueEvent`
 
-Emitted when a value query is executed.
+Emitted on `current_value` query.
 
 ```rust
 #[event]
 pub struct CurrentValueEvent {
     pub user: Pubkey,
     pub adapter: Pubkey,
-    pub value: u64,          // Share price (scaled by 1e9)
+    pub value: u64,            // User position in UNDERLYING units
     pub timestamp: i64,
 }
 ```
 
-## Dispatcher Events
+<Warning>
+`value` is the caller's position in underlying token units (`user_position_underlying_value`), **not** the global share price.
+</Warning>
 
-### DispatchDepositEvent
+## Dispatcher events
+
+### `DispatchDepositEvent`
+
 ```rust
 pub struct DispatchDepositEvent {
     pub user: Pubkey,
@@ -63,7 +68,8 @@ pub struct DispatchDepositEvent {
 }
 ```
 
-### DispatchWithdrawEvent
+### `DispatchWithdrawEvent`
+
 ```rust
 pub struct DispatchWithdrawEvent {
     pub user: Pubkey,
@@ -73,16 +79,21 @@ pub struct DispatchWithdrawEvent {
 }
 ```
 
-## Listening to Events
-
-### TypeScript
+## Listening in TypeScript
 
 ```typescript
 program.addEventListener("DepositEvent", (event, slot) => {
-  console.log(`Deposit: ${event.amount} by ${event.user}`);
+  console.log(`Deposit ${event.amount} → ${event.receipt_amount} shares`);
+  console.log(`User: ${event.user.toBase58()}, slot: ${slot}`);
+});
+
+program.addEventListener("CurrentValueEvent", (event) => {
+  console.log(`Position value: ${event.value} underlying`);
 });
 ```
 
-### Using Logs
+## Indexer notes
 
-Events are also emitted as base64-encoded data in transaction logs, parseable by any Solana indexer (e.g., Helius, Triton).
+Events appear in transaction logs as Anchor-emitted data. Any Solana indexer (Helius, Triton, custom Geyser plugin) can decode them using the program IDL from `target/idl/`.
+
+Generate fresh IDLs: `npm run build:idls`

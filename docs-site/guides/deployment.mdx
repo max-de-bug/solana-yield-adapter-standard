@@ -1,72 +1,87 @@
 ---
 title: Deployment
-description: Deploy the Yield Adapter Standard to devnet and mainnet
+description: Deploy programs to devnet and prepare for mainnet
 ---
 
-# Deployment
-
-## Devnet
+## Devnet (quick)
 
 ```bash
-./scripts/deploy-devnet.sh
+npm run deploy:devnet
 ```
 
-The deployment script handles:
-1. **Keypair generation** — Creates program keypairs in `deploy-keypairs/`
-2. **Building** — Runs `anchor build` for all programs
-3. **Deployment** — Deploys registry first, then dispatcher
-4. **Verification** — Confirms programs are live on-chain
+The script (`scripts/deploy-devnet.sh`):
+
+1. Generates program keypairs in `deploy-keypairs/` (if missing)
+2. Builds all seven programs via `scripts/build-sbf.sh`
+3. Deploys registry, then dispatcher, then adapters
+4. Prints program IDs for `Anchor.toml`
 
 <Info>
-After deployment, update `Anchor.toml` `[programs.devnet]` with the new program IDs output by the script.
+Ensure your Solana CLI points to devnet and your wallet has ~2.6 SOL for a full deploy:
+`solana config set --url devnet && solana balance`
 </Info>
+
+## Current devnet program IDs
+
+Configured in `Anchor.toml` `[programs.devnet]`:
+
+| Program | Address |
+|---|---|
+| Adapter Registry | [`CeyDkRgegNUz2TeFfFjRdL89G9EGGDymiqHoJkeFGcZ4`](https://explorer.solana.com/address/CeyDkRgegNUz2TeFfFjRdL89G9EGGDymiqHoJkeFGcZ4?cluster=devnet) |
+| Yield Dispatcher | `7oUKys5XKMzD2NmFCZyLDyTF2Hm1VH3qX8jVfZEY4f3r` |
+| Kamino Adapter | `BzuVWb3UgCW6axee6ZNb812D268XrWkJsE7mxkX9b3Kp` |
+| MarginFi Adapter | `FrCvyyGSukMZcLhpU7EneuhfPmqS5p8E2ysnFdwHhopR` |
+| Jupiter Adapter | `2acqkTDi2VQ4FCZVDB8PeMVLVWnREogE5HA2GxvHdWxu` |
+| Maple Adapter | `Ft2Yvaiqwsjvo1yyYEWvt12YCsDB4kjGBd7vrF8RwwjU` |
+| Drift Adapter | `CVfb8T9tf9WEeus4mKWsxTehVezeY9TGwYsSc3JmxWYz` |
+
+## Post-deploy initialization
+
+<Steps>
+  <Step title="Initialize registry">
+    ```typescript
+    await registryProgram.methods.initialize().accounts({
+      governance: wallet.publicKey,
+      registryState: registryStatePda,
+      systemProgram: SystemProgram.programId,
+    }).rpc();
+    ```
+  </Step>
+  <Step title="Initialize dispatcher">
+    ```typescript
+    await dispatcherProgram.methods.initialize().accounts({
+      authority: wallet.publicKey,
+      dispatcherState: dispatcherStatePda,
+      registryProgram: REGISTRY_ID,
+      systemProgram: SystemProgram.programId,
+    }).rpc();
+    ```
+  </Step>
+  <Step title="Register adapters">
+    For each adapter: `proposeAdapter` then governance `approveAdapter`.
+  </Step>
+  <Step title="Transfer governance">
+    Move registry and dispatcher authority to a Squads multisig.
+  </Step>
+</Steps>
+
+Full registry flow: [Registry](/registry).
 
 ## Mainnet
 
-For mainnet deployment:
+<Warning>
+**Pre-mainnet checklist:**
+
+- Independent security audit of all programs
+- Hardware wallet or multisig as deployer and governance
+- Monitoring for dispatcher and adapter events
+- Governance transfer before public launch
+</Warning>
 
 ```bash
-# Configure for mainnet
 solana config set --url mainnet-beta
-
-# Build with mainnet program IDs
-anchor build
-
-# Deploy (ensure proper key management)
+npm run build
 anchor deploy --provider.cluster mainnet-beta
 ```
 
-<Warning>
-**Mainnet deployment checklist:**
-- Use a hardware wallet or multisig for the deployer
-- Audit all programs before mainnet deployment
-- Set up monitoring for program events
-- Transfer governance to a multisig after deployment
-</Warning>
-
-## Post-Deployment
-
-After deploying:
-
-1. **Initialize the registry**
-```typescript
-await registryProgram.methods.initialize().accounts({...}).rpc();
-```
-
-2. **Initialize the dispatcher**
-```typescript
-await dispatcherProgram.methods.initialize().accounts({...}).rpc();
-```
-
-3. **Register adapters**
-```typescript
-await registryProgram.methods.proposeAdapter("Kamino USDC", "...").accounts({...}).rpc();
-await registryProgram.methods.approveAdapter().accounts({...}).rpc();
-```
-
-4. **Transfer governance** to a multisig or DAO
-```typescript
-await registryProgram.methods.transferGovernance().accounts({
-  newAuthority: multisigAddress,
-}).rpc();
-```
+Update `[programs.mainnet]` in `Anchor.toml` with deployed IDs and regenerate client code from fresh IDLs (`npm run build:idls`).

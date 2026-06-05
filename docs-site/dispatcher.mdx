@@ -1,17 +1,19 @@
 ---
 title: Dispatcher
-description: The core router for the Yield Adapter Standard
+description: Unified router for deposit, withdraw, and current_value across approved adapters
 ---
 
-# Yield Dispatcher
+The **Yield Dispatcher** is the single entry point for integrators. Users and dApps call the dispatcher; it validates registry approval and CPIs into the target adapter.
 
-The dispatcher acts as a **unified entry point** for all yield operations. Users interact with the dispatcher, which validates adapters and routes calls to the correct adapter program.
+<Info>
+**Devnet program ID:** `7oUKys5XKMzD2NmFCZyLDyTF2Hm1VH3qX8jVfZEY4f3r`
+</Info>
 
 ## Instructions
 
 ### `initialize`
 
-Creates the global `DispatcherState` PDA.
+Creates the global `DispatcherState` PDA. Called once at deployment.
 
 ```typescript
 await program.methods.initialize().accounts({
@@ -24,34 +26,90 @@ await program.methods.initialize().accounts({
 
 ### `deposit`
 
-Routes a deposit to a registered adapter.
+Routes a deposit to an approved adapter via CPI.
+
+<ParamField path="amount" type="u64" required>
+  Underlying token amount to deposit through the adapter.
+</ParamField>
+
+**Preconditions:**
+
+- Dispatcher not paused (`is_paused == false`)
+- Adapter `Approved` in registry
+- Valid mint on user token account
+- Adapter vault accounts pass PDA validation (`adapter_validation` module)
 
 ### `withdraw`
 
-Routes a withdrawal from a registered adapter.
+Routes a withdrawal. The `amount` argument is forwarded to the adapter as **receipt shares to burn**.
 
 ### `current_value`
 
-Queries the current value of a user's position.
+CPIs the adapter's read-only `current_value` instruction. Returns per-user underlying value via `CurrentValueEvent`.
 
-## State
+### `set_paused` / `transfer_authority`
 
-### DispatcherState
+Governance-only. Emergency pause halts all routing until unpaused.
+
+## State accounts
+
+### `DispatcherState`
 
 | Field | Type | Description |
 |---|---|---|
-| `authority` | `Pubkey` | Governance authority |
-| `registry_program_id` | `Pubkey` | Trusted registry |
-| `total_deposits` | `u64` | Total deposits routed |
-| `total_withdrawals` | `u64` | Total withdrawals routed |
+| `authority` | `Pubkey` | Governance authority (multisig recommended) |
+| `registry_program_id` | `Pubkey` | Trusted registry program |
+| `total_deposits` | `u64` | Cumulative deposits routed |
+| `total_withdrawals` | `u64` | Cumulative withdrawals routed |
 | `is_paused` | `bool` | Emergency pause flag |
+| `bump` | `u8` | PDA bump seed |
 
-### UserPosition
+### `UserPosition`
 
 | Field | Type | Description |
 |---|---|---|
 | `owner` | `Pubkey` | Position owner |
-| `adapter_program_id` | `Pubkey` | Target adapter |
-| `deposited_amount` | `u64` | Cumulative deposits |
-| `withdrawn_amount` | `u64` | Cumulative withdrawals |
-| `receipt_token_balance` | `u64` | Current receipt balance |
+| `adapter_program_id` | `Pubkey` | Target adapter program |
+| `deposited_amount` | `u64` | Cumulative underlying deposited |
+| `withdrawn_amount` | `u64` | Cumulative underlying withdrawn |
+| `receipt_token_balance` | `u64` | Tracked receipt balance at dispatcher layer |
+| `bump` | `u8` | PDA bump seed |
+
+## Events
+
+| Event | Purpose |
+|---|---|
+| `DispatchDepositEvent` | Indexer signal: deposit routed to adapter |
+| `DispatchWithdrawEvent` | Indexer signal: withdraw routed to adapter |
+
+Adapter-level [`DepositEvent`](/reference/events) / [`WithdrawEvent`](/reference/events) are emitted by the adapter CPI.
+
+## Integration pattern
+
+```typescript
+// Deposit USDC through dispatcher into Kamino adapter
+await dispatcherProgram.methods
+  .deposit(new BN(1_000_000))
+  .accounts({
+    user: wallet.publicKey,
+    dispatcherState,
+    registryProgram: REGISTRY_ID,
+    adapterProgram: KAMINO_ADAPTER_ID,
+    adapterEntry: kaminoEntryPda,
+    // ... adapter vault accounts, user token accounts
+  })
+  .rpc();
+```
+
+See `tests/dispatcher.test.ts` and `tests/helpers/adapter.ts` for complete account wiring.
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Registry" icon="list-check" href="/registry">
+    Adapter approval required before routing.
+  </Card>
+  <Card title="Architecture" icon="diagram-project" href="/architecture">
+    End-to-end deposit flow diagram.
+  </Card>
+</CardGroup>
