@@ -15,7 +15,7 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("7oUKys5XKMzD2NmFCZyLDyTF2Hm1VH3qX8jVfZEY4f3r");
+declare_id!("8u4YFQiTCR5n5dijVoinXyZ962ngVmFuWKELDUjVCqAR");
 
 #[program]
 pub mod yield_dispatcher {

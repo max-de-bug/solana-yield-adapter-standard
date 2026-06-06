@@ -11,6 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 FIXTURE_DIR="${PROJECT_DIR}/tests/fixtures"
 FIXTURE_ATA="${FIXTURE_DIR}/fork-usdc-ata.json"
+FIXTURE_SYRUP_ATA="${FIXTURE_DIR}/fork-syrup-usdc-ata.json"
 
 echo "============================================"
 echo "  Solana Yield Adapter Standard"
@@ -23,6 +24,7 @@ JUPITER_PERP_PROGRAM="PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu"
 DRIFT_PROGRAM="dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH"
 ATA_PROGRAM="ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
 USDC_MINT="EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+SYRUP_USDC_MINT="AvZZF1YaZDziPY2RCK4oJrRVrbN3mTD9NL24hPeaZeUj"
 
 VALIDATOR_DIR="${PROJECT_DIR}/test-ledger"
 
@@ -39,8 +41,9 @@ trap cleanup EXIT
 
 cleanup
 
-echo "[0/5] Preparing USDC fork fixture..."
+echo "[0/5] Preparing fork fixtures..."
 bash "${SCRIPT_DIR}/setup-fork-usdc-fixture.sh"
+bash "${SCRIPT_DIR}/setup-fork-syrup-usdc-fixture.sh"
 
 echo "[1/5] Building Anchor programs and IDLs..."
 cd "$PROJECT_DIR"
@@ -61,12 +64,17 @@ VALIDATOR_ARGS=(
     --clone "$JUPITER_PERP_PROGRAM"
     --clone "$DRIFT_PROGRAM"
     --clone "$USDC_MINT"
+    --clone "$SYRUP_USDC_MINT"
     --clone "$ATA_PROGRAM"
 )
 
 if [ -f "$FIXTURE_ATA" ]; then
     FIXTURE_ADDR=$(python3 -c "import json; print(json.load(open('${FIXTURE_ATA}'))['pubkey'])")
     VALIDATOR_ARGS+=(--account "$FIXTURE_ADDR" "$FIXTURE_ATA")
+fi
+if [ -f "$FIXTURE_SYRUP_ATA" ]; then
+    SYRUP_ADDR=$(python3 -c "import json; print(json.load(open('${FIXTURE_SYRUP_ATA}'))['pubkey'])")
+    VALIDATOR_ARGS+=(--account "$SYRUP_ADDR" "$FIXTURE_SYRUP_ATA")
 fi
 
 solana-test-validator "${VALIDATOR_ARGS[@]}" &

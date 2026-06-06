@@ -21,7 +21,7 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("CeyDkRgegNUz2TeFfFjRdL89G9EGGDymiqHoJkeFGcZ4");
+declare_id!("8TAhAne1z4chGzuP9EeXFuYsqyGHzACWuD7sURS3ydAq");
 
 #[program]
 pub mod adapter_registry {

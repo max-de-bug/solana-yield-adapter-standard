@@ -5,6 +5,11 @@ export const MAINNET_USDC_MINT = new PublicKey(
   "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 );
 
+/** Mainnet syrupUSDC (Maple Finance yield-bearing SPL token). */
+export const SYRUP_USDC_MINT = new PublicKey(
+  "AvZZF1YaZDziPY2RCK4oJrRVrbN3mTD9NL24hPeaZeUj"
+);
+
 /** Protocol program IDs cloned from mainnet in fork tests. */
 export const KAMINO_PROGRAM_ID = new PublicKey(
   "KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD"

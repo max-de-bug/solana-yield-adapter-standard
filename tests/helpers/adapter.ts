@@ -29,6 +29,7 @@ import {
   DRIFT_PROGRAM_ID,
   JUPITER_PERPS_PROGRAM_ID,
   MAINNET_USDC_MINT,
+  SYRUP_USDC_MINT,
   TOKEN_PROGRAM_ID as TOKEN_PROGRAM,
 } from "./constants";
 import * as fs from "fs";
@@ -50,6 +51,7 @@ export interface AdapterFlowOptions {
   vaultAuthoritySeed: string;
   depositAmount?: number;
   withdrawShares?: number;
+  underlyingMint?: PublicKey;
 }
 
 /** Mainnet protocol program id for fork routing tests. */
@@ -152,6 +154,98 @@ export async function fundUserUsdcOnFork(
   return userAta.address;
 }
 
+/** Fund a user token ATA from a fork fixture for any mint. */
+async function fundUserTokenOnFork(
+  provider: anchor.AnchorProvider,
+  payer: Keypair,
+  user: PublicKey,
+  mint: PublicKey,
+  fixtureFileName: string,
+  setupScriptName: string,
+  amount: number
+): Promise<PublicKey> {
+  const fixtureWalletPath = path.join(
+    __dirname,
+    "../fixtures/fork-wallet.json"
+  );
+  if (!fs.existsSync(fixtureWalletPath)) {
+    throw new Error(
+      `Missing ${fixtureWalletPath}. Run: ./scripts/setup-fork-usdc-fixture.sh`
+    );
+  }
+
+  const fixtureSecret = Uint8Array.from(
+    JSON.parse(fs.readFileSync(fixtureWalletPath, "utf8"))
+  );
+  const fixtureWallet = Keypair.fromSecretKey(fixtureSecret);
+
+  const airdropSig = await provider.connection.requestAirdrop(
+    fixtureWallet.publicKey,
+    2 * anchor.web3.LAMPORTS_PER_SOL
+  );
+  const latest = await provider.connection.getLatestBlockhash();
+  await provider.connection.confirmTransaction({
+    signature: airdropSig,
+    ...latest,
+  });
+
+  const fixtureAta = getAssociatedTokenAddressSync(
+    mint,
+    fixtureWallet.publicKey
+  );
+
+  const fixtureInfo = await provider.connection.getAccountInfo(fixtureAta);
+  if (!fixtureInfo) {
+    throw new Error(
+      `Fork fixture ATA ${fixtureAta.toBase58()} missing. Ensure ${setupScriptName} and run-mainnet-fork-tests.sh load ${fixtureFileName}`
+    );
+  }
+
+  const userAta = await getOrCreateAssociatedTokenAccount(
+    provider.connection,
+    payer,
+    mint,
+    user,
+    false,
+    undefined,
+    undefined,
+    TOKEN_PROGRAM
+  );
+
+  await getAccount(provider.connection, fixtureAta, undefined, TOKEN_PROGRAM);
+  await getAccount(provider.connection, userAta.address, undefined, TOKEN_PROGRAM);
+
+  await transfer(
+    provider.connection,
+    payer,
+    fixtureAta,
+    userAta.address,
+    fixtureWallet,
+    amount,
+    [],
+    undefined,
+    TOKEN_PROGRAM
+  );
+
+  return userAta.address;
+}
+
+/** Fund a user syrupUSDC ATA from the fork fixture (mainnet-fork only). */
+export async function fundUserSyrupUsdcOnFork(
+  provider: anchor.AnchorProvider,
+  payer: Keypair,
+  user: PublicKey,
+  amount: number
+): Promise<PublicKey> {
+  return fundUserTokenOnFork(
+    provider, payer, user,
+    SYRUP_USDC_MINT,
+    "fork-syrup-usdc-ata.json",
+    "setup-fork-syrup-usdc-fixture.sh",
+    amount
+  );
+}
+
 /** Assert a mainnet protocol program is present on the forked validator. */
 export async function assertProtocolProgramLoaded(
   connection: anchor.web3.Connection,
@@ -219,9 +313,8 @@ export async function runAdapterDepositWithdrawFlow(
     vaultAuthoritySeed,
     depositAmount = 1_000_000,
     withdrawShares = 500_000,
+    underlyingMint: explicitMint,
   } = options;
-
-  const underlyingMint = await resolveUnderlyingMint(provider, payer);
 
   const [vaultStatePda] = findPda(
     [Buffer.from(vaultStateSeed)],
@@ -231,6 +324,13 @@ export async function runAdapterDepositWithdrawFlow(
     [Buffer.from(vaultAuthoritySeed)],
     program.programId
   );
+
+  let underlyingMint: PublicKey;
+  if (explicitMint) {
+    underlyingMint = explicitMint;
+  } else {
+    underlyingMint = await resolveUnderlyingMint(provider, payer);
+  }
 
   await initializeAdapterVault(
     program,
@@ -248,12 +348,21 @@ export async function runAdapterDepositWithdrawFlow(
 
   let userTokenAccount: PublicKey;
   if (isMainnetFork()) {
-    userTokenAccount = await fundUserUsdcOnFork(
-      provider,
-      payer,
-      authority.publicKey,
-      depositAmount * 2
-    );
+    if (explicitMint && explicitMint.equals(SYRUP_USDC_MINT)) {
+      userTokenAccount = await fundUserSyrupUsdcOnFork(
+        provider,
+        payer,
+        authority.publicKey,
+        depositAmount * 2
+      );
+    } else {
+      userTokenAccount = await fundUserUsdcOnFork(
+        provider,
+        payer,
+        authority.publicKey,
+        depositAmount * 2
+      );
+    }
   } else {
     userTokenAccount = await createTestTokenAccount(
       provider,

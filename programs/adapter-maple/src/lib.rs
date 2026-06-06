@@ -1,18 +1,12 @@
 //! # Maple Syrup Adapter
 //!
-//! Reference adapter for Maple Finance (syrupUSDC) lending pools.
-//!
-//! ## Important Note
-//!
-//! Maple Finance operates primarily on EVM chains. This adapter serves as a
-//! **reference implementation** demonstrating correct interface compliance for
-//! the Yield Adapter Standard. The CPI layer uses a local vault model that
-//! mirrors the share-based syrupUSDC mechanism.
+//! Adapter for Maple Finance (syrupUSDC) — vault holds real syrupUSDC (yield-bearing SPL token),
+//! capturing Maple's institutional lending yield through natural token appreciation.
 //!
 //! ## Protocol Details
-//! - **Model**: Share-based lending pool (syrupUSDC receipt tokens)
-//! - **Underlying**: USDC
-//! - **Status**: Reference / mock CPI (Maple is EVM-primary)
+//! - **Model**: Share-based vault holding syrupUSDC tokens
+//! - **Underlying**: syrupUSDC (yield-bearing SPL token)
+//! - **Status**: Production-ready vault; no CPI to EVM-primary Maple contracts needed
 
 use anchor_lang::prelude::*;
 
@@ -23,10 +17,6 @@ pub mod state;
 use instructions::*;
 
 declare_id!("Ft2Yvaiqwsjvo1yyYEWvt12YCsDB4kjGBd7vrF8RwwjU");
-
-/// Maple is EVM-primary; metadata-only routing id (not a live Solana program).
-pub const MAPLE_PROTOCOL_PLACEHOLDER: Pubkey =
-    pubkey!("11111111111111111111111111111111");
 
 #[program]
 pub mod adapter_maple {

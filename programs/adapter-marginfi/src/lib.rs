@@ -15,7 +15,7 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("FrCvyyGSukMZcLhpU7EneuhfPmqS5p8E2ysnFdwHhopR");
+declare_id!("LtccLreoDVj2vurvsWpvfC8PvYTnUpTaxz6P9pDg5Y2");
 
 pub const MARGINFI_PROGRAM_ID: &str = "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA";
 

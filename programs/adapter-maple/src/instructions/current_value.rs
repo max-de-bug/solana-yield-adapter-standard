@@ -1,19 +1,16 @@
 use anchor_lang::prelude::*;
-use crate::state::AdapterPosition;
 use yield_adapter_trait::{
     user_position_underlying_value, CurrentValueEvent, YieldAdapterError,
     ADAPTER_POSITION_SEED,
 };
 
-use crate::protocol;
-use crate::state::{MapleVaultState, VAULT_STATE_SEED};
+use crate::state::{AdapterPosition, MapleVaultState, VAULT_STATE_SEED};
 
 #[derive(Accounts)]
 pub struct CurrentValue<'info> {
     pub user: Signer<'info>,
 
     #[account(
-        mut,
         seeds = [VAULT_STATE_SEED],
         bump = vault_state.bump,
     )]
@@ -28,11 +25,9 @@ pub struct CurrentValue<'info> {
 }
 
 pub fn handler(ctx: Context<CurrentValue>) -> Result<()> {
-    let vault = &mut ctx.accounts.vault_state;
+    let vault = &ctx.accounts.vault_state;
     let position = &ctx.accounts.user_position;
     let clock = Clock::get()?;
-
-    protocol::before_value_query(vault, ctx.remaining_accounts)?;
 
     let value = user_position_underlying_value(
         position.receipt_token_balance,
@@ -48,10 +43,9 @@ pub fn handler(ctx: Context<CurrentValue>) -> Result<()> {
     });
 
     msg!(
-        "Maple Syrup position value: {} USDC ({} shares, APY: {} bps)",
+        "Maple Syrup position value: {} ({} shares)",
         value,
-        position.receipt_token_balance,
-        vault.simulated_apy_bps
+        position.receipt_token_balance
     );
 
     Ok(())

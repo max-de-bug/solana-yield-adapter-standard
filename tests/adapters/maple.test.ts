@@ -3,6 +3,7 @@ import { Program } from "@anchor-lang/core";
 import { Keypair } from "@solana/web3.js";
 
 import { runAdapterDepositWithdrawFlow } from "../helpers/adapter";
+import { isMainnetFork, SYRUP_USDC_MINT } from "../helpers/constants";
 
 describe("adapter-maple", () => {
   const provider = anchor.AnchorProvider.env();
@@ -17,6 +18,7 @@ describe("adapter-maple", () => {
       program,
       vaultStateSeed: "maple_vault_state",
       vaultAuthoritySeed: "maple_vault_authority",
+      ...(isMainnetFork() ? { underlyingMint: SYRUP_USDC_MINT } : {}),
     });
   });
 });

@@ -1,10 +1,6 @@
 use anchor_lang::prelude::*;
 
 use crate::state::{MapleVaultState, VAULT_STATE_SEED};
-use crate::MAPLE_PROTOCOL_PLACEHOLDER;
-
-/// Default simulated APY for the reference Maple adapter (5%).
-pub const DEFAULT_MAPLE_APY_BPS: u16 = 500;
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
@@ -29,17 +25,13 @@ pub fn handler(ctx: Context<Initialize>, underlying_mint: Pubkey) -> Result<()> 
     state.underlying_mint = underlying_mint;
     state.total_underlying = 0;
     state.total_shares = 0;
-    state.simulated_apy_bps = DEFAULT_MAPLE_APY_BPS;
-    state.last_yield_sync_ts = 0;
-    state.protocol_program_id = MAPLE_PROTOCOL_PLACEHOLDER;
     state.protocol_routed_underlying = 0;
     state.is_active = true;
     state.bump = ctx.bumps.vault_state;
 
     msg!(
-        "Maple Syrup adapter initialized. Mint: {}, APY bps: {}, protocol placeholder",
+        "Maple Syrup adapter initialized. Mint: {}",
         underlying_mint,
-        state.simulated_apy_bps
     );
     Ok(())
 }

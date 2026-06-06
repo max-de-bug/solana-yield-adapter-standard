@@ -1,4 +1,11 @@
-# Solana Yield Adapter Standard
+<h1 align="center">
+  <code>Solana Yield Adapter Standard</code>
+</h1>
+<p align="center">
+  A standardized <code>deposit</code>, <code>withdraw</code>, and <code>current_value</code> interface for Solana yield protocols.
+</p>
+
+
 
 <div align="center">
 
@@ -8,9 +15,7 @@
 ![License](https://img.shields.io/badge/License-Apache_2.0-green?style=for-the-badge)
 ![Tests](https://img.shields.io/badge/Tests-Mainnet_Fork-brightgreen?style=for-the-badge)
 
-**A standardized interface for yield-bearing protocols on Solana.**
-
-[Adapter Standard](docs/ADAPTER_STANDARD.md) · [Build Your Own](docs/BUILD_YOUR_OWN_ADAPTER.md) · [Documentation](docs-site/)
+[Adapter Standard](docs/ADAPTER_STANDARD.md) · [Build Your Own](docs/BUILD_YOUR_OWN_ADAPTER.md) · [Documentation](https://syas.mintlify.app)
 
 </div>
 
@@ -310,6 +315,6 @@ This project is licensed under the Apache License 2.0 — see the [LICENSE](LICE
 
 **Built for the Solana ecosystem 🌊**
 
-[Documentation](docs-site/) · [Adapter Standard](docs/ADAPTER_STANDARD.md) · [Report Issue](https://github.com/your-org/solana-yield-adapter-standard/issues)
+[Documentation](https://syas.mintlify.app) · [Adapter Standard](docs/ADAPTER_STANDARD.md) · [Report Issue](https://github.com/max-de-bug/solana-yield-adapter-standard/issues)
 
 </div>
