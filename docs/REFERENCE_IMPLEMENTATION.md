@@ -16,7 +16,7 @@ This repository is a **reference implementation** of the Solana Yield Adapter St
 ## What is not implemented
 
 - **Live protocol CPI** into yield programs (funds stay in adapter vault token accounts).
-- **Maple on Solana** — Maple is EVM-primary; the Maple adapter uses simulated APY accrual in vault NAV.
+- **Maple on Solana** — Maple is EVM-primary with no native Solana program; the adapter holds real syrupUSDC (a yield-bearing SPL token) that appreciates vs USDC intrinsically — no simulation needed.
 - **Drift IF staking** — Cooldown is enforced in adapter `AdapterPosition` state, not via Drift program instructions.
 
 ## Fork tests

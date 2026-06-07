@@ -21,7 +21,7 @@ Build produces `target/deploy/*.so` via `./scripts/build-sbf.sh` (not Docker-bas
 - Adapters implement the **standard trait** (`deposit`, `withdraw`, `current_value`) using **local share-based vaults** and SPL token transfers.
 - **No on-chain CPI** into Kamino, MarginFi, Jupiter Perps, Maple, or Drift live programs.
 - Mainnet program IDs in code/docs are for **fork visibility tests** and metadata only.
-- Maple and Drift adapters are **illustrative** (bounty-listed protocols with simplified vault logic).
+- Maple and Drift adapters are **illustrative** (bounty-listed protocols with simplified vault logic). Maple holds real syrupUSDC but makes no CPI to any Maple Solana program (none exists).
 
 See [docs/REFERENCE_IMPLEMENTATION.md](docs/REFERENCE_IMPLEMENTATION.md) for details.
 

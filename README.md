@@ -154,10 +154,10 @@ See [SUBMISSION.md](SUBMISSION.md) and [docs/REFERENCE_IMPLEMENTATION.md](docs/R
 | **Kamino USDC** | [Kamino Finance](https://kamino.finance) | USDC | Share-based reference vault | 🔶 Reference |
 | **MarginFi USDC** | [MarginFi](https://marginfi.com) | USDC | Share-based reference vault | 🔶 Reference |
 | **Jupiter LP** | [Jupiter](https://jup.ag) | USDC | Share-based reference vault | 🔶 Reference |
-| **Maple Syrup** | [Maple Finance](https://maple.finance) | USDC | syrupUSDC-style reference | 🔶 Reference |
+| **Maple Syrup** | [Maple Finance](https://maple.finance) | syrupUSDC | Share vault on syrupUSDC (yield-bearing SPL) | 🔶 Reference |
 | **Drift Insurance** | [Drift Protocol](https://drift.trade) | USDC | IF staking (13d cooldown) | 🔶 Reference |
 
-> **Note**: Maple and Drift adapters are reference implementations demonstrating correct interface compliance. Maple operates primarily on EVM chains, and Drift's protocol status may affect live CPI availability.
+> **Note**: Maple and Drift adapters are reference implementations demonstrating correct interface compliance. Maple has no native Solana program — the adapter holds real syrupUSDC (a yield-bearing SPL token). Drift's protocol status may affect live CPI availability.
 
 ---
 

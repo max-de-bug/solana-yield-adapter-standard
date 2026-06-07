@@ -1,26 +1,26 @@
 ---
 title: Maple Adapter
-description: Reference adapter — syrupUSDC share model with simulated yield accrual
+description: Reference adapter — syrupUSDC share model on a real yield-bearing SPL token
 ---
 
-<Warning>
-Maple Finance is **EVM-primary**. This Solana adapter demonstrates interface compliance and **simulated APY** on vault NAV — not a live Maple protocol integration.
-</Warning>
+<Note>
+Maple Finance is **EVM-primary** with no native Solana program. This adapter holds real syrupUSDC (a yield-bearing SPL token) in a share vault — no CPI routing, no simulated accrual.
+</Note>
 
 | | |
 |---|---|
 | **Inspired by** | [Maple Finance](https://maple.finance) syrupUSDC |
 | **Adapter program (devnet)** | `Ft2Yvaiqwsjvo1yyYEWvt12YCsDB4kjGBd7vrF8RwwjU` |
-| **Underlying** | USDC |
-| **Model** | Share vault with time-based yield simulation |
+| **Underlying** | syrupUSDC (`AvZZF1YaZDziPY2RCK4oJrRVrbN3mTD9NL24hPeaZeUj`) |
+| **Model** | Share vault on syrupUSDC (yield-bearing SPL token) |
 
 ## Overview
 
-Maple's syrupUSDC pools use a share-based NAV that accrues as loans perform. Because Maple has limited Solana deployment, this adapter:
+[syrupUSDC](https://maple.finance) is a yield-bearing SPL token on Solana mainnet that appreciates vs USDC as Maple's institutional lending pools generate returns. This adapter:
 
-1. Implements the full three-instruction standard
-2. Accrues yield on `total_underlying` over elapsed slots (demonstration only)
-3. Serves as a template for cross-chain protocols launching on Solana
+1. Implements the full three-instruction standard with syrupUSDC as the underlying
+2. Holds real syrupUSDC tokens in its vault ATA — yield comes from the token's intrinsic appreciation
+3. Requires no protocol CPI or time-based simulation (yield is embedded in the token itself)
 
 ## Instruction summary
 
@@ -28,7 +28,7 @@ Maple's syrupUSDC pools use a share-based NAV that accrues as loans perform. Bec
 |---|---|---|
 | `deposit` | Underlying amount | Mint shares at current NAV |
 | `withdraw` | Receipt shares | Burn shares at current NAV |
-| `current_value` | — | User underlying value after simulated accrual |
+| `current_value` | — | User underlying value via share price |
 
 ## PDA seeds
 
@@ -42,9 +42,11 @@ user_position:   ["adapter_position", user_pubkey]
 
 Teams building adapters for protocols that:
 
-- Are deploying from EVM to Solana
-- Have CPI under development but need a working standard-compliant program today
-- Want to demonstrate share-price appreciation without live protocol state
+- Issue yield-bearing SPL tokens (no separate Solana program needed)
+- Are EVM-primary with no live Solana program
+- Want a lightweight adapter that treats the SPL token itself as the yield source
+
+Unlike the earlier simulated-yield approach, this pattern holds real syrupUSDC and benefits from actual Maple pool returns through token appreciation.
 
 <CardGroup cols={2}>
   <Card title="Reference Scope" icon="circle-info" href="/guides/reference-implementation">
