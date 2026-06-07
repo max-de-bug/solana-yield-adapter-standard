@@ -54,7 +54,7 @@ pub struct Deposit<'info> {
     /// CHECK: Must match the approved adapter entry and be an executable program.
     #[account(
         constraint = adapter_program.key() == adapter_entry.adapter_program_id,
-        constraint = adapter_program.executable == true,
+        constraint = adapter_program.executable,
     )]
     pub adapter_program: UncheckedAccount<'info>,
 

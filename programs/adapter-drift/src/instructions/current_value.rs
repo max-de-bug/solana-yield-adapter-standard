@@ -42,8 +42,10 @@ pub fn handler(ctx: Context<CurrentValue>) -> Result<()> {
     )?;
 
     let cooldown_remaining = if position.last_withdraw_request > 0 {
-        let elapsed = clock.unix_timestamp - position.last_withdraw_request;
-        (UNSTAKE_COOLDOWN_SECONDS - elapsed).max(0)
+        let elapsed = clock
+            .unix_timestamp
+            .saturating_sub(position.last_withdraw_request);
+        UNSTAKE_COOLDOWN_SECONDS.saturating_sub(elapsed)
     } else {
         0
     };

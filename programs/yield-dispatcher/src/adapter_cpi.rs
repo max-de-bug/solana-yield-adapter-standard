@@ -131,7 +131,9 @@ pub fn cpi_deposit<'info>(
     }
 
     let (_, shares_after) = read_vault_totals(&vault_state)?;
-    Ok(shares_after.saturating_sub(shares_before))
+    shares_after
+        .checked_sub(shares_before)
+        .ok_or(DispatcherError::AdapterCpiError.into())
 }
 
 pub struct AdapterWithdrawAccounts<'info> {

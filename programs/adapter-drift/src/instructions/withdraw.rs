@@ -72,7 +72,9 @@ pub fn handler(ctx: Context<Withdraw>, shares_to_burn: u64) -> Result<()> {
     );
 
     if position.last_withdraw_request > 0 {
-        let elapsed = clock.unix_timestamp - position.last_withdraw_request;
+        let elapsed = clock
+            .unix_timestamp
+            .saturating_sub(position.last_withdraw_request);
         require!(
             elapsed >= UNSTAKE_COOLDOWN_SECONDS,
             DriftAdapterError::CooldownNotElapsed

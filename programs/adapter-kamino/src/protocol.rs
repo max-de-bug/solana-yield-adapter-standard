@@ -5,7 +5,9 @@
 //! integrators pass complete Kamino account metas.
 
 use anchor_lang::prelude::*;
-use yield_adapter_trait::{record_protocol_routing, YieldAdapterError};
+use yield_adapter_trait::{
+    record_protocol_routing, verify_protocol_program_account, YieldAdapterError,
+};
 
 use crate::state::KaminoVaultState;
 use crate::KAMINO_LEND_ID;
@@ -23,14 +25,7 @@ pub fn on_deposit(
     )
 }
 
-pub fn before_value_query(vault: &mut KaminoVaultState, remaining: &[AccountInfo]) -> Result<()> {
-    if !remaining.is_empty() {
-        let program = &remaining[0];
-        require!(
-            program.key() == KAMINO_LEND_ID,
-            YieldAdapterError::AdapterProgramMismatch
-        );
-        require!(program.executable, YieldAdapterError::ProtocolCpiError);
-    }
-    Ok(())
+pub fn before_value_query(_vault: &KaminoVaultState, remaining: &[AccountInfo]) -> Result<()> {
+    require!(!remaining.is_empty(), YieldAdapterError::ProtocolCpiError);
+    verify_protocol_program_account(&remaining[0], KAMINO_LEND_ID)
 }

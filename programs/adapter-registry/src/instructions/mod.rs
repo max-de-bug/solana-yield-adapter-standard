@@ -1,3 +1,4 @@
+#![allow(ambiguous_glob_reexports)]
 pub mod approve_adapter;
 pub mod initialize;
 pub mod propose_adapter;

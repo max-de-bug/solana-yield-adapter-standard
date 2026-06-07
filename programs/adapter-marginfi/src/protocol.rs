@@ -1,7 +1,9 @@
 //! Protocol boundary for MarginFi v2: validates the live program and records routed deposits.
 
 use anchor_lang::prelude::*;
-use yield_adapter_trait::{record_protocol_routing, YieldAdapterError};
+use yield_adapter_trait::{
+    record_protocol_routing, verify_protocol_program_account, YieldAdapterError,
+};
 
 use crate::state::MarginfiVaultState;
 use crate::MARGINFI_V2_ID;
@@ -19,14 +21,7 @@ pub fn on_deposit(
     )
 }
 
-pub fn before_value_query(vault: &mut MarginfiVaultState, remaining: &[AccountInfo]) -> Result<()> {
-    if !remaining.is_empty() {
-        let program = &remaining[0];
-        require!(
-            program.key() == MARGINFI_V2_ID,
-            YieldAdapterError::AdapterProgramMismatch
-        );
-        require!(program.executable, YieldAdapterError::ProtocolCpiError);
-    }
-    Ok(())
+pub fn before_value_query(_vault: &MarginfiVaultState, remaining: &[AccountInfo]) -> Result<()> {
+    require!(!remaining.is_empty(), YieldAdapterError::ProtocolCpiError);
+    verify_protocol_program_account(&remaining[0], MARGINFI_V2_ID)
 }

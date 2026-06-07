@@ -1,7 +1,9 @@
 //! Protocol boundary for Jupiter Perpetuals JLP: validates the live program and records routed deposits.
 
 use anchor_lang::prelude::*;
-use yield_adapter_trait::{record_protocol_routing, YieldAdapterError};
+use yield_adapter_trait::{
+    record_protocol_routing, verify_protocol_program_account, YieldAdapterError,
+};
 
 use crate::state::JupiterVaultState;
 use crate::JUPITER_PERP_ID;
@@ -19,14 +21,7 @@ pub fn on_deposit(
     )
 }
 
-pub fn before_value_query(vault: &mut JupiterVaultState, remaining: &[AccountInfo]) -> Result<()> {
-    if !remaining.is_empty() {
-        let program = &remaining[0];
-        require!(
-            program.key() == JUPITER_PERP_ID,
-            YieldAdapterError::AdapterProgramMismatch
-        );
-        require!(program.executable, YieldAdapterError::ProtocolCpiError);
-    }
-    Ok(())
+pub fn before_value_query(_vault: &JupiterVaultState, remaining: &[AccountInfo]) -> Result<()> {
+    require!(!remaining.is_empty(), YieldAdapterError::ProtocolCpiError);
+    verify_protocol_program_account(&remaining[0], JUPITER_PERP_ID)
 }

@@ -341,41 +341,6 @@ pub fn record_protocol_routing(
     Ok(())
 }
 
-/// Accrue syrup-style yield into vault NAV (Maple reference model).
-pub fn accrue_time_based_yield(
-    total_underlying: &mut u64,
-    total_shares: u64,
-    apy_bps: u16,
-    last_sync_ts: &mut i64,
-    now: i64,
-) -> Result<()> {
-    if total_shares == 0 {
-        *last_sync_ts = now;
-        return Ok(());
-    }
-    if *last_sync_ts == 0 {
-        *last_sync_ts = now;
-        return Ok(());
-    }
-    let elapsed = now.saturating_sub(*last_sync_ts);
-    if elapsed == 0 {
-        return Ok(());
-    }
-    // apy_bps / 10_000 per year, pro-rated by seconds
-    let yield_amount = (*total_underlying as u128)
-        .checked_mul(apy_bps as u128)
-        .ok_or(YieldAdapterError::ArithmeticOverflow)?
-        .checked_mul(elapsed as u128)
-        .ok_or(YieldAdapterError::ArithmeticOverflow)?
-        .checked_div(10_000u128 * 31_536_000u128)
-        .ok_or(YieldAdapterError::ArithmeticOverflow)?;
-    *total_underlying = total_underlying
-        .checked_add(yield_amount as u64)
-        .ok_or(YieldAdapterError::ArithmeticOverflow)?;
-    *last_sync_ts = now;
-    Ok(())
-}
-
 // ---------------------------------------------------------------------------
 // Account reads — shared layout across reference adapters (Borsh, not byte offsets)
 // ---------------------------------------------------------------------------
@@ -429,4 +394,161 @@ pub fn read_adapter_position_receipt(account: &AccountInfo) -> Result<u64> {
     let position = AdapterPositionData::deserialize(&mut slice)
         .map_err(|_| YieldAdapterError::PositionNotInitialized)?;
     Ok(position.receipt_token_balance)
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // -----------------------------------------------------------------------
+    // calculate_share_price
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_share_price_initial() {
+        assert_eq!(calculate_share_price(0, 0).unwrap(), 1_000_000_000);
+    }
+
+    #[test]
+    fn test_share_price_after_deposit() {
+        assert_eq!(calculate_share_price(1000, 1000).unwrap(), 1_000_000_000);
+    }
+
+    #[test]
+    fn test_share_price_with_yield() {
+        // 1000 underlying, 500 shares → share_price = 1000 * 1e9 / 500 = 2_000_000_000
+        assert_eq!(calculate_share_price(1000, 500).unwrap(), 2_000_000_000);
+    }
+
+    #[test]
+    fn test_share_price_with_loss() {
+        // 500 underlying, 1000 shares → share_price = 500 * 1e9 / 1000 = 500_000_000
+        assert_eq!(calculate_share_price(500, 1000).unwrap(), 500_000_000);
+    }
+
+    #[test]
+    fn test_share_price_large_values_no_panic() {
+        // Large values should not overflow during u128 intermediates.
+        let price = calculate_share_price(1_000_000_000_000_000u64, 3_000_000u64).unwrap();
+        assert!(price > 0);
+    }
+
+    // -----------------------------------------------------------------------
+    // underlying_to_shares
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_underlying_to_shares_at_par() {
+        assert_eq!(underlying_to_shares(1000, 1_000_000_000).unwrap(), 1000);
+    }
+
+    #[test]
+    fn test_underlying_to_shares_half_price() {
+        // share_price = 0.5 (500_000_000) → shares = 1000 * 1e9 / 500_000_000 = 2000
+        assert_eq!(underlying_to_shares(1000, 500_000_000).unwrap(), 2000);
+    }
+
+    #[test]
+    fn test_underlying_to_shares_zero_price() {
+        assert!(underlying_to_shares(1000, 0).is_err());
+    }
+
+    // -----------------------------------------------------------------------
+    // shares_to_underlying
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_shares_to_underlying_at_par() {
+        assert_eq!(shares_to_underlying(1000, 1_000_000_000).unwrap(), 1000);
+    }
+
+    #[test]
+    fn test_shares_to_underlying_double_price() {
+        // share_price = 2.0 → underlying = 1000 * 2e9 / 1e9 = 2000
+        assert_eq!(shares_to_underlying(1000, 2_000_000_000).unwrap(), 2000);
+    }
+
+    // -----------------------------------------------------------------------
+    // shares_for_deposit
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_first_deposit_onetoone() {
+        assert_eq!(shares_for_deposit(1000, 0, 0).unwrap(), 1000);
+    }
+
+    #[test]
+    fn test_second_deposit_proportional() {
+        // 1000 total, 1000 shares → share_price = 1.0, deposit 500 → 500 shares
+        assert_eq!(shares_for_deposit(500, 1000, 1000).unwrap(), 500);
+    }
+
+    #[test]
+    fn test_deposit_when_pool_has_yield() {
+        // 2000 underlying, 1000 shares → share_price = 2.0, deposit 1000 → 500 shares
+        assert_eq!(shares_for_deposit(1000, 2000, 1000).unwrap(), 500);
+    }
+
+    #[test]
+    fn test_deposit_rounds_down() {
+        // 1000 underlying, 3 shares → share_price = 333_333_333, deposit 1000 → 1000 * 3 / 1000 = 3
+        assert_eq!(shares_for_deposit(1000, 1000, 3).unwrap(), 3);
+    }
+
+    // -----------------------------------------------------------------------
+    // user_position_underlying_value
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_zero_balance() {
+        assert_eq!(user_position_underlying_value(0, 1000, 1000).unwrap(), 0);
+    }
+
+    #[test]
+    fn test_zero_shares() {
+        assert_eq!(user_position_underlying_value(500, 0, 0).unwrap(), 0);
+    }
+
+    #[test]
+    fn test_position_value_par() {
+        assert_eq!(user_position_underlying_value(500, 1000, 1000).unwrap(), 500);
+    }
+
+    #[test]
+    fn test_position_value_after_yield() {
+        // 500 shares out of 1000 → 50%, 2000 underlying → value = 1000
+        assert_eq!(
+            user_position_underlying_value(500, 2000, 1000).unwrap(),
+            1000
+        );
+    }
+
+    #[test]
+    fn test_position_value_after_loss() {
+        // 500 shares out of 1000 → 50%, 500 underlying → value = 250
+        assert_eq!(user_position_underlying_value(500, 500, 1000).unwrap(), 250);
+    }
+
+    // -----------------------------------------------------------------------
+    // Edge cases
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_large_numbers_no_overflow() {
+        let total = 1_000_000_000_000u64;
+        let shares = 3_000_000_000u64;
+        let price = calculate_share_price(total, shares).unwrap();
+        assert!(price > 0);
+
+        let deposit = 500_000_000_000u64;
+        let result = shares_for_deposit(deposit, total, shares).unwrap();
+        assert!(result > 0);
+
+        let value = user_position_underlying_value(shares / 2, total, shares).unwrap();
+        assert!(value > 0);
+    }
 }

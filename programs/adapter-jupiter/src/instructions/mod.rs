@@ -1,3 +1,4 @@
+#![allow(ambiguous_glob_reexports)]
 pub mod current_value;
 pub mod deposit;
 pub mod initialize;
