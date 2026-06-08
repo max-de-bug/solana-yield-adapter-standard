@@ -4,7 +4,6 @@ use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 use yield_adapter_trait::{
     user_position_underlying_value, WithdrawEvent, YieldAdapterError,
     ADAPTER_POSITION_SEED,
-    VaultStatus,
 };
 
 use crate::state::{MarginfiVaultState, VAULT_AUTHORITY_SEED, VAULT_STATE_SEED};
@@ -18,7 +17,7 @@ pub struct Withdraw<'info> {
         mut,
         seeds = [VAULT_STATE_SEED],
         bump = vault_state.bump,
-        constraint = vault_state.status == VaultStatus::Active.as_u8() @ YieldAdapterError::AdapterNotActive,
+        constraint = vault_state.status.is_operational() @ YieldAdapterError::AdapterNotActive,
     )]
     pub vault_state: Account<'info, MarginfiVaultState>,
 

@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use yield_adapter_trait::VaultStatus;
 
 yield_adapter_trait::define_adapter_position!();
 
@@ -15,7 +16,7 @@ pub struct MarginfiVaultState {
     /// Cumulative underlying attested as routed to the protocol layer.
     pub protocol_routed_underlying: u64,
     pub last_yield_sync_ts: i64,
-    pub status: u8,
+    pub status: VaultStatus,
     pub bump: u8,
 }
 

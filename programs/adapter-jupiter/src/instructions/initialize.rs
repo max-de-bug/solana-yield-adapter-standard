@@ -30,7 +30,7 @@ pub fn handler(ctx: Context<Initialize>, underlying_mint: Pubkey) -> Result<()> 
     state.protocol_program_id = JUPITER_PERP_ID;
     state.protocol_routed_underlying = 0;
     state.last_yield_sync_ts = 0;
-    state.status = VaultStatus::Active.as_u8();
+    state.status = VaultStatus::Active;
     state.bump = ctx.bumps.vault_state;
 
     msg!(

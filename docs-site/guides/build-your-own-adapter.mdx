@@ -63,7 +63,7 @@ description: Ship a conformant yield adapter in under one day using this referen
         pub underlying_mint: Pubkey,
         pub total_underlying: u64,
         pub total_shares: u64,
-        pub status: u8,
+        pub status: VaultStatus,
         pub bump: u8,
     }
 
@@ -75,7 +75,7 @@ description: Ship a conformant yield adapter in under one day using this referen
     Use **unique** PDA seed prefixes (`my_vault_state`, not `kamino_vault_state`). The `define_adapter_position!` macro must expand **inside your adapter program** so Anchor assigns the correct program owner to position accounts.
     </Warning>
 
-    Use `VaultStatus` from `yield-adapter-trait` for the `status` field (`0` = Active, `1` = Paused, `2` = Deprecated).
+    Use `VaultStatus` from `yield-adapter-trait` for the `status` field — store the enum directly (`VaultStatus::Active`), not a raw `u8`.
   </Step>
 
   <Step title="3. Deposit (45 min)">

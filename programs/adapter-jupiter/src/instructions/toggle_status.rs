@@ -19,20 +19,17 @@ pub struct ToggleStatus<'info> {
 pub fn handler(ctx: Context<ToggleStatus>) -> Result<()> {
     let vault = &mut ctx.accounts.vault_state;
 
-    match VaultStatus::from_u8(vault.status) {
-        Some(VaultStatus::Active) => {
-            vault.status = VaultStatus::Paused.as_u8();
+    match vault.status {
+        VaultStatus::Active => {
+            vault.status = VaultStatus::Paused;
             msg!("Jupiter vault paused");
         }
-        Some(VaultStatus::Paused) => {
-            vault.status = VaultStatus::Active.as_u8();
+        VaultStatus::Paused => {
+            vault.status = VaultStatus::Active;
             msg!("Jupiter vault resumed");
         }
-        Some(VaultStatus::Deprecated) => {
+        VaultStatus::Deprecated => {
             return Err(YieldAdapterError::VaultDeprecated.into());
-        }
-        None => {
-            return Err(YieldAdapterError::InvalidMetadata.into());
         }
     }
 

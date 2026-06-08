@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use yield_adapter_trait::VaultStatus;
 
 yield_adapter_trait::define_adapter_position!();
 
@@ -11,7 +12,7 @@ pub struct MapleVaultState {
     pub total_underlying: u64,
     pub total_shares: u64,
     pub protocol_routed_underlying: u64,
-    pub status: u8,
+    pub status: VaultStatus,
     pub bump: u8,
 }
 

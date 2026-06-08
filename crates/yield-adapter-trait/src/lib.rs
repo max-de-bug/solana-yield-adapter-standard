@@ -20,8 +20,6 @@
 
 use anchor_lang::prelude::*;
 
-pub mod discriminators;
-
 // ---------------------------------------------------------------------------
 // Vault Status — replaces bool active with explicit states
 // ---------------------------------------------------------------------------
@@ -39,23 +37,6 @@ pub enum VaultStatus {
 }
 
 impl VaultStatus {
-    pub const fn as_u8(&self) -> u8 {
-        match self {
-            Self::Active => 0,
-            Self::Paused => 1,
-            Self::Deprecated => 2,
-        }
-    }
-
-    pub fn from_u8(v: u8) -> Option<Self> {
-        match v {
-            0 => Some(Self::Active),
-            1 => Some(Self::Paused),
-            2 => Some(Self::Deprecated),
-            _ => None,
-        }
-    }
-
     /// Returns `true` if deposits and withdrawals should be allowed.
     pub fn is_operational(&self) -> bool {
         matches!(self, Self::Active)
@@ -112,8 +93,8 @@ pub struct AdapterMetadata {
     /// The adapter program's own ID (for self-referential validation).
     pub adapter_program_id: Pubkey,
 
-    /// Vault status: 0=Active, 1=Paused, 2=Deprecated.
-    pub status: u8,
+    /// Vault status: Active, Paused, or Deprecated.
+    pub status: VaultStatus,
 
     /// Authority that can update this metadata.
     pub authority: Pubkey,

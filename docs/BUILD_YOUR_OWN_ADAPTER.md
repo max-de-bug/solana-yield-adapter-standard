@@ -41,6 +41,7 @@ Create `src/state.rs`:
 
 ```rust
 use anchor_lang::prelude::*;
+use yield_adapter_trait::VaultStatus;
 
 #[account]
 #[derive(Debug, InitSpace)]
@@ -49,7 +50,7 @@ pub struct MyVaultState {
     pub underlying_mint: Pubkey,
     pub total_underlying: u64,
     pub total_shares: u64,
-    pub status: u8,
+    pub status: VaultStatus,
     pub bump: u8,
 }
 
@@ -60,7 +61,7 @@ pub const VAULT_AUTHORITY_SEED: &[u8] = b"my_vault_authority";
 **Key decisions**:
 - Use unique PDA seeds (prefix with your protocol name)
 - Add any protocol-specific fields you need
-- Always include `status: u8` for emergency stops (use `VaultStatus` from `yield-adapter-trait`)
+- Always include `status: VaultStatus` for emergency stops (use the enum directly — `Active`, `Paused`, `Deprecated`)
 
 ## Step 3: Implement the Three Instructions (2-3 hours)
 
@@ -69,7 +70,7 @@ pub const VAULT_AUTHORITY_SEED: &[u8] = b"my_vault_authority";
 ```rust
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
-use yield_adapter_trait::{DepositEvent, VaultStatus, YieldAdapterError};
+use yield_adapter_trait::{DepositEvent, YieldAdapterError};
 use crate::state::{MyVaultState, VAULT_STATE_SEED};
 
 #[derive(Accounts)]
@@ -81,7 +82,7 @@ pub struct Deposit<'info> {
         mut,
         seeds = [VAULT_STATE_SEED],
         bump = vault_state.bump,
-        constraint = vault_state.status == VaultStatus::Active.as_u8()
+        constraint = vault_state.status.is_operational()
             @ YieldAdapterError::AdapterNotActive,
     )]
     pub vault_state: Account<'info, MyVaultState>,
@@ -268,7 +269,7 @@ Before submitting your adapter:
 - [ ] Emits `DepositEvent`, `WithdrawEvent`, `CurrentValueEvent`
 - [ ] Uses `checked_*` arithmetic everywhere
 - [ ] Validates `amount > 0` on deposit and withdraw
-- [ ] Validates `status == VaultStatus::Active.as_u8()` on state-modifying instructions
+- [ ] Validates `status.is_operational()` on state-modifying instructions
 - [ ] Validates token mint matches `underlying_mint`
 - [ ] Uses PDA authority for vault transfers
 - [ ] Has comprehensive tests (deposit, withdraw, current_value, edge cases)
