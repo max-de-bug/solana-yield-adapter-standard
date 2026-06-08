@@ -14,7 +14,7 @@ Defined in `crates/yield-adapter-trait`. All adapters reuse these.
 | 6000 | `ZeroDepositAmount` | `deposit(0)` |
 | 6001 | `ZeroWithdrawAmount` | `withdraw(0)` |
 | 6002 | `InsufficientReceiptBalance` | Burn exceeds position balance |
-| 6003 | `AdapterNotActive` | Vault `is_active == false` |
+| 6003 | `AdapterNotActive` | Vault status is not `VaultStatus::Active` |
 | 6004 | `MintMismatch` | Token mint ≠ vault underlying mint |
 | 6005 | `AdapterProgramMismatch` | Wrong adapter program in accounts |
 | 6006 | `ArithmeticOverflow` | Share math overflow |

@@ -49,7 +49,7 @@ pub struct MyVaultState {
     pub underlying_mint: Pubkey,
     pub total_underlying: u64,
     pub total_shares: u64,
-    pub is_active: bool,
+    pub status: u8,
     pub bump: u8,
 }
 
@@ -60,7 +60,7 @@ pub const VAULT_AUTHORITY_SEED: &[u8] = b"my_vault_authority";
 **Key decisions**:
 - Use unique PDA seeds (prefix with your protocol name)
 - Add any protocol-specific fields you need
-- Always include `is_active` for emergency stops
+- Always include `status: u8` for emergency stops (use `VaultStatus` from `yield-adapter-trait`)
 
 ## Step 3: Implement the Three Instructions (2-3 hours)
 
@@ -69,7 +69,7 @@ pub const VAULT_AUTHORITY_SEED: &[u8] = b"my_vault_authority";
 ```rust
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
-use yield_adapter_trait::{DepositEvent, YieldAdapterError};
+use yield_adapter_trait::{DepositEvent, VaultStatus, YieldAdapterError};
 use crate::state::{MyVaultState, VAULT_STATE_SEED};
 
 #[derive(Accounts)]
@@ -81,7 +81,8 @@ pub struct Deposit<'info> {
         mut,
         seeds = [VAULT_STATE_SEED],
         bump = vault_state.bump,
-        constraint = vault_state.is_active @ YieldAdapterError::AdapterNotActive,
+        constraint = vault_state.status == VaultStatus::Active.as_u8()
+            @ YieldAdapterError::AdapterNotActive,
     )]
     pub vault_state: Account<'info, MyVaultState>,
 
@@ -267,7 +268,7 @@ Before submitting your adapter:
 - [ ] Emits `DepositEvent`, `WithdrawEvent`, `CurrentValueEvent`
 - [ ] Uses `checked_*` arithmetic everywhere
 - [ ] Validates `amount > 0` on deposit and withdraw
-- [ ] Validates `is_active` on state-modifying instructions
+- [ ] Validates `status == VaultStatus::Active.as_u8()` on state-modifying instructions
 - [ ] Validates token mint matches `underlying_mint`
 - [ ] Uses PDA authority for vault transfers
 - [ ] Has comprehensive tests (deposit, withdraw, current_value, edge cases)

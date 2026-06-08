@@ -49,4 +49,8 @@ pub mod adapter_drift {
     pub fn current_value(ctx: Context<CurrentValue>) -> Result<()> {
         instructions::current_value::handler(ctx)
     }
+
+    pub fn toggle_status(ctx: Context<ToggleStatus>) -> Result<()> {
+        instructions::toggle_status::handler(ctx)
+    }
 }

@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 
 use crate::state::{KaminoVaultState, VAULT_STATE_SEED};
 use crate::KAMINO_LEND_ID;
+use yield_adapter_trait::VaultStatus;
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
@@ -29,7 +30,7 @@ pub fn handler(ctx: Context<Initialize>, underlying_mint: Pubkey) -> Result<()> 
     state.protocol_program_id = KAMINO_LEND_ID;
     state.protocol_routed_underlying = 0;
     state.last_yield_sync_ts = 0;
-    state.is_active = true;
+    state.status = VaultStatus::Active.as_u8();
     state.bump = ctx.bumps.vault_state;
 
     msg!(

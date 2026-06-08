@@ -88,7 +88,7 @@ Each adapter MUST maintain a vault state PDA containing at minimum:
 | `underlying_mint` | `Pubkey` | Mint of the underlying token |
 | `total_underlying` | `u64` | Total underlying in vault |
 | `total_shares` | `u64` | Total receipt tokens outstanding |
-| `is_active` | `bool` | Whether the adapter is active |
+| `status` | `u8` | Vault status: `0` = Active, `1` = Paused, `2` = Deprecated |
 | `bump` | `u8` | PDA bump seed |
 
 #### Vault Authority
@@ -146,7 +146,19 @@ Compliant adapters MUST use the following error code ranges:
 | `6200–6299` | Registry errors |
 | `7000+` | Protocol-specific adapter errors |
 
-### 3.6 Adapter Metadata
+### 3.6 Vault Status
+
+Vault state includes a `status: u8` field using the `VaultStatus` enum (defined in `yield-adapter-trait`):
+
+| Value | Variant | Meaning |
+|---|---|---|
+| `0` | `Active` | Deposits and withdrawals allowed |
+| `1` | `Paused` | Operations blocked, config intact |
+| `2` | `Deprecated` | Vault permanently retired |
+
+Adapters SHOULD also implement a `toggle_status` instruction (admin-only) to transition between `Active` and `Paused`. The `Deprecated` status is a terminal state.
+
+### 3.7 Adapter Metadata
 
 Each adapter SHOULD publish an `AdapterMetadata` PDA containing:
 
@@ -179,13 +191,13 @@ The standard version is tracked by the `standard_version` field in `AdapterMetad
 - Vault authority MUST be a PDA (no external signers)
 - All state-modifying instructions MUST emit events
 - Adapter MUST validate token mint matches expected underlying
-- Adapter MUST validate `is_active` before processing
+- Adapter MUST validate `status == VaultStatus::Active.as_u8()` before processing
 
 ## 7. Conformance
 
 An adapter is **conformant** if it:
 
-1. Implements all three required instructions
+1. Implements all three required instructions (`deposit`, `withdraw`, `current_value`)
 2. Emits all required events
 3. Uses the standard error code ranges
 4. Follows the share-based vault model

@@ -15,7 +15,7 @@ pub struct MarginfiVaultState {
     /// Cumulative underlying attested as routed to the protocol layer.
     pub protocol_routed_underlying: u64,
     pub last_yield_sync_ts: i64,
-    pub is_active: bool,
+    pub status: u8,
     pub bump: u8,
 }
 

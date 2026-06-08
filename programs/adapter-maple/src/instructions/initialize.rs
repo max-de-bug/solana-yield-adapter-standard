@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::state::{MapleVaultState, VAULT_STATE_SEED};
+use yield_adapter_trait::VaultStatus;
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
@@ -26,7 +27,7 @@ pub fn handler(ctx: Context<Initialize>, underlying_mint: Pubkey) -> Result<()> 
     state.total_underlying = 0;
     state.total_shares = 0;
     state.protocol_routed_underlying = 0;
-    state.is_active = true;
+    state.status = VaultStatus::Active.as_u8();
     state.bump = ctx.bumps.vault_state;
 
     msg!(

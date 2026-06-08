@@ -20,6 +20,48 @@
 
 use anchor_lang::prelude::*;
 
+pub mod discriminators;
+
+// ---------------------------------------------------------------------------
+// Vault Status — replaces bool active with explicit states
+// ---------------------------------------------------------------------------
+
+/// Operational status of an adapter vault.
+///
+/// - `Active` — deposits and withdrawals are allowed.
+/// - `Paused` — deposits and withdrawals are blocked; config remains intact.
+/// - `Deprecated` — vault is permanently retired; no operations allowed.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace, Debug)]
+pub enum VaultStatus {
+    Active,
+    Paused,
+    Deprecated,
+}
+
+impl VaultStatus {
+    pub const fn as_u8(&self) -> u8 {
+        match self {
+            Self::Active => 0,
+            Self::Paused => 1,
+            Self::Deprecated => 2,
+        }
+    }
+
+    pub fn from_u8(v: u8) -> Option<Self> {
+        match v {
+            0 => Some(Self::Active),
+            1 => Some(Self::Paused),
+            2 => Some(Self::Deprecated),
+            _ => None,
+        }
+    }
+
+    /// Returns `true` if deposits and withdrawals should be allowed.
+    pub fn is_operational(&self) -> bool {
+        matches!(self, Self::Active)
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Seeds & Constants
 // ---------------------------------------------------------------------------
@@ -70,8 +112,8 @@ pub struct AdapterMetadata {
     /// The adapter program's own ID (for self-referential validation).
     pub adapter_program_id: Pubkey,
 
-    /// Whether this adapter is currently active.
-    pub is_active: bool,
+    /// Vault status: 0=Active, 1=Paused, 2=Deprecated.
+    pub status: u8,
 
     /// Authority that can update this metadata.
     pub authority: Pubkey,
@@ -172,9 +214,13 @@ pub enum YieldAdapterError {
     #[msg("Insufficient receipt token balance for withdrawal")]
     InsufficientReceiptBalance,
 
-    /// Vault or adapter metadata has `is_active == false` (paused or not yet enabled).
+    /// Vault status is not `VaultStatus::Active` (paused or deprecated).
     #[msg("Adapter is not active")]
     AdapterNotActive,
+
+    /// Vault status is `VaultStatus::Deprecated` — no operations allowed.
+    #[msg("Vault is deprecated")]
+    VaultDeprecated,
 
     /// A token account's mint does not match `vault_state.underlying_mint` (wrong SPL mint passed in).
     #[msg("Underlying mint mismatch")]

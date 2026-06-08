@@ -4,6 +4,7 @@ use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 use yield_adapter_trait::{
     shares_for_deposit, DepositEvent, YieldAdapterError,
     ADAPTER_POSITION_SEED,
+    VaultStatus,
 };
 
 use crate::protocol;
@@ -18,7 +19,7 @@ pub struct Deposit<'info> {
         mut,
         seeds = [VAULT_STATE_SEED],
         bump = vault_state.bump,
-        constraint = vault_state.is_active @ YieldAdapterError::AdapterNotActive,
+        constraint = vault_state.status == VaultStatus::Active.as_u8() @ YieldAdapterError::AdapterNotActive,
     )]
     pub vault_state: Account<'info, MapleVaultState>,
 

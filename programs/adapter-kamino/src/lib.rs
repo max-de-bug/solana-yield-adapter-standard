@@ -51,4 +51,9 @@ pub mod adapter_kamino {
     pub fn current_value(ctx: Context<CurrentValue>) -> Result<()> {
         instructions::current_value::handler(ctx)
     }
+
+    /// Toggle the vault status between Active and Paused.
+    pub fn toggle_status(ctx: Context<ToggleStatus>) -> Result<()> {
+        instructions::toggle_status::handler(ctx)
+    }
 }

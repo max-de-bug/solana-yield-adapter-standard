@@ -11,7 +11,7 @@ pub struct MapleVaultState {
     pub total_underlying: u64,
     pub total_shares: u64,
     pub protocol_routed_underlying: u64,
-    pub is_active: bool,
+    pub status: u8,
     pub bump: u8,
 }
 
