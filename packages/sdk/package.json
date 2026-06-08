@@ -1,0 +1,25 @@
+{
+  "name": "@solana-yield-adapter/sdk",
+  "version": "1.0.0",
+  "description": "TypeScript SDK for the Solana Yield Adapter Standard",
+  "license": "Apache-2.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test:fork": "npx tsx run-fork.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@anchor-lang/core": "1.0.1",
+    "@solana/web3.js": "^1.95.8",
+    "@solana/spl-token": "^0.4.13",
+    "bn.js": "^5.2.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0"
+  }
+}
