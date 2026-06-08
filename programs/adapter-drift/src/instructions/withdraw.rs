@@ -6,6 +6,7 @@ use yield_adapter_trait::{
     ADAPTER_POSITION_SEED,
 };
 
+use crate::protocol;
 use crate::state::{DriftVaultState, VAULT_AUTHORITY_SEED, VAULT_STATE_SEED};
 use crate::UNSTAKE_COOLDOWN_SECONDS;
 
@@ -59,7 +60,7 @@ pub struct Withdraw<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler(ctx: Context<Withdraw>, shares_to_burn: u64) -> Result<()> {
+pub fn handler<'a>(ctx: Context<'a, Withdraw<'a>>, shares_to_burn: u64) -> Result<()> {
     require!(shares_to_burn > 0, YieldAdapterError::ZeroWithdrawAmount);
 
     let vault = &mut ctx.accounts.vault_state;
@@ -86,6 +87,15 @@ pub fn handler(ctx: Context<Withdraw>, shares_to_burn: u64) -> Result<()> {
 
     let bump = ctx.bumps.vault_authority;
     let signer_seeds: &[&[&[u8]]] = &[&[VAULT_AUTHORITY_SEED, &[bump]]];
+
+    protocol::on_withdraw(
+        vault,
+        &ctx.accounts.vault_authority.to_account_info(),
+        &ctx.accounts.vault_token_account.to_account_info(),
+        underlying_amount,
+        ctx.remaining_accounts,
+        bump,
+    )?;
 
     token::transfer(
         CpiContext::new_with_signer(

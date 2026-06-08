@@ -1,11 +1,9 @@
-//! CPI routing from the dispatcher into registered reference adapters.
-
-use adapter_drift::program::AdapterDrift;
-use adapter_jupiter::program::AdapterJupiter;
-use adapter_kamino::program::AdapterKamino;
-use adapter_maple::program::AdapterMaple;
-use adapter_marginfi::program::AdapterMarginfi;
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::{
+    instruction::{AccountMeta, Instruction},
+    program::invoke,
+};
+use sha2::{Digest, Sha256};
 
 use crate::error::DispatcherError;
 use yield_adapter_trait::{read_adapter_position_receipt, read_reference_vault_totals};
@@ -19,6 +17,42 @@ pub fn read_vault_totals(vault_state: &AccountInfo) -> Result<(u64, u64)> {
 pub fn read_position_receipt(user_position: &AccountInfo) -> Result<u64> {
     read_adapter_position_receipt(user_position)
         .map_err(|_| DispatcherError::AdapterCpiError.into())
+}
+
+/// Compute the Anchor discriminator for a given instruction name.
+fn discriminator(method: &str) -> [u8; 8] {
+    let mut hasher = Sha256::new();
+    hasher.update(b"global:");
+    hasher.update(method.as_bytes());
+    let result = hasher.finalize();
+    let mut out = [0u8; 8];
+    out.copy_from_slice(&result[..8]);
+    out
+}
+
+/// Build instruction data: 8-byte Anchor discriminator + optional u64 argument.
+fn build_instruction_data(method: &str, amount: Option<u64>) -> Vec<u8> {
+    let mut data = discriminator(method).to_vec();
+    if let Some(amt) = amount {
+        data.extend_from_slice(&amt.to_le_bytes());
+    }
+    data
+}
+
+/// Perform a generic CPI call to any adapter program.
+fn cpi_call(
+    program_id: Pubkey,
+    accounts: &[AccountInfo],
+    metas: &[AccountMeta],
+    method: &str,
+    amount: Option<u64>,
+) -> Result<()> {
+    let ix = Instruction {
+        program_id,
+        accounts: metas.to_vec(),
+        data: build_instruction_data(method, amount),
+    };
+    invoke(&ix, accounts).map_err(|_| DispatcherError::AdapterCpiError.into())
 }
 
 pub struct AdapterDepositAccounts<'info> {
@@ -41,94 +75,29 @@ pub fn cpi_deposit<'info>(
     let (_, shares_before) = read_vault_totals(&vault_state)?;
     let program_id = accounts.adapter_program.key();
 
-    if program_id == AdapterKamino::id() {
-        adapter_kamino::cpi::deposit(
-            CpiContext::new(
-                program_id,
-                adapter_kamino::cpi::accounts::Deposit {
-                    user: accounts.user,
-                    vault_state: accounts.vault_state,
-                    user_position: accounts.user_position,
-                    user_token_account: accounts.user_token_account,
-                    vault_authority: accounts.vault_authority,
-                    vault_token_account: accounts.vault_token_account,
-                    token_program: accounts.token_program,
-                    system_program: accounts.system_program,
-                },
-            ),
-            amount,
-        )?;
-    } else if program_id == AdapterMarginfi::id() {
-        adapter_marginfi::cpi::deposit(
-            CpiContext::new(
-                program_id,
-                adapter_marginfi::cpi::accounts::Deposit {
-                    user: accounts.user,
-                    vault_state: accounts.vault_state,
-                    user_position: accounts.user_position,
-                    user_token_account: accounts.user_token_account,
-                    vault_authority: accounts.vault_authority,
-                    vault_token_account: accounts.vault_token_account,
-                    token_program: accounts.token_program,
-                    system_program: accounts.system_program,
-                },
-            ),
-            amount,
-        )?;
-    } else if program_id == AdapterJupiter::id() {
-        adapter_jupiter::cpi::deposit(
-            CpiContext::new(
-                program_id,
-                adapter_jupiter::cpi::accounts::Deposit {
-                    user: accounts.user,
-                    vault_state: accounts.vault_state,
-                    user_position: accounts.user_position,
-                    user_token_account: accounts.user_token_account,
-                    vault_authority: accounts.vault_authority,
-                    vault_token_account: accounts.vault_token_account,
-                    token_program: accounts.token_program,
-                    system_program: accounts.system_program,
-                },
-            ),
-            amount,
-        )?;
-    } else if program_id == AdapterMaple::id() {
-        adapter_maple::cpi::deposit(
-            CpiContext::new(
-                program_id,
-                adapter_maple::cpi::accounts::Deposit {
-                    user: accounts.user,
-                    vault_state: accounts.vault_state,
-                    user_position: accounts.user_position,
-                    user_token_account: accounts.user_token_account,
-                    vault_authority: accounts.vault_authority,
-                    vault_token_account: accounts.vault_token_account,
-                    token_program: accounts.token_program,
-                    system_program: accounts.system_program,
-                },
-            ),
-            amount,
-        )?;
-    } else if program_id == AdapterDrift::id() {
-        adapter_drift::cpi::deposit(
-            CpiContext::new(
-                program_id,
-                adapter_drift::cpi::accounts::Deposit {
-                    user: accounts.user,
-                    vault_state: accounts.vault_state,
-                    user_position: accounts.user_position,
-                    user_token_account: accounts.user_token_account,
-                    vault_authority: accounts.vault_authority,
-                    vault_token_account: accounts.vault_token_account,
-                    token_program: accounts.token_program,
-                    system_program: accounts.system_program,
-                },
-            ),
-            amount,
-        )?;
-    } else {
-        return Err(DispatcherError::AdapterNotApproved.into());
-    }
+    let account_infos = [
+        accounts.user.clone(),
+        accounts.vault_state.clone(),
+        accounts.user_position.clone(),
+        accounts.user_token_account.clone(),
+        accounts.vault_authority.clone(),
+        accounts.vault_token_account.clone(),
+        accounts.token_program.clone(),
+        accounts.system_program.clone(),
+    ];
+
+    let account_metas = [
+        AccountMeta::new(accounts.user.key(), true),
+        AccountMeta::new(accounts.vault_state.key(), false),
+        AccountMeta::new(accounts.user_position.key(), false),
+        AccountMeta::new(accounts.user_token_account.key(), false),
+        AccountMeta::new_readonly(accounts.vault_authority.key(), false),
+        AccountMeta::new(accounts.vault_token_account.key(), false),
+        AccountMeta::new_readonly(accounts.token_program.key(), false),
+        AccountMeta::new_readonly(accounts.system_program.key(), false),
+    ];
+
+    cpi_call(program_id, &account_infos, &account_metas, "deposit", Some(amount))?;
 
     let (_, shares_after) = read_vault_totals(&vault_state)?;
     shares_after
@@ -153,91 +122,27 @@ pub fn cpi_withdraw<'info>(
 ) -> Result<()> {
     let program_id = accounts.adapter_program.key();
 
-    if program_id == AdapterKamino::id() {
-        adapter_kamino::cpi::withdraw(
-            CpiContext::new(
-                program_id,
-                adapter_kamino::cpi::accounts::Withdraw {
-                    user: accounts.user,
-                    vault_state: accounts.vault_state,
-                    user_position: accounts.user_position,
-                    user_token_account: accounts.user_token_account,
-                    vault_token_account: accounts.vault_token_account,
-                    vault_authority: accounts.vault_authority,
-                    token_program: accounts.token_program,
-                },
-            ),
-            shares,
-        )?;
-    } else if program_id == AdapterMarginfi::id() {
-        adapter_marginfi::cpi::withdraw(
-            CpiContext::new(
-                program_id,
-                adapter_marginfi::cpi::accounts::Withdraw {
-                    user: accounts.user,
-                    vault_state: accounts.vault_state,
-                    user_position: accounts.user_position,
-                    user_token_account: accounts.user_token_account,
-                    vault_token_account: accounts.vault_token_account,
-                    vault_authority: accounts.vault_authority,
-                    token_program: accounts.token_program,
-                },
-            ),
-            shares,
-        )?;
-    } else if program_id == AdapterJupiter::id() {
-        adapter_jupiter::cpi::withdraw(
-            CpiContext::new(
-                program_id,
-                adapter_jupiter::cpi::accounts::Withdraw {
-                    user: accounts.user,
-                    vault_state: accounts.vault_state,
-                    user_position: accounts.user_position,
-                    user_token_account: accounts.user_token_account,
-                    vault_token_account: accounts.vault_token_account,
-                    vault_authority: accounts.vault_authority,
-                    token_program: accounts.token_program,
-                },
-            ),
-            shares,
-        )?;
-    } else if program_id == AdapterMaple::id() {
-        adapter_maple::cpi::withdraw(
-            CpiContext::new(
-                program_id,
-                adapter_maple::cpi::accounts::Withdraw {
-                    user: accounts.user,
-                    vault_state: accounts.vault_state,
-                    user_position: accounts.user_position,
-                    user_token_account: accounts.user_token_account,
-                    vault_token_account: accounts.vault_token_account,
-                    vault_authority: accounts.vault_authority,
-                    token_program: accounts.token_program,
-                },
-            ),
-            shares,
-        )?;
-    } else if program_id == AdapterDrift::id() {
-        adapter_drift::cpi::withdraw(
-            CpiContext::new(
-                program_id,
-                adapter_drift::cpi::accounts::Withdraw {
-                    user: accounts.user,
-                    vault_state: accounts.vault_state,
-                    user_position: accounts.user_position,
-                    user_token_account: accounts.user_token_account,
-                    vault_token_account: accounts.vault_token_account,
-                    vault_authority: accounts.vault_authority,
-                    token_program: accounts.token_program,
-                },
-            ),
-            shares,
-        )?;
-    } else {
-        return Err(DispatcherError::AdapterNotApproved.into());
-    }
+    let account_infos = [
+        accounts.user.clone(),
+        accounts.vault_state.clone(),
+        accounts.user_position.clone(),
+        accounts.user_token_account.clone(),
+        accounts.vault_token_account.clone(),
+        accounts.vault_authority.clone(),
+        accounts.token_program.clone(),
+    ];
 
-    Ok(())
+    let account_metas = [
+        AccountMeta::new(accounts.user.key(), true),
+        AccountMeta::new(accounts.vault_state.key(), false),
+        AccountMeta::new(accounts.user_position.key(), false),
+        AccountMeta::new(accounts.user_token_account.key(), false),
+        AccountMeta::new(accounts.vault_token_account.key(), false),
+        AccountMeta::new_readonly(accounts.vault_authority.key(), false),
+        AccountMeta::new_readonly(accounts.token_program.key(), false),
+    ];
+
+    cpi_call(program_id, &account_infos, &account_metas, "withdraw", Some(shares))
 }
 
 pub struct AdapterCurrentValueAccounts<'info> {
@@ -250,54 +155,17 @@ pub struct AdapterCurrentValueAccounts<'info> {
 pub fn cpi_current_value<'info>(accounts: AdapterCurrentValueAccounts<'info>) -> Result<()> {
     let program_id = accounts.adapter_program.key();
 
-    if program_id == AdapterKamino::id() {
-        adapter_kamino::cpi::current_value(CpiContext::new(
-            program_id,
-            adapter_kamino::cpi::accounts::CurrentValue {
-                user: accounts.user,
-                vault_state: accounts.vault_state,
-                user_position: accounts.user_position,
-            },
-        ))?;
-    } else if program_id == AdapterMarginfi::id() {
-        adapter_marginfi::cpi::current_value(CpiContext::new(
-            program_id,
-            adapter_marginfi::cpi::accounts::CurrentValue {
-                user: accounts.user,
-                vault_state: accounts.vault_state,
-                user_position: accounts.user_position,
-            },
-        ))?;
-    } else if program_id == AdapterJupiter::id() {
-        adapter_jupiter::cpi::current_value(CpiContext::new(
-            program_id,
-            adapter_jupiter::cpi::accounts::CurrentValue {
-                user: accounts.user,
-                vault_state: accounts.vault_state,
-                user_position: accounts.user_position,
-            },
-        ))?;
-    } else if program_id == AdapterMaple::id() {
-        adapter_maple::cpi::current_value(CpiContext::new(
-            program_id,
-            adapter_maple::cpi::accounts::CurrentValue {
-                user: accounts.user,
-                vault_state: accounts.vault_state,
-                user_position: accounts.user_position,
-            },
-        ))?;
-    } else if program_id == AdapterDrift::id() {
-        adapter_drift::cpi::current_value(CpiContext::new(
-            program_id,
-            adapter_drift::cpi::accounts::CurrentValue {
-                user: accounts.user,
-                vault_state: accounts.vault_state,
-                user_position: accounts.user_position,
-            },
-        ))?;
-    } else {
-        return Err(DispatcherError::AdapterNotApproved.into());
-    }
+    let account_infos = [
+        accounts.user.clone(),
+        accounts.vault_state.clone(),
+        accounts.user_position.clone(),
+    ];
 
-    Ok(())
+    let account_metas = [
+        AccountMeta::new_readonly(accounts.user.key(), true),
+        AccountMeta::new_readonly(accounts.vault_state.key(), false),
+        AccountMeta::new_readonly(accounts.user_position.key(), false),
+    ];
+
+    cpi_call(program_id, &account_infos, &account_metas, "current_value", None)
 }

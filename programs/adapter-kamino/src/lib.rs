@@ -38,12 +38,12 @@ pub mod adapter_kamino {
     }
 
     /// Deposit USDC into the Kamino lending vault.
-    pub fn deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
+    pub fn deposit<'a>(ctx: Context<'a, Deposit<'a>>, amount: u64) -> Result<()> {
         instructions::deposit::handler(ctx, amount)
     }
 
     /// Withdraw USDC from the Kamino lending vault.
-    pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()> {
+    pub fn withdraw<'a>(ctx: Context<'a, Withdraw<'a>>, amount: u64) -> Result<()> {
         instructions::withdraw::handler(ctx, amount)
     }
 

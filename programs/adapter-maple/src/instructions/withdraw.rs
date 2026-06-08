@@ -6,6 +6,7 @@ use yield_adapter_trait::{
     ADAPTER_POSITION_SEED,
 };
 
+use crate::protocol;
 use crate::state::{MapleVaultState, VAULT_AUTHORITY_SEED, VAULT_STATE_SEED};
 
 #[derive(Accounts)]
@@ -67,6 +68,8 @@ pub fn handler(ctx: Context<Withdraw>, shares_to_burn: u64) -> Result<()> {
     let clock = Clock::get()?;
     let bump = ctx.bumps.vault_authority;
     let signer_seeds: &[&[&[u8]]] = &[&[VAULT_AUTHORITY_SEED, &[bump]]];
+
+    protocol::on_withdraw(vault, underlying_amount, ctx.remaining_accounts)?;
 
     token::transfer(
         CpiContext::new_with_signer(

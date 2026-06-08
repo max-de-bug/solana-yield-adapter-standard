@@ -15,6 +15,7 @@ resolver = "2"
 anchor-lang = "=1.0.1"
 anchor-spl = "=1.0.1"
 
+
 [profile.release]
 overflow-checks = true
 lto = "fat"

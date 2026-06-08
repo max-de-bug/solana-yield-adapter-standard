@@ -22,6 +22,7 @@ anchor-lang = { workspace = true, features = ["init-if-needed"] }
 anchor-spl = { workspace = true }
 yield-adapter-trait = { path = "../../crates/yield-adapter-trait" }
 adapter-registry = { path = "../adapter-registry", features = ["cpi"] }
+sha2 = "0.10"
 adapter-kamino = { path = "../adapter-kamino", features = ["cpi"] }
 adapter-marginfi = { path = "../adapter-marginfi", features = ["cpi"] }
 adapter-jupiter = { path = "../adapter-jupiter", features = ["cpi"] }

@@ -54,7 +54,7 @@ describe("adapter-maple", () => {
       program,
       vaultStateSeed,
       vaultAuthoritySeed,
-      ...(isMainnetFork() ? { underlyingMint: SYRUP_USDC_MINT } : {}),
+      underlyingMint,
     });
   });
 

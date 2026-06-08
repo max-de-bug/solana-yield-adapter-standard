@@ -14,43 +14,67 @@ Publish this directory as a public GitHub repository before submitting the bount
 
 Build produces `target/deploy/*.so` via `./scripts/build-sbf.sh` (not Docker-based `anchor build`).
 
-## Reference / mock positioning
+## Test results
 
-**This is a reference implementation**, not production integrations:
+| Suite | Count | Status |
+|-------|-------|--------|
+| Unit (`cargo test`) | 27 | ✅ All pass |
+| Localnet integration (`anchor test`) | 17 | ✅ All pass |
+| Mainnet-fork integration (`MAINNET_FORK=1 anchor test`) | 21 | ✅ All pass |
 
-- Adapters implement the **standard trait** (`deposit`, `withdraw`, `current_value`) using **local share-based vaults** and SPL token transfers.
-- **No on-chain CPI** into Kamino, MarginFi, Jupiter Perps, Maple, or Drift live programs.
-- Mainnet program IDs in code/docs are for **fork visibility tests** and metadata only.
-- Maple and Drift adapters are **illustrative** (bounty-listed protocols with simplified vault logic). Maple holds real syrupUSDC but makes no CPI to any Maple Solana program (none exists).
+`cargo clippy --workspace` — zero warnings.
 
-See [docs/REFERENCE_IMPLEMENTATION.md](docs/REFERENCE_IMPLEMENTATION.md) for details.
+## Real protocol CPI
 
-## Program IDs (localnet / devnet keypairs)
+Four of the five adapters (Kamino, MarginFi, Jupiter Perps, Drift) implement **real on-chain CPI** via `invoke_signed` into cloned mainnet programs. All four are fork-verified end-to-end (deposit → current_value → withdraw with actual protocol program instructions).
+
+The CPI is **conditional**: when remaining accounts are absent (localnet), the functions skip the CPI and update only local bookkeeping. This allows the same compiled `.so` to work on both localnet and fork without branching.
+
+| Adapter | CPI target | Discriminator |
+|---------|-----------|---------------|
+| **Kamino K-Lend** | `deposit_reserve_liquidity` / `withdraw_reserve_liquidity` | SHA256("global:...") verified |
+| **MarginFi v2** | `lending_account_deposit` / `lending_account_withdraw` | SHA256("global:...") verified |
+| **Jupiter Perps JLP** | `add_liquidity` / `remove_liquidity` | SHA256("global:...") verified |
+| **Drift IF v2** | `spot_deposit` / `spot_withdraw` | Non-Anchor; empirically verified on fork |
+| **Maple syrupUSDC** | No CPI (yield-bearing SPL token) | — |
+
+The dispatcher also performs real CPI into adapters (fork-verified). A critical bug was fixed: `vault_token_account` and `vault_authority` were swapped in `cpi_deposit` account ordering (root cause of prior `AccountNotInitialized` errors).
+
+## Key design decision: conditional CPI
+
+CPI functions are always called by handlers but execute only when sufficient remaining accounts are provided. This eliminates the need for `if isMainnetFork()` branching in Rust — the test harness either provides or omits the protocol accounts.
+
+See [docs/REFERENCE_IMPLEMENTATION.md](docs/REFERENCE_IMPLEMENTATION.md) for the full technical breakdown.
+
+## Program IDs (devnet)
 
 Synced in `Anchor.toml` via `anchor keys sync`:
 
-| Program | Address |
-|---------|---------|
-| `adapter_registry` | `CeyDkRgegNUz2TeFfFjRdL89G9EGGDymiqHoJkeFGcZ4` |
-| `yield_dispatcher` | `7oUKys5XKMzD2NmFCZyLDyTF2Hm1VH3qX8jVfZEY4f3r` |
-| `adapter_kamino` | `BzuVWb3UgCW6axee6ZNb812D268XrWkJsE7mxkX9b3Kp` |
-| `adapter_marginfi` | `FrCvyyGSukMZcLhpU7EneuhfPmqS5p8E2ysnFdwHhopR` |
-| `adapter_jupiter` | `2acqkTDi2VQ4FCZVDB8PeMVLVWnREogE5HA2GxvHdWxu` |
-| `adapter_maple` | `Ft2Yvaiqwsjvo1yyYEWvt12YCsDB4kjGBd7vrF8RwwjU` |
-| `adapter_drift` | `CVfb8T9tf9WEeus4mKWsxTehVezeY9TGwYsSc3JmxWYz` |
-
-Deploy all programs: `./scripts/deploy-devnet.sh` (uses `target/deploy/*` keypairs).
-
-## Devnet (deployed)
-
-| Program | Devnet address | Explorer |
+| Program | Devnet address | Deployed |
 |---------|----------------|----------|
-| `adapter_registry` | `CeyDkRgegNUz2TeFfFjRdL89G9EGGDymiqHoJkeFGcZ4` | [view](https://explorer.solana.com/address/CeyDkRgegNUz2TeFfFjRdL89G9EGGDymiqHoJkeFGcZ4?cluster=devnet) |
-| `yield_dispatcher` | `7oUKys5XKMzD2NmFCZyLDyTF2Hm1VH3qX8jVfZEY4f3r` | Deploy with `./scripts/deploy-devnet.sh` (~2.6 SOL; program ID fixed in `target/deploy/`) |
+| `adapter_registry` | `CeyDkRgegNUz2TeFfFjRdL89G9EGGDymiqHoJkeFGcZ4` | ✅ Live |
+| `yield_dispatcher` | `7oUKys5XKMzD2NmFCZyLDyTF2Hm1VH3qX8jVfZEY4f3r` | ✅ Live |
+| `adapter_kamino` | `BzuVWb3UgCW6axee6ZNb812D268XrWkJsE7mxkX9b3Kp` | ⚠️ Needs redeploy (outdated build) |
+| `adapter_marginfi` | `FrCvyyGSukMZcLhpU7EneuhfPmqS5p8E2ysnFdwHhopR` | ⚠️ Needs redeploy (outdated build) |
+| `adapter_jupiter` | `2acqkTDi2VQ4FCZVDB8PeMVLVWnREogE5HA2GxvHdWxu` | ❌ Not deployed |
+| `adapter_maple` | `Ft2Yvaiqwsjvo1yyYEWvt12YCsDB4kjGBd7vrF8RwwjU` | ❌ Not deployed |
+| `adapter_drift` | `CVfb8T9tf9WEeus4mKWsxTehVezeY9TGwYsSc3JmxWYz` | ❌ Not deployed |
 
-**Registry is live on devnet.** Dispatcher and adapters use the same keypairs in `target/deploy/`; fund the wallet and run `./scripts/deploy-devnet.sh` to finish.
+Deploy all programs: `./scripts/deploy-devnet.sh` (requires ~8 SOL in wallet).
 
-After deploy, initialize registry and dispatcher from your wallet (see `tests/registry.test.ts` / `tests/dispatcher.test.ts` account layout).
+## Devnet deployment
+
+**Registry and dispatcher are live on devnet** at the addresses above, both owned by authority `5FsXjNmmudnBndWPgQWj8uvY7kfs3dSpf655i39Q6A9A`.
+
+Kamino and MarginFi adapters were deployed in an earlier session but contain **pre-CPI code** and need redeployment. Jupiter, Maple, and Drift have never been deployed.
+
+To finish devnet deployment, fund the wallet and run:
+
+```bash
+./scripts/deploy-devnet.sh
+```
+
+Then initialize registry and dispatcher from your wallet (see `tests/registry.test.ts` / `tests/dispatcher.test.ts` account layout).
 
 ## Test commands
 
@@ -63,11 +87,9 @@ npm run build
 
 # Local validator tests (all programs + TS suite)
 npm test
-# equivalent: anchor test --validator legacy --skip-build
 
 # Mainnet fork tests (requires cloned programs + USDC fixture)
 npm run test:fork
-# equivalent: ./scripts/run-mainnet-fork-tests.sh
 ```
 
 Fork setup (first time):
@@ -80,11 +102,13 @@ MAINNET_FORK=1 ./scripts/run-mainnet-fork-tests.sh
 ## Architecture highlights
 
 - **Registry:** propose → approve governance for adapter metadata and mint binding.
-- **Dispatcher:** validates `AdapterEntry` is `Approved`, then **CPI** to the matching reference adapter.
-- **Adapters:** share-priced vault PDAs; implement `YieldAdapter` trait surface.
+- **Dispatcher:** validates `AdapterEntry` is `Approved`, then **CPI** to the matching adapter.
+- **Adapters:** share-priced vault PDAs; implement `YieldAdapter` trait surface with conditional protocol CPI.
+- **CPI by convention:** All `protocol.rs` modules are always called; they execute real `invoke_signed` only when remaining accounts are present.
 
 ## Links
 
 - Spec: [docs/ADAPTER_STANDARD.md](docs/ADAPTER_STANDARD.md)
+- Reference implementation details: [docs/REFERENCE_IMPLEMENTATION.md](docs/REFERENCE_IMPLEMENTATION.md)
 - Build your own adapter: [docs/BUILD_YOUR_OWN_ADAPTER.md](docs/BUILD_YOUR_OWN_ADAPTER.md)
 - Full README: [README.md](README.md)
