@@ -294,6 +294,12 @@ anchor init my-adapter && cd my-adapter
 
 ---
 
+## Related Projects
+
+- [syas-quasar](https://github.com/max-de-bug/syas-quasar) — Quasar port with framework benchmark comparisons
+
+---
+
 ## Contributing
 
 1. Fork the repository

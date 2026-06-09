@@ -56,6 +56,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "adapter-template"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "yield-adapter-trait",
+]
+
+[[package]]
 name = "aead"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"

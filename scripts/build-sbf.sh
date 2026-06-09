@@ -31,6 +31,7 @@ PROGRAMS=(
   adapter-jupiter
   adapter-maple
   adapter-drift
+  adapter-template
   yield-dispatcher
 )
 

@@ -1,0 +1,53 @@
+---
+title: "Quasar Port & Benchmark"
+description: "Framework speed benchmark comparing the Anchor reference implementation against an equivalent Quasar port"
+---
+
+## Overview
+
+Alongside this Anchor reference implementation, we maintain an equivalent port built with the [**Quasar**](https://github.com/blueshift-gg/quasar) framework. Quasar is a `#![no_std]` Solana framework with zero-copy serialization, designed as a lighter alternative to Anchor.
+
+The Quasar port lives in the [`syas-quasar`](https://github.com/max-de-bug/syas-quasar) repository and implements the exact same interfaces, accounts, and tests.
+
+## Head-to-Head Results
+
+Measured on identical hardware (Ubuntu 22.04, Ryzen 9, 32 GB RAM):
+
+| Metric | Anchor | Quasar | Δ |
+|--------|--------|--------|---|
+| **Build time** (8 programs) | 25.6s | 20.2s | **21% faster** |
+| **Total binary size** | 2.0 MB | 0.3 MB | **86% smaller** |
+| **Test execution** | validator RPC (~3s/adapter) | QuasarSVM in-process (~ms) | **~100x faster** |
+| **Runtime dependency** | Borsh + std | `#![no_std]` | lighter |
+
+### Binary Size by Program
+
+| Program | Anchor | Quasar | Reduction |
+|---------|--------|--------|-----------|
+| yield-dispatcher | 345.0 KB | 53.9 KB | **84%** |
+| adapter-registry | 202.9 KB | 21.3 KB | **90%** |
+| adapter-kamino | 253.7 KB | 35.5 KB | **86%** |
+| adapter-marginfi | 252.5 KB | 35.5 KB | **86%** |
+| adapter-jupiter | 251.3 KB | 35.5 KB | **86%** |
+| adapter-maple | 235.5 KB | 33.7 KB | **86%** |
+| adapter-drift | 253.4 KB | 36.8 KB | **85%** |
+| adapter-template | 240.8 KB | 37.4 KB | **84%** |
+| **Total** | **2.0 MB** | **0.3 MB** | **86%** |
+
+## Reproduce
+
+```bash
+git clone https://github.com/max-de-bug/syas-quasar.git
+cd syas-quasar
+npm run benchmark
+```
+
+## Key Differences
+
+| Area | Anchor | Quasar |
+|------|--------|--------|
+| Language features | `std` + Borsh + heap alloc | `#![no_std]`, zero-copy pointer casts |
+| Instruction dispatch | SHA256 discriminators | Explicit `#[instruction(discriminator = N)]` |
+| Account serialization | Borsh `AccountDeserialize` | `set_inner()` + `#[seeds()]` |
+| Test framework | `anchor test` + mocha/TS | QuasarSVM (Rust) + TS clients |
+| CPI routing | `CpiContext` with `invoke_signed` | `invoke_signed` with `Seed` helpers |

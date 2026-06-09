@@ -51,6 +51,7 @@ export const ADAPTER_VAULT_SEEDS: Record<string, Buffer> = {
   jupiter: Buffer.from("jupiter_vault_state"),
   maple: Buffer.from("maple_vault_state"),
   drift: Buffer.from("drift_vault_state"),
+  template: Buffer.from("template_vault_state"),
 } as const;
 
 export const ADAPTER_VAULT_AUTHORITY_SEEDS: Record<string, Buffer> = {
@@ -59,6 +60,7 @@ export const ADAPTER_VAULT_AUTHORITY_SEEDS: Record<string, Buffer> = {
   jupiter: Buffer.from("jupiter_vault_authority"),
   maple: Buffer.from("maple_vault_authority"),
   drift: Buffer.from("drift_vault_authority"),
+  template: Buffer.from("template_vault_authority"),
 } as const;
 
 export const ADAPTER_NAMES = [
@@ -67,6 +69,7 @@ export const ADAPTER_NAMES = [
   "jupiter",
   "maple",
   "drift",
+  "template",
 ] as const;
 
 export type AdapterName = (typeof ADAPTER_NAMES)[number];

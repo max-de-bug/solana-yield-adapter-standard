@@ -13,6 +13,7 @@ adapter_kamino = "BzuVWb3UgCW6axee6ZNb812D268XrWkJsE7mxkX9b3Kp"
 adapter_maple = "Ft2Yvaiqwsjvo1yyYEWvt12YCsDB4kjGBd7vrF8RwwjU"
 adapter_marginfi = "FrCvyyGSukMZcLhpU7EneuhfPmqS5p8E2ysnFdwHhopR"
 adapter_registry = "CeyDkRgegNUz2TeFfFjRdL89G9EGGDymiqHoJkeFGcZ4"
+adapter_template = "jbLUHXvc9P26MpQdGXht4aKnbn68i2GijxsFX6RXahV"
 yield_dispatcher = "7oUKys5XKMzD2NmFCZyLDyTF2Hm1VH3qX8jVfZEY4f3r"
 
 [programs.localnet]
@@ -22,6 +23,7 @@ adapter_kamino = "BQMHrbTGx9ruKQN54XzMajLq769ax3e33YJ5FMkowrg9"
 adapter_maple = "Ft2Yvaiqwsjvo1yyYEWvt12YCsDB4kjGBd7vrF8RwwjU"
 adapter_marginfi = "LtccLreoDVj2vurvsWpvfC8PvYTnUpTaxz6P9pDg5Y2"
 adapter_registry = "8TAhAne1z4chGzuP9EeXFuYsqyGHzACWuD7sURS3ydAq"
+adapter_template = "jbLUHXvc9P26MpQdGXht4aKnbn68i2GijxsFX6RXahV"
 yield_dispatcher = "8u4YFQiTCR5n5dijVoinXyZ962ngVmFuWKELDUjVCqAR"
 
 [provider]

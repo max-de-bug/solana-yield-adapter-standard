@@ -8,6 +8,7 @@ members = [
     "programs/adapter-jupiter",
     "programs/adapter-maple",
     "programs/adapter-drift",
+    "programs/adapter-template",
 ]
 resolver = "2"
 
