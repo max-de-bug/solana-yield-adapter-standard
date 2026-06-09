@@ -379,9 +379,9 @@ export async function runAdapterDepositWithdrawFlow(
     );
   }
 
-  const userPositionPda = adapterUserPositionPda(
-    authority.publicKey,
-    program.programId
+  const [userPositionPda] = adapterUserPositionPda(
+    program.programId,
+    authority.publicKey
   );
 
   const depositBuilder = program.methods

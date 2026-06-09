@@ -168,7 +168,7 @@ describe("adapter-registry", () => {
 
   it("rejects unauthorized approve attempts", async () => {
     const unauthorizedUser = Keypair.generate();
-    await airdrop(provider, unauthorizedUser.publicKey);
+    await airdrop(provider.connection, unauthorizedUser.publicKey);
 
     const adapterProgram = Keypair.generate();
     const underlyingMint = Keypair.generate();

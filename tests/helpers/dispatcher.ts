@@ -198,9 +198,9 @@ export async function setupApprovedKaminoForDispatcher(
     vaultAuthorityPda,
     vaultTokenAccount,
     adapterUserPositionPda: adapterUserPositionPda(
-      authority.publicKey,
-      kaminoProgram.programId
-    ),
+      kaminoProgram.programId,
+      authority.publicKey
+    )[0],
   };
 }
 

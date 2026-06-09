@@ -65,7 +65,7 @@ describe("adapter-maple", () => {
         ).then(a => a.address)
       : await createTestTokenAccount(provider, underlyingMint, authority.publicKey, payer);
 
-    const userPositionPda = adapterUserPositionPda(authority.publicKey, program.programId);
+    const [userPositionPda] = adapterUserPositionPda(program.programId, authority.publicKey);
 
     try {
       await program.methods

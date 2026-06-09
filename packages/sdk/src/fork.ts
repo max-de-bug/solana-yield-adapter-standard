@@ -2,7 +2,7 @@ import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 
-const PROJECT_DIR = path.resolve(__dirname, "..", "..");
+const PROJECT_DIR = path.resolve(__dirname, "..", "..", "..");
 const FIXTURE_DIR = path.join(PROJECT_DIR, "tests", "fixtures");
 const VALIDATOR_DIR = path.join(PROJECT_DIR, "test-ledger");
 const DEPLOY_DIR = path.join(PROJECT_DIR, "target", "deploy");
@@ -151,9 +151,14 @@ export function deployPrograms(): void {
 }
 
 export function runTests(): void {
-  run(
+  execSync(
     "anchor test --skip-local-validator --skip-build --validator legacy --provider.cluster localnet",
-    { maxBuffer: 50 * 1024 * 1024 }
+    {
+      cwd: PROJECT_DIR,
+      stdio: "inherit",
+      encoding: "utf-8",
+      timeout: 300000,
+    }
   );
 }
 
@@ -183,8 +188,8 @@ export async function prepareFixtures(): Promise<void> {
 }
 
 export async function buildPrograms(): Promise<void> {
-  fs.chmodSync("scripts/build-sbf.sh", 0o755);
-  fs.chmodSync("scripts/build-idls.sh", 0o755);
+  fs.chmodSync(path.join(PROJECT_DIR, "scripts", "build-sbf.sh"), 0o755);
+  fs.chmodSync(path.join(PROJECT_DIR, "scripts", "build-idls.sh"), 0o755);
   run("bash scripts/build-sbf.sh");
   run("bash scripts/build-idls.sh");
 }
