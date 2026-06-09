@@ -214,7 +214,7 @@ Tests cover:
 
 Clones live program state from mainnet (Kamino, MarginFi, Drift) and runs integration tests against real on-chain state.
 
-![Mainnet fork tests passing](https://github.com/user-attachments/assets/950ba295-9418-4c16-8800-f44035f66696)
+![Mainnet-fork tests passing](https://github.com/user-attachments/assets/f29d6e7b-063e-4905-8859-1ce56983bec0)
 
 ---
 
