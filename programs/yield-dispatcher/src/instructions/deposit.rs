@@ -110,7 +110,7 @@ pub struct Deposit<'info> {
 }
 
 /// Route a deposit through the dispatcher to an approved adapter via CPI.
-pub fn handler(ctx: Context<Deposit>, amount: u64) -> Result<()> {
+pub fn handler(ctx: Context<Deposit>, amount: u64, min_shares_out: u64) -> Result<()> {
     require!(amount > 0, DispatcherError::ZeroAmount);
 
     let clock = Clock::get()?;
@@ -127,6 +127,7 @@ pub fn handler(ctx: Context<Deposit>, amount: u64) -> Result<()> {
             system_program: ctx.accounts.system_program.to_account_info(),
         },
         amount,
+        min_shares_out,
     )?;
 
     let position = &mut ctx.accounts.user_position;

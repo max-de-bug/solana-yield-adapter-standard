@@ -263,6 +263,11 @@ pub enum YieldAdapterError {
     /// `AdapterMetadata` failed validation (version, mint, program id, or layout does not match expectations).
     #[msg("Invalid adapter metadata")]
     InvalidMetadata,
+
+    /// The calculated output amount (shares for deposit, underlying for withdraw) is below the
+    /// user-specified minimum. Protects against pool manipulation (sandwich attacks, MEV).
+    #[msg("Output amount below minimum slippage tolerance")]
+    SlippageExceeded,
 }
 
 // ---------------------------------------------------------------------------

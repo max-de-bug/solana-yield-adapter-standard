@@ -11,6 +11,7 @@ Implement real protocol CPI for all five adapters via per-adapter `protocol.rs` 
 - **CPI account order fixed in `yield-dispatcher`**: `adapter_cpi.rs` had `vault_token_account` and `vault_authority` swapped in `cpi_deposit` (indices 4 and 5). Kamino deposit struct expects `vault_authority` at index 4, `vault_token_account` at index 5. Fixed both `account_infos` and `account_metas`. This was the root cause of the `AccountNotInitialized` error on dispatcher deposit tests.
 - **All 17 localnet integration tests pass** (5 adapter flows, 5 dispatcher/registry tests, etc.)
 - **All 21 mainnet-fork tests pass** (5 adapter flows with real protocol CPI, 5 "loads program" fork-verification tests, dispatcher deposit/withdraw via Kamino CPI, registry tests)
+- **Slippage protection added**: `deposit` now takes `min_shares_out: u64`, `withdraw` takes `min_underlying_out: u64`. Check fires after calculation, before state mutation. Error code `SlippageExceeded` (6012). Dispatcher CPI forwards both params.
 
 ### Test Results
 | Test Suite | Tests | Status |

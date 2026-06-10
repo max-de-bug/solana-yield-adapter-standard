@@ -57,7 +57,7 @@ pub struct Deposit<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler<'a>(ctx: Context<'a, Deposit<'a>>, amount: u64) -> Result<()> {
+pub fn handler<'a>(ctx: Context<'a, Deposit<'a>>, amount: u64, min_shares_out: u64) -> Result<()> {
     require!(amount > 0, YieldAdapterError::ZeroDepositAmount);
 
     let vault = &mut ctx.accounts.vault_state;
@@ -65,6 +65,12 @@ pub fn handler<'a>(ctx: Context<'a, Deposit<'a>>, amount: u64) -> Result<()> {
 
     // Compute how many shares the user receives for their deposit.
     let shares = shares_for_deposit(amount, vault.total_underlying, vault.total_shares)?;
+
+    // Guard against unfavorable share price movement.
+    require!(
+        shares >= min_shares_out,
+        YieldAdapterError::SlippageExceeded
+    );
 
     // Transfer underlying tokens from user → vault.
     token::transfer(

@@ -60,7 +60,7 @@ pub struct Withdraw<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler<'a>(ctx: Context<'a, Withdraw<'a>>, shares_to_burn: u64) -> Result<()> {
+pub fn handler<'a>(ctx: Context<'a, Withdraw<'a>>, shares_to_burn: u64, min_underlying_out: u64) -> Result<()> {
     require!(shares_to_burn > 0, YieldAdapterError::ZeroWithdrawAmount);
 
     let vault = &mut ctx.accounts.vault_state;
@@ -84,6 +84,11 @@ pub fn handler<'a>(ctx: Context<'a, Withdraw<'a>>, shares_to_burn: u64) -> Resul
 
     let underlying_amount =
         user_position_underlying_value(shares_to_burn, vault.total_underlying, vault.total_shares)?;
+
+    require!(
+        underlying_amount >= min_underlying_out,
+        YieldAdapterError::SlippageExceeded
+    );
 
     let bump = ctx.bumps.vault_authority;
     let signer_seeds: &[&[&[u8]]] = &[&[VAULT_AUTHORITY_SEED, &[bump]]];

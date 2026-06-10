@@ -101,7 +101,7 @@ pub struct Withdraw<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler(ctx: Context<Withdraw>, shares: u64) -> Result<()> {
+pub fn handler(ctx: Context<Withdraw>, shares: u64, min_underlying_out: u64) -> Result<()> {
     require!(shares > 0, DispatcherError::ZeroAmount);
 
     let position = &ctx.accounts.user_position;
@@ -124,6 +124,7 @@ pub fn handler(ctx: Context<Withdraw>, shares: u64) -> Result<()> {
             token_program: ctx.accounts.token_program.to_account_info(),
         },
         shares,
+        min_underlying_out,
     )?;
 
     let position = &mut ctx.accounts.user_position;

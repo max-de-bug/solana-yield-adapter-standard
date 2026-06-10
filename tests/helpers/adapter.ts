@@ -385,7 +385,7 @@ export async function runAdapterDepositWithdrawFlow(
   );
 
   const depositBuilder = program.methods
-    .deposit(new anchor.BN(depositAmount))
+    .deposit(new anchor.BN(depositAmount), new anchor.BN(0))
     .accounts({
       user: authority.publicKey,
       vaultState: vaultStatePda,
@@ -430,7 +430,7 @@ export async function runAdapterDepositWithdrawFlow(
   await currentValueBuilder.rpc();
 
   await program.methods
-    .withdraw(new anchor.BN(withdrawShares))
+    .withdraw(new anchor.BN(withdrawShares), new anchor.BN(0))
     .accounts({
       user: authority.publicKey,
       vaultState: vaultStatePda,

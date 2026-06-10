@@ -30,12 +30,12 @@ pub mod adapter_marginfi {
         instructions::initialize::handler(ctx, underlying_mint)
     }
 
-    pub fn deposit<'a>(ctx: Context<'a, Deposit<'a>>, amount: u64) -> Result<()> {
-        instructions::deposit::handler(ctx, amount)
+    pub fn deposit<'a>(ctx: Context<'a, Deposit<'a>>, amount: u64, min_shares_out: u64) -> Result<()> {
+        instructions::deposit::handler(ctx, amount, min_shares_out)
     }
 
-    pub fn withdraw<'a>(ctx: Context<'a, Withdraw<'a>>, amount: u64) -> Result<()> {
-        instructions::withdraw::handler(ctx, amount)
+    pub fn withdraw<'a>(ctx: Context<'a, Withdraw<'a>>, amount: u64, min_underlying_out: u64) -> Result<()> {
+        instructions::withdraw::handler(ctx, amount, min_underlying_out)
     }
 
     pub fn current_value(ctx: Context<CurrentValue>) -> Result<()> {

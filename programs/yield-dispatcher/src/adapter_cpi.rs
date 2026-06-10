@@ -30,10 +30,10 @@ fn discriminator(method: &str) -> [u8; 8] {
     out
 }
 
-/// Build instruction data: 8-byte Anchor discriminator + optional u64 argument.
-fn build_instruction_data(method: &str, amount: Option<u64>) -> Vec<u8> {
+/// Build instruction data: 8-byte Anchor discriminator + zero or more u64 arguments.
+fn build_instruction_data(method: &str, amounts: &[u64]) -> Vec<u8> {
     let mut data = discriminator(method).to_vec();
-    if let Some(amt) = amount {
+    for amt in amounts {
         data.extend_from_slice(&amt.to_le_bytes());
     }
     data
@@ -45,12 +45,12 @@ fn cpi_call(
     accounts: &[AccountInfo],
     metas: &[AccountMeta],
     method: &str,
-    amount: Option<u64>,
+    amounts: &[u64],
 ) -> Result<()> {
     let ix = Instruction {
         program_id,
         accounts: metas.to_vec(),
-        data: build_instruction_data(method, amount),
+        data: build_instruction_data(method, amounts),
     };
     invoke(&ix, accounts).map_err(|_| DispatcherError::AdapterCpiError.into())
 }
@@ -70,6 +70,7 @@ pub struct AdapterDepositAccounts<'info> {
 pub fn cpi_deposit<'info>(
     accounts: AdapterDepositAccounts<'info>,
     amount: u64,
+    min_shares_out: u64,
 ) -> Result<u64> {
     let vault_state = accounts.vault_state.clone();
     let (_, shares_before) = read_vault_totals(&vault_state)?;
@@ -97,7 +98,7 @@ pub fn cpi_deposit<'info>(
         AccountMeta::new_readonly(accounts.system_program.key(), false),
     ];
 
-    cpi_call(program_id, &account_infos, &account_metas, "deposit", Some(amount))?;
+    cpi_call(program_id, &account_infos, &account_metas, "deposit", &[amount, min_shares_out])?;
 
     let (_, shares_after) = read_vault_totals(&vault_state)?;
     shares_after
@@ -119,6 +120,7 @@ pub struct AdapterWithdrawAccounts<'info> {
 pub fn cpi_withdraw<'info>(
     accounts: AdapterWithdrawAccounts<'info>,
     shares: u64,
+    min_underlying_out: u64,
 ) -> Result<()> {
     let program_id = accounts.adapter_program.key();
 
@@ -142,7 +144,7 @@ pub fn cpi_withdraw<'info>(
         AccountMeta::new_readonly(accounts.token_program.key(), false),
     ];
 
-    cpi_call(program_id, &account_infos, &account_metas, "withdraw", Some(shares))
+    cpi_call(program_id, &account_infos, &account_metas, "withdraw", &[shares, min_underlying_out])
 }
 
 pub struct AdapterCurrentValueAccounts<'info> {
@@ -167,5 +169,5 @@ pub fn cpi_current_value<'info>(accounts: AdapterCurrentValueAccounts<'info>) ->
         AccountMeta::new_readonly(accounts.user_position.key(), false),
     ];
 
-    cpi_call(program_id, &account_infos, &account_metas, "current_value", None)
+    cpi_call(program_id, &account_infos, &account_metas, "current_value", &[])
 }

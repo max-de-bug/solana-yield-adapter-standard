@@ -28,14 +28,14 @@ pub mod adapter_template {
 
     /// Deposit `amount` underlying tokens into the yield source.
     /// The vault authority PDA transfers user tokens, then routes them to the protocol.
-    pub fn deposit<'a>(ctx: Context<'a, Deposit<'a>>, amount: u64) -> Result<()> {
-        instructions::deposit::handler(ctx, amount)
+    pub fn deposit<'a>(ctx: Context<'a, Deposit<'a>>, amount: u64, min_shares_out: u64) -> Result<()> {
+        instructions::deposit::handler(ctx, amount, min_shares_out)
     }
 
     /// Withdraw `shares_to_burn` receipt tokens, returning underlying tokens to the user.
     /// Withdraws from the protocol via CPI, then transfers tokens back to the user.
-    pub fn withdraw<'a>(ctx: Context<'a, Withdraw<'a>>, shares_to_burn: u64) -> Result<()> {
-        instructions::withdraw::handler(ctx, shares_to_burn)
+    pub fn withdraw<'a>(ctx: Context<'a, Withdraw<'a>>, shares_to_burn: u64, min_underlying_out: u64) -> Result<()> {
+        instructions::withdraw::handler(ctx, shares_to_burn, min_underlying_out)
     }
 
     /// Query the current value of a user's position in underlying token units.

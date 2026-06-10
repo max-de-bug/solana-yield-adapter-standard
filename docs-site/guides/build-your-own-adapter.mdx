@@ -93,6 +93,9 @@ description: Ship a conformant yield adapter in under one day using this referen
         vault.total_shares,
     )?;
 
+    // Slippage protection: check minimum output before any state changes.
+    require!(shares >= min_shares_out, YieldAdapterError::SlippageExceeded);
+
     // SPL transfer user → vault, then update vault totals and position.receipt_token_balance
     emit!(DepositEvent {
         user: ctx.accounts.user.key(),
@@ -152,7 +155,7 @@ description: Ship a conformant yield adapter in under one day using this referen
     Copy `tests/helpers/adapter.ts` patterns:
 
     ```typescript
-    await program.methods.deposit(new BN(1_000_000)).accounts({
+    await program.methods.deposit(new BN(1_000_000), new BN(0)).accounts({
       user: authority.publicKey,
       vaultState: vaultStatePda,
       userPosition: adapterUserPositionPda(authority.publicKey, program.programId),
@@ -168,8 +171,10 @@ description: Ship a conformant yield adapter in under one day using this referen
     - First deposit 1:1 shares
     - Withdraw partial shares
     - `current_value` after deposit (underlying &gt; 0)
-    - `deposit(0)` fails
+    - `deposit(0, 0)` fails (ZeroDepositAmount)
     - `withdraw` over balance fails
+    - `deposit(1000, 1001)` fails (SlippageExceeded)
+    - `withdraw(1000, 1_000_000_001)` fails (SlippageExceeded)
 
     Details: [Testing guide](/guides/testing).
   </Step>
@@ -203,6 +208,7 @@ description: Ship a conformant yield adapter in under one day using this referen
 <Check>All math uses `checked_*`</Check>
 <Check>`amount > 0` on deposit and withdraw</Check>
 <Check>`status.can_deposit()` on deposit, `status.can_withdraw()` on withdraw</Check>
+<Check>`shares >= min_shares_out` on deposit, `underlying >= min_underlying_out` on withdraw</Check>
 <Check>`user_token_account.mint == vault.underlying_mint`</Check>
 <Check>Vault outbound transfers signed by vault authority **PDA**</Check>
 <Check>Tests: deposit → current_value → withdraw</Check>
@@ -217,6 +223,7 @@ description: Ship a conformant yield adapter in under one day using this referen
 | Stale TypeScript client | Run `bash scripts/build-idls.sh` after changing accounts |
 | Withdraw by underlying amount | Standard withdraw burns **shares**; compute underlying pro-rata |
 | Skipping events | Every deposit/withdraw/value query must emit the standard event |
+| No slippage protection | Pass `min_shares_out` / `min_underlying_out` and check after calculation, before any transfers |
 
 ## Golden reference
 

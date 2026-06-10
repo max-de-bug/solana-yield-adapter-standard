@@ -24,30 +24,36 @@ Every compliant adapter program MUST implement exactly three instructions:
 
 ```
 Instruction: deposit
-Args: amount (u64) — amount of underlying tokens to deposit
+Args:
+  amount (u64)        — amount of underlying tokens to deposit
+  min_shares_out (u64) — minimum receipt tokens to accept (slippage protection; 0 = no minimum)
 ```
 
 **Behavior**:
 1. MUST validate `amount > 0`
-2. MUST transfer `amount` of underlying tokens from the user to the adapter vault
-3. MUST calculate receipt tokens proportional to the current share price
-4. MUST update internal vault state (total_underlying, total_shares)
-5. MUST emit a `DepositEvent`
+2. MUST calculate receipt tokens proportional to the current share price
+3. MUST validate `shares >= min_shares_out` (revert with `SlippageExceeded` if below minimum)
+4. MUST transfer `amount` of underlying tokens from the user to the adapter vault
+5. MUST update internal vault state (total_underlying, total_shares)
+6. MUST emit a `DepositEvent`
 
 #### `withdraw`
 
 ```
 Instruction: withdraw
-Args: amount (u64) — amount of receipt/share tokens to burn
+Args:
+  amount (u64)          — amount of receipt/share tokens to burn
+  min_underlying_out (u64) — minimum underlying tokens to receive (slippage protection; 0 = no minimum)
 ```
 
 **Behavior**:
 1. MUST validate `amount > 0`
 2. MUST validate the user has sufficient receipt token balance
 3. MUST calculate underlying tokens proportional to the current share price
-4. MUST transfer calculated underlying tokens from vault to user
-5. MUST update internal vault state
-6. MUST emit a `WithdrawEvent`
+4. MUST validate `underlying_amount >= min_underlying_out` (revert with `SlippageExceeded` if below minimum)
+5. MUST transfer calculated underlying tokens from vault to user
+6. MUST update internal vault state
+7. MUST emit a `WithdrawEvent`
 
 #### `current_value`
 
@@ -146,7 +152,20 @@ Compliant adapters MUST use the following error code ranges:
 | `6200–6299` | Registry errors |
 | `7000+` | Protocol-specific adapter errors |
 
-### 3.6 Vault Status
+### 3.6 Slippage Protection
+
+Every `deposit` and `withdraw` instruction accepts a **minimum output amount** as its second argument:
+
+| Instruction | Parameter | Check | Protects against |
+|---|---|---|---|
+| `deposit` | `min_shares_out` | `shares >= min_shares_out` | Share price dilution before deposit lands |
+| `withdraw` | `min_underlying_out` | `underlying_amount >= min_underlying_out` | Pool manipulation before withdrawal lands |
+
+The check is performed **after** the share/underlying calculation but **before** any token transfer or state mutation, so a reverted transaction leaves all accounts untouched. Passing `0` disables the check.
+
+The corresponding error code is `SlippageExceeded` (6012).
+
+### 3.7 Vault Status
 
 Every adapter vault state includes a `status: VaultStatus` field, defined as the `VaultStatus` enum in `yield-adapter-trait`:
 
@@ -159,7 +178,7 @@ Every adapter vault state includes a `status: VaultStatus` field, defined as the
 
 Adapters SHOULD also implement a `toggle_status` instruction (admin-only) that cycles `Active → DepositsPaused → Paused → Active`. The `Deprecated` status is a terminal state — it can only be set via governance, never by toggling.
 
-### 3.7 Adapter Metadata
+### 3.8 Adapter Metadata
 
 Each adapter SHOULD publish an `AdapterMetadata` PDA containing:
 
@@ -193,6 +212,7 @@ The standard version is tracked by the `standard_version` field in `AdapterMetad
 - All state-modifying instructions MUST emit events
 - Adapter MUST validate token mint matches expected underlying
 - Adapter MUST validate `status.can_deposit()` on deposits and `status.can_withdraw()` on withdrawals (`is_operational()` is the logical OR of the two)
+- Adapter MUST validate `shares >= min_shares_out` on deposit and `underlying_amount >= min_underlying_out` on withdraw
 
 ## 7. Conformance
 

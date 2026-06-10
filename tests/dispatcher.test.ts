@@ -117,7 +117,7 @@ describe("yield-dispatcher", () => {
     );
 
     await program.methods
-      .deposit(new anchor.BN(500_000))
+      .deposit(new anchor.BN(500_000), new anchor.BN(0))
       .accounts({
         user: authority.publicKey,
         dispatcherState: dispatcherStatePda,
@@ -161,7 +161,7 @@ describe("yield-dispatcher", () => {
     );
 
     await program.methods
-      .deposit(new anchor.BN(1_000_000))
+      .deposit(new anchor.BN(1_000_000), new anchor.BN(0))
       .accounts({
         user: authority.publicKey,
         dispatcherState: dispatcherStatePda,
@@ -184,7 +184,7 @@ describe("yield-dispatcher", () => {
     ).receiptTokenBalance.toNumber();
 
     await program.methods
-      .withdraw(new anchor.BN(400_000))
+      .withdraw(new anchor.BN(400_000), new anchor.BN(0))
       .accounts({
         user: authority.publicKey,
         dispatcherState: dispatcherStatePda,
@@ -248,7 +248,7 @@ describe("yield-dispatcher", () => {
 
     try {
       await program.methods
-        .deposit(new anchor.BN(500_000))
+        .deposit(new anchor.BN(500_000), new anchor.BN(0))
         .accounts({
           user: authority.publicKey,
           dispatcherState: dispatcherStatePda,
@@ -293,7 +293,7 @@ describe("yield-dispatcher", () => {
 
     try {
       await program.methods
-        .deposit(new anchor.BN(0))
+        .deposit(new anchor.BN(0), new anchor.BN(0))
         .accounts({
           user: authority.publicKey,
           dispatcherState: dispatcherStatePda,

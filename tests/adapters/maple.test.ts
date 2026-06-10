@@ -69,7 +69,7 @@ describe("adapter-maple", () => {
 
     try {
       await program.methods
-        .deposit(new anchor.BN(0))
+        .deposit(new anchor.BN(0), new anchor.BN(0))
         .accounts({
           user: authority.publicKey,
           vaultState: vaultStatePda,

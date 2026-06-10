@@ -53,13 +53,18 @@ pub struct Deposit<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<Deposit>, amount: u64) -> Result<()> {
+pub fn handler(ctx: Context<Deposit>, amount: u64, min_shares_out: u64) -> Result<()> {
     require!(amount > 0, YieldAdapterError::ZeroDepositAmount);
 
     let vault = &mut ctx.accounts.vault_state;
     let clock = Clock::get()?;
 
     let shares = shares_for_deposit(amount, vault.total_underlying, vault.total_shares)?;
+
+    require!(
+        shares >= min_shares_out,
+        YieldAdapterError::SlippageExceeded
+    );
 
     token::transfer(
         CpiContext::new(

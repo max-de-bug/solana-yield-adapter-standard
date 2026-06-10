@@ -55,7 +55,7 @@ pub struct Withdraw<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler<'a>(ctx: Context<'a, Withdraw<'a>>, shares_to_burn: u64) -> Result<()> {
+pub fn handler<'a>(ctx: Context<'a, Withdraw<'a>>, shares_to_burn: u64, min_underlying_out: u64) -> Result<()> {
     require!(shares_to_burn > 0, YieldAdapterError::ZeroWithdrawAmount);
 
     let vault = &mut ctx.accounts.vault_state;
@@ -69,6 +69,12 @@ pub fn handler<'a>(ctx: Context<'a, Withdraw<'a>>, shares_to_burn: u64) -> Resul
     // Convert shares → underlying value based on current vault ratio.
     let underlying_amount =
         user_position_underlying_value(shares_to_burn, vault.total_underlying, vault.total_shares)?;
+
+    // Guard against unfavorable share price movement (sandwich / MEV).
+    require!(
+        underlying_amount >= min_underlying_out,
+        YieldAdapterError::SlippageExceeded
+    );
 
     let clock = Clock::get()?;
     let bump = ctx.bumps.vault_authority;

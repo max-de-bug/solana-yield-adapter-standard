@@ -101,7 +101,7 @@ pub struct Deposit<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler(ctx: Context<Deposit>, amount: u64) -> Result<()> {
+pub fn handler(ctx: Context<Deposit>, amount: u64, min_shares_out: u64) -> Result<()> {
     require!(amount > 0, YieldAdapterError::ZeroDepositAmount);
 
     let vault = &mut ctx.accounts.vault_state;
@@ -117,6 +117,12 @@ pub fn handler(ctx: Context<Deposit>, amount: u64) -> Result<()> {
             .checked_div(vault.total_underlying as u128)
             .ok_or(YieldAdapterError::ArithmeticOverflow)? as u64
     };
+
+    // Slippage protection: guard against unfavorable share price movement.
+    require!(
+        shares >= min_shares_out,
+        YieldAdapterError::SlippageExceeded
+    );
 
     // Transfer tokens
     token::transfer(
@@ -157,6 +163,8 @@ pub fn handler(ctx: Context<Deposit>, amount: u64) -> Result<()> {
 Same pattern but reversed: burn shares → calculate underlying → transfer out via PDA signer.
 
 **Important**: Use `CpiContext::new_with_signer` with your vault authority PDA seeds.
+
+**Slippage protection**: Add `min_underlying_out: u64` to the function signature and check `underlying_amount >= min_underlying_out` after the calculation (same position as the deposit check).
 
 ### 3c. Current Value
 
@@ -217,13 +225,13 @@ protocol::deposit(cpi_ctx, amount)?;
 describe("my-yield-adapter", () => {
   it("deposits and receives proportional shares", async () => {
     // Setup: create mint, token accounts, initialize vault
-    // Action: deposit 1000 USDC
+    // Action: deposit 1000 USDC, min_shares_out = 0 (no slippage protection)
     // Assert: shares == 1000 (first deposit is 1:1)
     // Assert: vault.total_underlying == 1000
   });
 
   it("withdraws proportionally", async () => {
-    // Deposit 1000, withdraw 500 shares
+    // Deposit 1000, withdraw 500 shares, min_underlying_out = 0
     // Assert: user receives 500 USDC
     // Assert: vault state updated correctly
   });
@@ -234,7 +242,12 @@ describe("my-yield-adapter", () => {
   });
 
   it("rejects zero deposits", async () => {
-    // Assert: deposit(0) throws ZeroDepositAmount
+    // Assert: deposit(0, 0) throws ZeroDepositAmount
+  });
+
+  it("reverts on slippage", async () => {
+    // Assert: deposit(1000, 1001) throws SlippageExceeded
+    // Assert: withdraw(1000, 1_000_000_001) throws SlippageExceeded
   });
 });
 ```
@@ -271,8 +284,9 @@ Before submitting your adapter:
 - [ ] Validates `amount > 0` on deposit and withdraw
 - [ ] Validates `status.can_deposit()` on deposit and `status.can_withdraw()` on withdraw
 - [ ] Validates token mint matches `underlying_mint`
+- [ ] Validates `shares >= min_shares_out` on deposit and `underlying_amount >= min_underlying_out` on withdraw
 - [ ] Uses PDA authority for vault transfers
-- [ ] Has comprehensive tests (deposit, withdraw, current_value, edge cases)
+- [ ] Has comprehensive tests (deposit, withdraw, current_value, edge cases, slippage reverts)
 - [ ] Passes `cargo clippy --workspace` with zero warnings
 - [ ] Protocol-specific errors use error codes 7000+
 
@@ -285,6 +299,7 @@ Before submitting your adapter:
 | Hardcoded share price | Use the dynamic formula: `total_underlying * 1e9 / total_shares` |
 | Missing mint validation | Always validate `token_account.mint == vault.underlying_mint` |
 | External signer for vault | Use a PDA derived from known seeds — never an external keypair |
+| No slippage protection | Pass `min_shares_out` / `min_underlying_out` and check after calculation, before any transfers |
 
 ## Need Help?
 

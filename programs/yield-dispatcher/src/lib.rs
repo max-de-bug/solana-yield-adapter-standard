@@ -30,15 +30,15 @@ pub mod yield_dispatcher {
     ///
     /// The dispatcher validates the adapter is approved in the registry,
     /// then performs a CPI to the adapter's `deposit` instruction.
-    pub fn deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
-        instructions::deposit::handler(ctx, amount)
+    pub fn deposit(ctx: Context<Deposit>, amount: u64, min_shares_out: u64) -> Result<()> {
+        instructions::deposit::handler(ctx, amount, min_shares_out)
     }
 
     /// Withdraw underlying tokens from a registered adapter.
     ///
     /// Burns receipt tokens and returns underlying tokens to the user.
-    pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()> {
-        instructions::withdraw::handler(ctx, amount)
+    pub fn withdraw(ctx: Context<Withdraw>, shares: u64, min_underlying_out: u64) -> Result<()> {
+        instructions::withdraw::handler(ctx, shares, min_underlying_out)
     }
 
     /// Query the current value of a user's position in an adapter.
