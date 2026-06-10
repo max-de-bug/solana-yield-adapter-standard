@@ -11,7 +11,7 @@
 //! ## Governance
 //!
 //! The registry is controlled by a single governance authority (initially the deployer).
-//! Governance can be transferred to a multisig, DAO, or other program via `transfer_governance`.
+//! Governance can be transferred to a multisig, DAO, or other program via `nominate_governance` / `accept_governance`.
 
 use anchor_lang::prelude::*;
 

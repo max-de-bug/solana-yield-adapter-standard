@@ -32,10 +32,10 @@ The CPI is **conditional**: when remaining accounts are absent (localnet), the f
 
 | Adapter | CPI target | Discriminator |
 |---------|-----------|---------------|
-| **Kamino K-Lend** | `deposit_reserve_liquidity` / `withdraw_reserve_liquidity` | SHA256("global:...") verified |
-| **MarginFi v2** | `lending_account_deposit` / `lending_account_withdraw` | SHA256("global:...") verified |
-| **Jupiter Perps JLP** | `add_liquidity` / `remove_liquidity` | SHA256("global:...") verified |
-| **Drift IF v2** | `spot_deposit` / `spot_withdraw` | Non-Anchor; empirically verified on fork |
+| **Kamino K-Lend** | `deposit_reserve_liquidity` / `withdraw_reserve_liquidity` | `a9c91e7e06cd6644` / `00174d97e0646770` |
+| **MarginFi v2** | `lending_account_deposit` / `lending_account_withdraw` | `ab5eeb675240d48c` / `24484a13d2d2c0c0` |
+| **Jupiter Perps JLP** | `add_liquidity` / `remove_liquidity` | `b59d59438fb63448` / `5055d14818ceb16c` |
+| **Drift IF v2** | `spot_deposit` / `spot_withdraw` | `99ffd56e5d773d16` / `9c0a7f2e396b1c8c` (non-Anchor) |
 | **Maple syrupUSDC** | No CPI (yield-bearing SPL token) | — |
 
 The dispatcher also performs real CPI into adapters (fork-verified). A critical bug was fixed: `vault_token_account` and `vault_authority` were swapped in `cpi_deposit` account ordering (root cause of prior `AccountNotInitialized` errors).

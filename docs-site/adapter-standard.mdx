@@ -12,11 +12,15 @@ Every compliant adapter **must** expose exactly these three instructions — no 
 ### `deposit`
 
 ```rust
-pub fn deposit(ctx: Context<Deposit>, amount: u64) -> Result<()>
+pub fn deposit(ctx: Context<Deposit>, amount: u64, min_shares_out: u64) -> Result<()>
 ```
 
 <ParamField path="amount" type="u64" required>
   Underlying token amount to deposit. Must be greater than zero.
+</ParamField>
+
+<ParamField path="min_shares_out" type="u64" default="0">
+  Minimum receipt shares to mint. Transaction reverts if computed shares &lt; this value (slippage protection).
 </ParamField>
 
 **Required behavior:**
@@ -25,17 +29,22 @@ pub fn deposit(ctx: Context<Deposit>, amount: u64) -> Result<()>
 2. Verify `user_token_account.mint == vault.underlying_mint`
 3. Transfer underlying from user to vault token account
 4. Compute receipt shares via `shares_for_deposit(amount, total_underlying, total_shares)`
-5. Update vault totals and `AdapterPosition.receipt_token_balance`
-6. Emit [`DepositEvent`](/reference/events#depositevent)
+5. Revert if `receipt_amount < min_shares_out` → `YieldAdapterError::SlippageExceeded`
+6. Update vault totals and `AdapterPosition.receipt_token_balance`
+7. Emit [`DepositEvent`](/reference/events#depositevent)
 
 ### `withdraw`
 
 ```rust
-pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()>
+pub fn withdraw(ctx: Context<Withdraw>, amount: u64, min_underlying_out: u64) -> Result<()>
 ```
 
 <ParamField path="amount" type="u64" required>
   **Receipt shares to burn**, not underlying amount. Must be greater than zero.
+</ParamField>
+
+<ParamField path="min_underlying_out" type="u64" default="0">
+  Minimum underlying tokens to receive. Transaction reverts if computed underlying &lt; this value (slippage protection).
 </ParamField>
 
 **Required behavior:**
@@ -43,9 +52,10 @@ pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()>
 1. Reject `amount == 0` → `YieldAdapterError::ZeroWithdrawAmount`
 2. Verify user has sufficient `receipt_token_balance`
 3. Compute underlying via `user_position_underlying_value(shares, total_underlying, total_shares)`
-4. Transfer underlying from vault to user (vault authority PDA signs)
-5. Decrement vault totals and position balance
-6. Emit [`WithdrawEvent`](/reference/events#withdrawevent)
+4. Revert if `underlying_amount < min_underlying_out` → `YieldAdapterError::SlippageExceeded`
+5. Transfer underlying from vault to user (vault authority PDA signs)
+6. Decrement vault totals and position balance
+7. Emit [`WithdrawEvent`](/reference/events#withdrawevent)
 
 ### `current_value`
 

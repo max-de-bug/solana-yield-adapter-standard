@@ -6,7 +6,7 @@ use crate::state::{DriftVaultState, VAULT_AUTHORITY_SEED};
 use crate::DRIFT_V2_ID;
 
 /// Discriminator for Drift v2 `spot_deposit`.
-/// Drift uses a custom 8-byte discriminator derived from SHA256("global:spot_deposit")[..8].
+/// Drift is non-Anchor; these bytes were determined empirically via fork testing.
 const DRIFT_SPOT_DEPOSIT: [u8; 8] = [0x99, 0xff, 0xd5, 0x6e, 0x5d, 0x77, 0x3d, 0x16];
 
 /// Discriminator for Drift v2 `spot_withdraw`.
