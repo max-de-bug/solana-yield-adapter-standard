@@ -4,6 +4,7 @@ import { Keypair } from "@solana/web3.js";
 
 import {
   assertProtocolProgramLoaded,
+  addSlippageTests,
   runAdapterDepositWithdrawFlow,
 } from "../helpers/adapter";
 import { isMainnetFork, KAMINO_PROGRAM_ID } from "../helpers/constants";
@@ -32,5 +33,11 @@ describe("adapter-kamino", () => {
       vaultStateSeed: "kamino_vault_state",
       vaultAuthoritySeed: "kamino_vault_authority",
     });
+  });
+
+  addSlippageTests({
+    program,
+    vaultStateSeed: "kamino_vault_state",
+    vaultAuthoritySeed: "kamino_vault_authority",
   });
 });

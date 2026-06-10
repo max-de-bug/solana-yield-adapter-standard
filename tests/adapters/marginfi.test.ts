@@ -4,6 +4,7 @@ import { Keypair } from "@solana/web3.js";
 
 import {
   assertProtocolProgramLoaded,
+  addSlippageTests,
   runAdapterDepositWithdrawFlow,
 } from "../helpers/adapter";
 import { isMainnetFork, MARGINFI_PROGRAM_ID } from "../helpers/constants";
@@ -32,5 +33,11 @@ describe("adapter-marginfi", () => {
       vaultStateSeed: "marginfi_vault_state",
       vaultAuthoritySeed: "marginfi_vault_authority",
     });
+  });
+
+  addSlippageTests({
+    program,
+    vaultStateSeed: "marginfi_vault_state",
+    vaultAuthoritySeed: "marginfi_vault_authority",
   });
 });

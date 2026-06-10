@@ -4,6 +4,7 @@ import { Keypair } from "@solana/web3.js";
 
 import {
   assertProtocolProgramLoaded,
+  addSlippageTests,
   runAdapterDepositWithdrawFlow,
 } from "../helpers/adapter";
 import { DRIFT_PROGRAM_ID, isMainnetFork } from "../helpers/constants";
@@ -33,5 +34,11 @@ describe("adapter-drift", () => {
       vaultAuthoritySeed: "drift_vault_authority",
       withdrawShares: 500_000,
     });
+  });
+
+  addSlippageTests({
+    program,
+    vaultStateSeed: "drift_vault_state",
+    vaultAuthoritySeed: "drift_vault_authority",
   });
 });

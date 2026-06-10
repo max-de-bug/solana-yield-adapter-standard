@@ -5,6 +5,7 @@ import { expect } from "chai";
 
 import {
   assertProtocolProgramLoaded,
+  addSlippageTests,
   runAdapterDepositWithdrawFlow,
 } from "../helpers/adapter";
 import { isMainnetFork, JUPITER_PERPS_PROGRAM_ID } from "../helpers/constants";
@@ -33,5 +34,11 @@ describe("adapter-jupiter", () => {
       vaultStateSeed: "jupiter_vault_state",
       vaultAuthoritySeed: "jupiter_vault_authority",
     });
+  });
+
+  addSlippageTests({
+    program,
+    vaultStateSeed: "jupiter_vault_state",
+    vaultAuthoritySeed: "jupiter_vault_authority",
   });
 });

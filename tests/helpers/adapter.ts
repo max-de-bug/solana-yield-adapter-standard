@@ -451,3 +451,124 @@ export async function runAdapterDepositWithdrawFlow(
   );
   expect(vaultBalanceAfterWithdraw).to.be.lessThan(depositAmount);
 }
+
+/**
+ * Shared slippage protection tests — can be called from any adapter test file.
+ * Exercises both deposit and withdraw slippage rejection paths.
+ */
+export function addSlippageTests(opts: {
+  program: Program;
+  vaultStateSeed: string;
+  vaultAuthoritySeed: string;
+  underlyingMint?: PublicKey;
+}): void {
+  const { program, vaultStateSeed, vaultAuthoritySeed } = opts;
+  const provider = anchor.AnchorProvider.env();
+  const authority = provider.wallet as anchor.Wallet;
+  const payer = (provider.wallet as anchor.Wallet).payer as Keypair;
+
+  it("rejects deposit with excessive min_shares_out (slippage)", async () => {
+    const depositAmount = 1_000_000;
+
+    const [vaultStatePda] = findPda([Buffer.from(vaultStateSeed)], program.programId);
+    const [vaultAuthorityPda] = findPda([Buffer.from(vaultAuthoritySeed)], program.programId);
+    const underlyingMint = opts.underlyingMint ?? await resolveUnderlyingMint(provider, payer);
+
+    await initializeAdapterVault(program, authority, vaultStatePda, underlyingMint);
+    const vaultTokenAccount = await createVaultTokenAccount(provider, payer, underlyingMint, vaultAuthorityPda);
+
+    const userTokenAccount = isMainnetFork()
+      ? await (async () => {
+          const { getOrCreateAssociatedTokenAccount } = await import("@solana/spl-token");
+          const ata = await getOrCreateAssociatedTokenAccount(
+            provider.connection, payer, underlyingMint, authority.publicKey
+          );
+          return ata.address;
+        })()
+      : await (async () => {
+          const ata = await createTestTokenAccount(provider, underlyingMint, authority.publicKey, payer);
+          await mintTestTokens(provider, underlyingMint, ata, payer, depositAmount * 2);
+          return ata;
+        })();
+
+    const [userPositionPda] = adapterUserPositionPda(program.programId, authority.publicKey);
+
+    try {
+      await program.methods
+        .deposit(new anchor.BN(depositAmount), new anchor.BN(depositAmount * 2))
+        .accounts({
+          user: authority.publicKey,
+          vaultState: vaultStatePda,
+          userPosition: userPositionPda,
+          userTokenAccount,
+          vaultAuthority: vaultAuthorityPda,
+          vaultTokenAccount,
+          tokenProgram: TOKEN_PROGRAM,
+          systemProgram: SystemProgram.programId,
+        })
+        .rpc();
+      expect.fail("Should have rejected deposit with excessive min_shares_out");
+    } catch (err: unknown) {
+      expect(String(err)).to.contain("SlippageExceeded");
+    }
+  });
+
+  it("rejects withdraw with excessive min_underlying_out (slippage)", async () => {
+    const depositAmount = 1_000_000;
+
+    const [vaultStatePda] = findPda([Buffer.from(vaultStateSeed)], program.programId);
+    const [vaultAuthorityPda] = findPda([Buffer.from(vaultAuthoritySeed)], program.programId);
+    const underlyingMint = opts.underlyingMint ?? await resolveUnderlyingMint(provider, payer);
+
+    await initializeAdapterVault(program, authority, vaultStatePda, underlyingMint);
+    const vaultTokenAccount = await createVaultTokenAccount(provider, payer, underlyingMint, vaultAuthorityPda);
+
+    const userTokenAccount = isMainnetFork()
+      ? await (async () => {
+          const { getOrCreateAssociatedTokenAccount } = await import("@solana/spl-token");
+          const ata = await getOrCreateAssociatedTokenAccount(
+            provider.connection, payer, underlyingMint, authority.publicKey
+          );
+          return ata.address;
+        })()
+      : await (async () => {
+          const ata = await createTestTokenAccount(provider, underlyingMint, authority.publicKey, payer);
+          await mintTestTokens(provider, underlyingMint, ata, payer, depositAmount * 2);
+          return ata;
+        })();
+
+    const [userPositionPda] = adapterUserPositionPda(program.programId, authority.publicKey);
+
+    await program.methods
+      .deposit(new anchor.BN(depositAmount), new anchor.BN(0))
+      .accounts({
+        user: authority.publicKey,
+        vaultState: vaultStatePda,
+        userPosition: userPositionPda,
+        userTokenAccount,
+        vaultAuthority: vaultAuthorityPda,
+        vaultTokenAccount,
+          tokenProgram: TOKEN_PROGRAM,
+          systemProgram: SystemProgram.programId,
+        })
+        .rpc();
+
+    try {
+      await program.methods
+        .withdraw(new anchor.BN(depositAmount / 2), new anchor.BN(depositAmount))
+        .accounts({
+          user: authority.publicKey,
+          vaultState: vaultStatePda,
+          userPosition: userPositionPda,
+          userTokenAccount,
+          vaultTokenAccount,
+          vaultAuthority: vaultAuthorityPda,
+          tokenProgram: TOKEN_PROGRAM,
+        })
+        .rpc();
+      expect.fail("Should have rejected withdraw with excessive min_underlying_out");
+    } catch (err: unknown) {
+      expect(String(err)).to.contain("SlippageExceeded");
+    }
+  });
+}
