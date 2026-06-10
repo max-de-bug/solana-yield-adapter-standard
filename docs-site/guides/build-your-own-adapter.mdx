@@ -202,7 +202,7 @@ description: Ship a conformant yield adapter in under one day using this referen
 <Check>`AdapterPosition` PDA per user (`ADAPTER_POSITION_SEED` + user pubkey)</Check>
 <Check>All math uses `checked_*`</Check>
 <Check>`amount > 0` on deposit and withdraw</Check>
-<Check>`status == VaultStatus::Active` on mutating instructions</Check>
+<Check>`status.can_deposit()` on deposit, `status.can_withdraw()` on withdraw</Check>
 <Check>`user_token_account.mint == vault.underlying_mint`</Check>
 <Check>Vault outbound transfers signed by vault authority **PDA**</Check>
 <Check>Tests: deposit → current_value → withdraw</Check>

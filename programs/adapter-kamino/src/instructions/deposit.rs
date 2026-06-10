@@ -18,7 +18,7 @@ pub struct Deposit<'info> {
         mut,
         seeds = [VAULT_STATE_SEED],
         bump = vault_state.bump,
-        constraint = vault_state.status.is_operational() @ YieldAdapterError::AdapterNotActive,
+        constraint = vault_state.status.can_deposit() @ YieldAdapterError::AdapterNotActive,
     )]
     pub vault_state: Account<'info, KaminoVaultState>,
 

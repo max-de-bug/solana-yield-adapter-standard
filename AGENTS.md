@@ -25,7 +25,7 @@ Implement real protocol CPI for all five adapters via per-adapter `protocol.rs` 
 3. **Maple test mint consistency**: `before` hook mint now passed through to `runAdapterDepositWithdrawFlow` on all networks.
 
 ### Still Relevant From Prior Sessions
-- VaultStatus enum (Active/Paused/Deprecated) with toggle_status instruction
+- VaultStatus enum (Active/Paused/Deprecated/DepositsPaused) with three-state toggle_status instruction (Active → DepositsPaused → Paused → Active)
 - Per-instruction macros deleted, hand-written instruction code retained
 - Anchor 1.0.1 `#[program]` macro requires glob re-exports (`#![allow(ambiguous_glob_reexports)]`)
 - Pre-computed discriminator constants in `yield-adapter-trait/src/discriminators.rs`

@@ -21,12 +21,16 @@ pub fn handler(ctx: Context<ToggleStatus>) -> Result<()> {
 
     match vault.status {
         VaultStatus::Active => {
+            vault.status = VaultStatus::DepositsPaused;
+            msg!("Kamino vault: deposits paused, withdrawals allowed");
+        }
+        VaultStatus::DepositsPaused => {
             vault.status = VaultStatus::Paused;
-            msg!("Kamino vault paused");
+            msg!("Kamino vault: fully paused");
         }
         VaultStatus::Paused => {
             vault.status = VaultStatus::Active;
-            msg!("Kamino vault resumed");
+            msg!("Kamino vault: fully resumed");
         }
         VaultStatus::Deprecated => {
             return Err(YieldAdapterError::VaultDeprecated.into());

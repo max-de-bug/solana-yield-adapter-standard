@@ -61,7 +61,7 @@ pub const VAULT_AUTHORITY_SEED: &[u8] = b"my_vault_authority";
 **Key decisions**:
 - Use unique PDA seeds (prefix with your protocol name)
 - Add any protocol-specific fields you need
-- Always include `status: VaultStatus` for emergency stops (use the enum directly — `Active`, `Paused`, `Deprecated`)
+- Always include `status: VaultStatus` for emergency stops (use the enum directly — `Active`, `Paused`, `Deprecated`, `DepositsPaused`)
 
 ## Step 3: Implement the Three Instructions (2-3 hours)
 
@@ -82,7 +82,7 @@ pub struct Deposit<'info> {
         mut,
         seeds = [VAULT_STATE_SEED],
         bump = vault_state.bump,
-        constraint = vault_state.status.is_operational()
+        constraint = vault_state.status.can_deposit()
             @ YieldAdapterError::AdapterNotActive,
     )]
     pub vault_state: Account<'info, MyVaultState>,
@@ -269,7 +269,7 @@ Before submitting your adapter:
 - [ ] Emits `DepositEvent`, `WithdrawEvent`, `CurrentValueEvent`
 - [ ] Uses `checked_*` arithmetic everywhere
 - [ ] Validates `amount > 0` on deposit and withdraw
-- [ ] Validates `status.is_operational()` on state-modifying instructions
+- [ ] Validates `status.can_deposit()` on deposit and `status.can_withdraw()` on withdraw
 - [ ] Validates token mint matches `underlying_mint`
 - [ ] Uses PDA authority for vault transfers
 - [ ] Has comprehensive tests (deposit, withdraw, current_value, edge cases)

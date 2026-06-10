@@ -21,12 +21,16 @@ pub fn handler(ctx: Context<ToggleStatus>) -> Result<()> {
 
     match vault.status {
         VaultStatus::Active => {
+            vault.status = VaultStatus::DepositsPaused;
+            msg!("Maple Syrup vault: deposits paused, withdrawals allowed");
+        }
+        VaultStatus::DepositsPaused => {
             vault.status = VaultStatus::Paused;
-            msg!("Maple Syrup vault paused");
+            msg!("Maple Syrup vault: fully paused");
         }
         VaultStatus::Paused => {
             vault.status = VaultStatus::Active;
-            msg!("Maple Syrup vault resumed");
+            msg!("Maple Syrup vault: fully resumed");
         }
         VaultStatus::Deprecated => {
             return Err(YieldAdapterError::VaultDeprecated.into());

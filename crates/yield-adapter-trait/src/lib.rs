@@ -27,19 +27,52 @@ use anchor_lang::prelude::*;
 /// Operational status of an adapter vault.
 ///
 /// - `Active` — deposits and withdrawals are allowed.
+/// - `DepositsPaused` — deposits blocked, withdrawals still allowed.
 /// - `Paused` — deposits and withdrawals are blocked; config remains intact.
 /// - `Deprecated` — vault is permanently retired; no operations allowed.
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace, Debug)]
+///
+/// # Serialization order
+/// `DepositsPaused` is appended **after** `Deprecated` so that the Borsh
+/// discriminants of the original three variants (`Active` = 0, `Paused` = 1,
+/// `Deprecated` = 2) remain unchanged — preserving backward compatibility
+/// with all existing on-chain vault accounts.
+#[derive(
+    AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace, Debug, Default,
+)]
 pub enum VaultStatus {
+    #[default]
     Active,
     Paused,
     Deprecated,
+    DepositsPaused,
 }
 
 impl VaultStatus {
-    /// Returns `true` if deposits and withdrawals should be allowed.
+    /// Returns `true` if the vault is not deprecated and not fully paused.
+    /// Withdrawals are allowed when operational (even during `DepositsPaused`).
     pub fn is_operational(&self) -> bool {
+        matches!(self, Self::Active | Self::DepositsPaused)
+    }
+
+    /// Returns `true` if deposits are currently allowed.
+    pub fn can_deposit(&self) -> bool {
         matches!(self, Self::Active)
+    }
+
+    /// Returns `true` if withdrawals are currently allowed.
+    pub fn can_withdraw(&self) -> bool {
+        matches!(self, Self::Active | Self::DepositsPaused)
+    }
+}
+
+impl core::fmt::Display for VaultStatus {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Active => write!(f, "active"),
+            Self::Paused => write!(f, "paused"),
+            Self::Deprecated => write!(f, "deprecated"),
+            Self::DepositsPaused => write!(f, "deposits_paused"),
+        }
     }
 }
 
@@ -195,7 +228,7 @@ pub enum YieldAdapterError {
     #[msg("Insufficient receipt token balance for withdrawal")]
     InsufficientReceiptBalance,
 
-    /// Vault status is not `VaultStatus::Active` (paused or deprecated).
+    /// Vault status is not `VaultStatus::Active` (paused, deposits paused, or deprecated).
     #[msg("Adapter is not active")]
     AdapterNotActive,
 

@@ -88,7 +88,7 @@ Each adapter MUST maintain a vault state PDA containing at minimum:
 | `underlying_mint` | `Pubkey` | Mint of the underlying token |
 | `total_underlying` | `u64` | Total underlying in vault |
 | `total_shares` | `u64` | Total receipt tokens outstanding |
-| `status` | `VaultStatus` | `Active`, `Paused`, or `Deprecated` (defined in `yield-adapter-trait`) |
+| `status` | `VaultStatus` | `Active`, `Paused`, `Deprecated`, or `DepositsPaused` (defined in `yield-adapter-trait`) |
 | `bump` | `u8` | PDA bump seed |
 
 #### Vault Authority
@@ -155,8 +155,9 @@ Every adapter vault state includes a `status: VaultStatus` field, defined as the
 | `0` | `Active` | Deposits and withdrawals allowed |
 | `1` | `Paused` | Operations blocked, config intact |
 | `2` | `Deprecated` | Vault permanently retired |
+| `3` | `DepositsPaused` | Deposits blocked, withdrawals still allowed |
 
-Adapters SHOULD also implement a `toggle_status` instruction (admin-only) to transition between `Active` and `Paused`. The `Deprecated` status is a terminal state.
+Adapters SHOULD also implement a `toggle_status` instruction (admin-only) that cycles `Active → DepositsPaused → Paused → Active`. The `Deprecated` status is a terminal state — it can only be set via governance, never by toggling.
 
 ### 3.7 Adapter Metadata
 
@@ -191,7 +192,7 @@ The standard version is tracked by the `standard_version` field in `AdapterMetad
 - Vault authority MUST be a PDA (no external signers)
 - All state-modifying instructions MUST emit events
 - Adapter MUST validate token mint matches expected underlying
-- Adapter MUST validate `status.is_operational()` before processing mutating instructions
+- Adapter MUST validate `status.can_deposit()` on deposits and `status.can_withdraw()` on withdrawals (`is_operational()` is the logical OR of the two)
 
 ## 7. Conformance
 
