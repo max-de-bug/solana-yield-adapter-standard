@@ -9,8 +9,8 @@ The test suite validates registry governance, dispatcher routing, and all five a
 
 | Command | Tests | Environment | Duration |
 |---|---|---|---|
-| `npm test` | 16 | Local validator | ~2 min |
-| `npm run test:fork` | 20 | Cloned mainnet programs | ~5–15 min (first run) |
+| `npm test` | 17 | Local validator | ~2 min |
+| `MAINNET_FORK=1` (see below) | 31 | Cloned mainnet programs | ~5–15 min (first run) |
 
 <Tip>
 `npm test` uses `anchor test --validator legacy --skip-build`. Run `npm run build` first if programs changed.
@@ -44,15 +44,15 @@ Copy these patterns when adding a sixth adapter.
 ## Mainnet-fork tests
 
 ```bash
-npm run test:fork
+./scripts/run-fork-solana-test-validator.sh
 ```
 
-The script (`scripts/run-mainnet-fork-tests.sh`):
+The script (`scripts/run-fork-solana-test-validator.sh`):
 
 1. Builds all programs and IDLs
-2. Starts `solana-test-validator` with `--clone` for mainnet programs
+2. Starts `solana-test-validator` with `--clone` for mainnet programs and `--account` for fixture ATAs
 3. Deploys your programs to the fork
-4. Runs the full test suite against cloned state
+4. Runs `MAINNET_FORK=1 anchor test` against cloned state
 
 ### Cloned programs
 
@@ -62,6 +62,7 @@ The script (`scripts/run-mainnet-fork-tests.sh`):
 | MarginFi v2 | `MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA` | Lending protocol bytecode |
 | Drift v2 | `dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH` | Perp / insurance bytecode |
 | Jupiter Perps | `PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu` | Perp pool bytecode |
+| Maple | `SyrupNWBqaeiDnMmnFBTqCj5pd3LNzRNT8XjqgLiJd7` | syrupUSDC yield-bearing token |
 | SPL Token | `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA` | Token operations |
 
 <Warning>

@@ -53,7 +53,7 @@ npm run build
     npm test
     ```
 
-    Runs **16 integration tests** against a local validator:
+    Runs **17 integration tests** against a local validator:
 
     - Registry governance lifecycle
     - Dispatcher routing and pause
@@ -62,10 +62,10 @@ npm run build
   </Tab>
   <Tab title="Mainnet fork">
     ```bash
-    npm run test:fork
+    ./scripts/run-fork-solana-test-validator.sh
     ```
 
-    Runs **20 integration tests** on a validator with cloned mainnet programs (Kamino, MarginFi, Drift, Jupiter Perps, SPL Token).
+    Runs **31 integration tests** on a validator with cloned mainnet programs (Kamino, MarginFi, Drift, Jupiter Perps, Maple, SPL Token) and injected fixture ATAs.
 
     <Warning>
     Requires network access to clone program state. First run may take several minutes.

@@ -71,6 +71,7 @@ Also requires: `adapter_program_id`, `underlying_mint`.
 | `underlying_mint` | `Pubkey` | Token this adapter accepts |
 | `metadata_uri` | `String[200]` | Off-chain metadata |
 | `vault_state_seed` | `Vec<u8>[32]` | PDA seed bytes for the adapter's vault state account |
+| `vault_authority_seed` | `Vec<u8>[32]` | PDA seed bytes for the adapter's vault authority signer |
 | `proposer` | `Pubkey` | Original proposer |
 | `proposed_at` | `i64` | Unix timestamp |
 | `approved_at` | `i64` | Approval timestamp (0 if never approved) |
