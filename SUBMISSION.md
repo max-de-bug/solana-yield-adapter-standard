@@ -36,9 +36,11 @@ The CPI is **conditional**: when remaining accounts are absent (localnet), the f
 | **MarginFi v2** | `lending_account_deposit` / `lending_account_withdraw` | `ab5eeb675240d48c` / `24484a13d2d2c0c0` |
 | **Jupiter Perps JLP** | `add_liquidity` / `remove_liquidity` | `b59d59438fb63448` / `5055d14818ceb16c` |
 | **Drift IF v2** | `spot_deposit` / `spot_withdraw` | `99ffd56e5d773d16` / `9c0a7f2e396b1c8c` (non-Anchor) |
-| **Maple syrupUSDC** | No CPI (yield-bearing SPL token) | — |
+| **Maple syrupUSDC** | No CPI needed — syrupUSDC is a yield-bearing SPL token whose value accrues intrinsically | — |
 
 The dispatcher also performs real CPI into adapters (fork-verified). A critical bug was fixed: `vault_token_account` and `vault_authority` were swapped in `cpi_deposit` account ordering (root cause of prior `AccountNotInitialized` errors).
+
+**Why no swap wrapper for Maple:** Some competitors use an Orca Whirlpool swap (USDC → LP token) as a "Maple" CPI. This is incorrect — it's an Orca LP wrapper, not Maple. syrupUSDC is natively yield-bearing on Solana (Maple's institutional lending yield accrues through token appreciation). Our vault holds real syrupUSDC tokens; no protocol CPI is needed because the token itself is the yield source. This is the production-correct approach.
 
 ## Key design decision: conditional CPI
 
