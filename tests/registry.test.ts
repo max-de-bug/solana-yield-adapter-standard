@@ -61,7 +61,7 @@ describe("adapter-registry", () => {
     );
 
     await program.methods
-      .proposeAdapter("Test Adapter", "https://example.com/metadata.json")
+      .proposeAdapter("Test Adapter", "https://example.com/metadata.json", "test_vault_state")
       .accounts({
         proposer: authority.publicKey,
         registryState: registryStatePda,
@@ -94,7 +94,7 @@ describe("adapter-registry", () => {
 
     // First propose
     await program.methods
-      .proposeAdapter("Approved Adapter", "https://example.com/meta.json")
+      .proposeAdapter("Approved Adapter", "https://example.com/meta.json", "test_vault_state")
       .accounts({
         proposer: authority.publicKey,
         registryState: registryStatePda,
@@ -131,7 +131,7 @@ describe("adapter-registry", () => {
 
     // Propose then approve
     await program.methods
-      .proposeAdapter("Revoke Target", "https://example.com/meta.json")
+      .proposeAdapter("Revoke Target", "https://example.com/meta.json", "test_vault_state")
       .accounts({
         proposer: authority.publicKey,
         registryState: registryStatePda,
@@ -180,7 +180,7 @@ describe("adapter-registry", () => {
 
     // Propose first
     await program.methods
-      .proposeAdapter("Unauth Test", "https://example.com/meta.json")
+      .proposeAdapter("Unauth Test", "https://example.com/meta.json", "test_vault_state")
       .accounts({
         proposer: authority.publicKey,
         registryState: registryStatePda,
@@ -209,11 +209,13 @@ describe("adapter-registry", () => {
     }
   });
 
-  it("transfers governance", async () => {
+  it("transfers governance via two-step nominate + accept", async () => {
     const newAuthority = Keypair.generate();
+    await airdrop(provider.connection, newAuthority.publicKey);
 
+    // Step 1: current authority nominates new authority
     await program.methods
-      .transferGovernance()
+      .nominateGovernance()
       .accounts({
         authority: authority.publicKey,
         registryState: registryStatePda,
@@ -221,9 +223,28 @@ describe("adapter-registry", () => {
       })
       .rpc();
 
-    const state = await program.account.registryState.fetch(registryStatePda);
+    let state = await program.account.registryState.fetch(registryStatePda);
+    expect(state.pendingAuthority.toString()).to.equal(
+      newAuthority.publicKey.toString()
+    );
+    expect(state.authority.toString()).to.equal(
+      authority.publicKey.toString()
+    );
+
+    // Step 2: new authority accepts the nomination
+    await program.methods
+      .acceptGovernance()
+      .accounts({
+        signer: newAuthority.publicKey,
+        registryState: registryStatePda,
+      })
+      .signers([newAuthority])
+      .rpc();
+
+    state = await program.account.registryState.fetch(registryStatePda);
     expect(state.authority.toString()).to.equal(
       newAuthority.publicKey.toString()
     );
+    expect(state.pendingAuthority).to.be.null;
   });
 });

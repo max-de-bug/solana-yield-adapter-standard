@@ -1,98 +1,40 @@
-//! Validates adapter PDAs and token accounts before dispatcher CPI.
+//! Validates adapter PDAs before dispatcher CPI.
+//!
+//! Vault state PDA seeds are read from the registry's `AdapterEntry` at runtime,
+//! so the dispatcher never needs to be redeployed when adding a new adapter.
+//! Vault authority and user position use standardized seeds from the trait crate.
 
-use adapter_drift;
-use adapter_jupiter;
-use adapter_kamino;
-use adapter_maple;
-use adapter_marginfi;
-use adapter_drift::state::{
-    VAULT_AUTHORITY_SEED as DRIFT_AUTHORITY, VAULT_STATE_SEED as DRIFT_VAULT,
-};
-use adapter_jupiter::state::{
-    VAULT_AUTHORITY_SEED as JUPITER_AUTHORITY, VAULT_STATE_SEED as JUPITER_VAULT,
-};
-use adapter_kamino::state::{
-    VAULT_AUTHORITY_SEED as KAMINO_AUTHORITY, VAULT_STATE_SEED as KAMINO_VAULT,
-};
-use adapter_maple::state::{
-    VAULT_AUTHORITY_SEED as MAPLE_AUTHORITY, VAULT_STATE_SEED as MAPLE_VAULT,
-};
-use adapter_marginfi::state::{
-    VAULT_AUTHORITY_SEED as MARGINFI_AUTHORITY, VAULT_STATE_SEED as MARGINFI_VAULT,
-};
 use anchor_lang::prelude::*;
-use yield_adapter_trait::ADAPTER_POSITION_SEED;
+use yield_adapter_trait::{ADAPTER_POSITION_SEED, VAULT_AUTHORITY_SEED};
 
-struct AdapterVaultSeeds {
-    vault_state: &'static [u8],
-    vault_authority: &'static [u8],
+pub fn expected_vault_state_pda(vault_state_seed: &[u8], adapter: &Pubkey) -> Pubkey {
+    let (pda, _) = Pubkey::find_program_address(&[vault_state_seed], adapter);
+    pda
 }
 
-fn seeds_for_adapter(adapter: &Pubkey) -> Option<AdapterVaultSeeds> {
-    if adapter == &adapter_kamino::ID {
-        return Some(AdapterVaultSeeds {
-            vault_state: KAMINO_VAULT,
-            vault_authority: KAMINO_AUTHORITY,
-        });
-    }
-    if adapter == &adapter_marginfi::ID {
-        return Some(AdapterVaultSeeds {
-            vault_state: MARGINFI_VAULT,
-            vault_authority: MARGINFI_AUTHORITY,
-        });
-    }
-    if adapter == &adapter_jupiter::ID {
-        return Some(AdapterVaultSeeds {
-            vault_state: JUPITER_VAULT,
-            vault_authority: JUPITER_AUTHORITY,
-        });
-    }
-    if adapter == &adapter_maple::ID {
-        return Some(AdapterVaultSeeds {
-            vault_state: MAPLE_VAULT,
-            vault_authority: MAPLE_AUTHORITY,
-        });
-    }
-    if adapter == &adapter_drift::ID {
-        return Some(AdapterVaultSeeds {
-            vault_state: DRIFT_VAULT,
-            vault_authority: DRIFT_AUTHORITY,
-        });
-    }
-    None
+pub fn expected_vault_authority_pda(adapter: &Pubkey) -> Pubkey {
+    let (pda, _) = Pubkey::find_program_address(&[VAULT_AUTHORITY_SEED], adapter);
+    pda
 }
 
-pub fn expected_vault_state_pda(adapter: &Pubkey) -> Option<Pubkey> {
-    let seeds = seeds_for_adapter(adapter)?;
-    let (pda, _) = Pubkey::find_program_address(&[seeds.vault_state], adapter);
-    Some(pda)
-}
-
-pub fn expected_vault_authority_pda(adapter: &Pubkey) -> Option<Pubkey> {
-    let seeds = seeds_for_adapter(adapter)?;
-    let (pda, _) = Pubkey::find_program_address(&[seeds.vault_authority], adapter);
-    Some(pda)
-}
-
-pub fn expected_user_position_pda(adapter: &Pubkey, user: &Pubkey) -> Option<Pubkey> {
-    seeds_for_adapter(adapter)?;
+pub fn expected_user_position_pda(adapter: &Pubkey, user: &Pubkey) -> Pubkey {
     let (pda, _) =
         Pubkey::find_program_address(&[ADAPTER_POSITION_SEED, user.as_ref()], adapter);
-    Some(pda)
+    pda
 }
 
-pub fn is_adapter_vault_state(account: &AccountInfo, adapter: &Pubkey) -> bool {
-    match expected_vault_state_pda(adapter) {
-        Some(expected) => account.key() == expected && account.owner == adapter,
-        None => false,
-    }
+pub fn is_adapter_vault_state(
+    account: &AccountInfo,
+    vault_state_seed: &[u8],
+    adapter: &Pubkey,
+) -> bool {
+    let expected = expected_vault_state_pda(vault_state_seed, adapter);
+    account.key() == expected && account.owner == adapter
 }
 
 pub fn is_adapter_vault_authority(account: &AccountInfo, adapter: &Pubkey) -> bool {
-    match expected_vault_authority_pda(adapter) {
-        Some(expected) => account.key() == expected,
-        None => false,
-    }
+    let expected = expected_vault_authority_pda(adapter);
+    account.key() == expected
 }
 
 pub fn is_adapter_user_position(
@@ -100,8 +42,6 @@ pub fn is_adapter_user_position(
     adapter: &Pubkey,
     user: &Pubkey,
 ) -> bool {
-    match expected_user_position_pda(adapter, user) {
-        Some(expected) => account.key() == expected && account.owner == adapter,
-        None => false,
-    }
+    let expected = expected_user_position_pda(adapter, user);
+    account.key() == expected && account.owner == adapter
 }

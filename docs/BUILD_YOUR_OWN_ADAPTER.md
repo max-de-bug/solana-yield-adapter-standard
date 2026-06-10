@@ -257,9 +257,13 @@ describe("my-yield-adapter", () => {
 Once your adapter is deployed, register it with the on-chain registry:
 
 ```typescript
-// 1. Propose your adapter
+// 1. Propose your adapter — include the vault state seed your adapter uses
 await registryProgram.methods
-  .proposeAdapter("My Yield Adapter", "https://my-docs.com/adapter.json")
+  .proposeAdapter(
+    "My Yield Adapter",
+    "https://my-docs.com/adapter.json",
+    "my_vault_state",      // vault_state_seed: must match your VAULT_STATE_SEED constant
+  )
   .accounts({
     proposer: wallet.publicKey,
     registryState: registryStatePda,
@@ -272,6 +276,9 @@ await registryProgram.methods
 
 // 2. Wait for governance approval
 // The registry authority will call approve_adapter()
+
+// 3. (Optional) Governance uses two-step transfer to hand off to multisig:
+//    nominateGovernance → acceptGovernance
 ```
 
 ## Checklist
@@ -287,6 +294,7 @@ Before submitting your adapter:
 - [ ] Validates `shares >= min_shares_out` on deposit and `underlying_amount >= min_underlying_out` on withdraw
 - [ ] Uses PDA authority for vault transfers
 - [ ] Has comprehensive tests (deposit, withdraw, current_value, edge cases, slippage reverts)
+- [ ] `vault_state_seed` included when proposing in registry
 - [ ] Passes `cargo clippy --workspace` with zero warnings
 - [ ] Protocol-specific errors use error codes 7000+
 

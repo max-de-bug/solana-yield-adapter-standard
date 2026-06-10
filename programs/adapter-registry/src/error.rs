@@ -29,4 +29,8 @@ pub enum RegistryError {
     /// The signer is not the pending authority.
     #[msg("Not the pending governance authority")]
     NotPendingAuthority,
+
+    /// The vault state seed is empty or exceeds 32 bytes.
+    #[msg("Invalid vault state seed")]
+    InvalidVaultStateSeed,
 }

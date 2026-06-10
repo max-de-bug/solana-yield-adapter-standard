@@ -64,6 +64,11 @@ pub struct AdapterEntry {
     #[max_len(MAX_METADATA_URI_LEN)]
     pub metadata_uri: String,
 
+    /// The PDA seed bytes used by this adapter for its vault state account.
+    /// Allows the dispatcher to validate vault state PDAs without hardcoding.
+    #[max_len(32)]
+    pub vault_state_seed: Vec<u8>,
+
     /// The account that proposed this adapter.
     pub proposer: Pubkey,
 

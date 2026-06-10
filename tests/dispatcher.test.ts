@@ -99,6 +99,75 @@ describe("yield-dispatcher", () => {
     expect(state.isPaused).to.be.false;
   });
 
+  it("toggles pause and blocks deposits when paused", async () => {
+    // Toggle pause ON
+    await program.methods
+      .togglePause()
+      .accounts({
+        authority: authority.publicKey,
+        dispatcherState: dispatcherStatePda,
+      })
+      .rpc();
+
+    let state = await program.account.dispatcherState.fetch(
+      dispatcherStatePda
+    );
+    expect(state.isPaused).to.be.true;
+
+    // Verify deposits are blocked
+    const setup = await setupApprovedKaminoForDispatcher(
+      provider,
+      authority,
+      payer,
+      usdcMint
+    );
+    const vaultMint = await resolveKaminoVaultMint(kaminoProgram, usdcMint);
+    const userTokenAccount = await fundUserForTest(vaultMint, 1_000_000);
+    const positionPda = userPositionPda(
+      program.programId,
+      authority.publicKey,
+      setup.adapterProgram
+    );
+
+    try {
+      await program.methods
+        .deposit(new anchor.BN(500_000), new anchor.BN(0))
+        .accounts({
+          user: authority.publicKey,
+          dispatcherState: dispatcherStatePda,
+          userPosition: positionPda,
+          registryProgram: registryProgram.programId,
+          adapterEntry: setup.adapterEntryPda,
+          adapterProgram: setup.adapterProgram,
+          userTokenAccount,
+          adapterVaultState: setup.vaultStatePda,
+          adapterVault: setup.vaultTokenAccount,
+          adapterVaultAuthority: setup.vaultAuthorityPda,
+          adapterUserPosition: setup.adapterUserPositionPda,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+        })
+        .rpc();
+      expect.fail("Should have rejected deposit when paused");
+    } catch (err: unknown) {
+      expect(String(err)).to.contain("Dispatcher is paused");
+    }
+
+    // Toggle pause OFF
+    await program.methods
+      .togglePause()
+      .accounts({
+        authority: authority.publicKey,
+        dispatcherState: dispatcherStatePda,
+      })
+      .rpc();
+
+    state = await program.account.dispatcherState.fetch(
+      dispatcherStatePda
+    );
+    expect(state.isPaused).to.be.false;
+  });
+
   it("deposits through the dispatcher via Kamino CPI", async () => {
     const setup = await setupApprovedKaminoForDispatcher(
       provider,
@@ -220,7 +289,7 @@ describe("yield-dispatcher", () => {
     const vaultMint = await resolveKaminoVaultMint(kaminoProgram, usdcMint);
 
     await registryProgram.methods
-      .proposeAdapter("Fake", "https://example.com/fake.json")
+      .proposeAdapter("Fake", "https://example.com/fake.json", "test_vault_state")
       .accounts({
         proposer: authority.publicKey,
         registryState: registryStatePda,

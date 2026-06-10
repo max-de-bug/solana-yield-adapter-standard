@@ -178,6 +178,8 @@ Every adapter vault state includes a `status: VaultStatus` field, defined as the
 
 Adapters SHOULD also implement a `toggle_status` instruction (admin-only) that cycles `Active → DepositsPaused → Paused → Active`. The `Deprecated` status is a terminal state — it can only be set via governance, never by toggling.
 
+The enum is annotated with `#[repr(u8)]`, guaranteeing a fixed in-memory layout and preventing accidental addition of data-carrying variants that would break on-chain account deserialization.
+
 ### 3.8 Adapter Metadata
 
 Each adapter SHOULD publish an `AdapterMetadata` PDA containing:
@@ -195,17 +197,48 @@ Each adapter SHOULD publish an `AdapterMetadata` PDA containing:
 
 Adapters are registered through the on-chain **Adapter Registry**:
 
-1. **Propose** — Anyone can propose an adapter
+1. **Propose** — Anyone can propose an adapter, providing its `vault_state_seed` (the PDA seed bytes its vault state account uses)
 2. **Approve** — Governance authority approves
 3. **Revoke** — Governance authority revokes
 
-The registry stores `AdapterEntry` PDAs indexed by adapter program ID.
+The registry stores `AdapterEntry` PDAs indexed by adapter program ID:
 
-## 5. Versioning
+| Field | Type | Description |
+|---|---|---|
+| `adapter_program_id` | `Pubkey` | Adapter program to route to |
+| `name` | `String[32]` | Display name |
+| `status` | `enum` | `Proposed` / `Approved` / `Revoked` |
+| `underlying_mint` | `Pubkey` | Token this adapter accepts |
+| `metadata_uri` | `String[200]` | Off-chain metadata |
+| `vault_state_seed` | `Vec<u8>[32]` | PDA seed for the adapter's vault state account |
+| `proposer` | `Pubkey` | Original proposer |
+
+The `vault_state_seed` field enables the dispatcher to validate vault state PDAs at runtime without hardcoding adapter-specific seeds — new adapters require only registry approval, not a dispatcher redeployment.
+
+### 4.1 Governance Transfers
+
+Governance transfer uses a **two-step nominate–accept pattern** to prevent accidental loss of control:
+
+1. `nominate_governance` — Current authority sets a `pending_authority` (reversible if the mistake is caught before acceptance)
+2. `accept_governance` — The nominated authority signs to finalize the transfer; `pending_authority` is cleared
+
+This is the standard pattern used by OpenBook, Mango, and the Solana Foundation multisig program.
+
+## 5. Dispatcher Circuit Breaker
+
+The Yield Dispatcher includes an emergency pause mechanism as a defense-in-depth measure:
+
+- `toggle_pause` — Authority-only instruction that flips `dispatcher_state.is_paused`
+- When paused, both `deposit` and `withdraw` routing are blocked at the dispatcher level
+- Individual adapters retain their own `toggle_status` for per-vault granularity
+
+This two-layer safety model (global circuit breaker + per-adapter status) matches the pattern used by major DeFi protocols including Kamino and Marginfi.
+
+## 6. Versioning
 
 The standard version is tracked by the `standard_version` field in `AdapterMetadata`. Breaking changes to the interface require a new version number.
 
-## 6. Security Requirements
+## 7. Security Requirements
 
 - All arithmetic MUST use `checked_*` operations
 - Vault authority MUST be a PDA (no external signers)
@@ -213,8 +246,10 @@ The standard version is tracked by the `standard_version` field in `AdapterMetad
 - Adapter MUST validate token mint matches expected underlying
 - Adapter MUST validate `status.can_deposit()` on deposits and `status.can_withdraw()` on withdrawals (`is_operational()` is the logical OR of the two)
 - Adapter MUST validate `shares >= min_shares_out` on deposit and `underlying_amount >= min_underlying_out` on withdraw
+- Registry governance MUST use two-step nominate–accept transfer
+- Dispatcher SHOULD implement a `toggle_pause` circuit breaker
 
-## 7. Conformance
+## 8. Conformance
 
 An adapter is **conformant** if it:
 

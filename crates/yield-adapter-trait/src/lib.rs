@@ -39,6 +39,7 @@ use anchor_lang::prelude::*;
 #[derive(
     AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace, Debug, Default,
 )]
+#[repr(u8)]
 pub enum VaultStatus {
     #[default]
     Active,

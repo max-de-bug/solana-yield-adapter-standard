@@ -53,6 +53,7 @@ pub struct CurrentValue<'info> {
         mut,
         constraint = adapter_validation::is_adapter_vault_state(
             &adapter_vault_state.to_account_info(),
+            &adapter_entry.vault_state_seed,
             &adapter_program.key(),
         ) @ DispatcherError::AdapterCpiError,
     )]

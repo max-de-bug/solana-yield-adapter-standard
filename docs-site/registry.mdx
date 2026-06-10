@@ -53,9 +53,13 @@ Also requires: `adapter_program_id`, `underlying_mint`.
 
 **Governance only.** Transitions `Approved` → `Revoked`. Existing positions are not auto-closed — integrators should surface revocation to users.
 
-### `transfer_governance`
+### `nominate_governance`
 
-Transfers authority to a new pubkey (e.g. Squads multisig). Supports pending-accept pattern for two-step handoff.
+**Governance only.** Sets the `pending_authority` field. The current authority nominates a successor; governance is not transferred until the nominee accepts.
+
+### `accept_governance`
+
+**Pending authority only.** Finalizes the transfer: upgrades `pending_authority` to `authority` and clears the nomination. This two-step pattern prevents accidental loss of control — if a nomination is sent to the wrong address, the current authority can overwrite it before acceptance.
 
 ## `AdapterEntry` account
 
@@ -66,6 +70,7 @@ Transfers authority to a new pubkey (e.g. Squads multisig). Supports pending-acc
 | `status` | `enum` | `Proposed` / `Approved` / `Revoked` |
 | `underlying_mint` | `Pubkey` | Token this adapter accepts |
 | `metadata_uri` | `String[200]` | Off-chain metadata |
+| `vault_state_seed` | `Vec<u8>[32]` | PDA seed bytes for the adapter's vault state account |
 | `proposer` | `Pubkey` | Original proposer |
 | `proposed_at` | `i64` | Unix timestamp |
 | `approved_at` | `i64` | Approval timestamp (0 if never approved) |
@@ -74,8 +79,9 @@ Transfers authority to a new pubkey (e.g. Squads multisig). Supports pending-acc
 ## Example: register an adapter
 
 ```typescript
+// Propose with the vault state seed the adapter uses for its vault state PDA
 await registryProgram.methods
-  .proposeAdapter("My Adapter", "https://example.com/adapter.json")
+  .proposeAdapter("My Adapter", "https://example.com/adapter.json", "my_vault_state")
   .accounts({
     governance: wallet.publicKey,
     registryState,
@@ -100,13 +106,16 @@ await registryProgram.methods
     `initialize()` with deployer as governance.
   </Step>
   <Step title="Propose each adapter">
-    One `AdapterEntry` PDA per adapter program ID.
+    One `AdapterEntry` PDA per adapter program ID. Each proposal includes the vault state seed string.
   </Step>
   <Step title="Approve adapters">
     Governance calls `approve_adapter` for each reference adapter.
   </Step>
-  <Step title="Transfer governance">
-    Move authority to multisig before mainnet.
+  <Step title="Nominate new governance">
+    `nominate_governance` to set multisig as pending authority.
+  </Step>
+  <Step title="Accept governance">
+    Multisig calls `accept_governance` to finalize the transfer.
   </Step>
 </Steps>
 

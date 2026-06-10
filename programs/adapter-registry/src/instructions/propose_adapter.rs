@@ -40,11 +40,20 @@ pub struct ProposeAdapter<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<ProposeAdapter>, name: String, metadata_uri: String) -> Result<()> {
+pub fn handler(
+    ctx: Context<ProposeAdapter>,
+    name: String,
+    metadata_uri: String,
+    vault_state_seed: String,
+) -> Result<()> {
     require!(name.len() <= MAX_ADAPTER_NAME_LEN, RegistryError::NameTooLong);
     require!(
         metadata_uri.len() <= MAX_METADATA_URI_LEN,
         RegistryError::UriTooLong
+    );
+    require!(
+        vault_state_seed.len() <= 32 && !vault_state_seed.is_empty(),
+        RegistryError::InvalidVaultStateSeed,
     );
 
     let clock = Clock::get()?;
@@ -55,6 +64,7 @@ pub fn handler(ctx: Context<ProposeAdapter>, name: String, metadata_uri: String)
     entry.status = AdapterStatus::Proposed;
     entry.underlying_mint = ctx.accounts.underlying_mint.key();
     entry.metadata_uri = metadata_uri;
+    entry.vault_state_seed = vault_state_seed.into_bytes();
     entry.proposer = ctx.accounts.proposer.key();
     entry.proposed_at = clock.unix_timestamp;
     entry.approved_at = 0;

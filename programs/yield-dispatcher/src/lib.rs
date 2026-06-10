@@ -47,4 +47,11 @@ pub mod yield_dispatcher {
     pub fn current_value(ctx: Context<CurrentValue>) -> Result<()> {
         instructions::current_value::handler(ctx)
     }
+
+    /// Toggle the dispatcher pause state. Authority-only.
+    ///
+    /// When paused, all deposit/withdraw routing is blocked.
+    pub fn toggle_pause(ctx: Context<TogglePause>) -> Result<()> {
+        instructions::toggle_pause::handler(ctx)
+    }
 }

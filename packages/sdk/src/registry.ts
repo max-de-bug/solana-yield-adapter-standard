@@ -40,6 +40,7 @@ export class RegistryClient {
     underlyingMint: PublicKey,
     name: string,
     metadataUri: string,
+    vaultStateSeed: string,
     registryStatePda?: PublicKey
   ): Promise<PublicKey> {
     const [entryPda] = adapterEntryPda(this.program.programId, adapterProgramId);
@@ -53,7 +54,7 @@ export class RegistryClient {
     if (existing) return entryPda;
 
     await this.program.methods
-      .proposeAdapter(name, metadataUri)
+      .proposeAdapter(name, metadataUri, vaultStateSeed)
       .accounts({
         proposer: authority,
         registryState: regPda,
@@ -92,7 +93,8 @@ export class RegistryClient {
     adapterProgramId: PublicKey,
     underlyingMint: PublicKey,
     name: string,
-    metadataUri: string
+    metadataUri: string,
+    vaultStateSeed: string
   ): Promise<PublicKey> {
     const regPda = await this.ensureInitialized(authority);
     await this.proposeAdapter(
@@ -101,6 +103,7 @@ export class RegistryClient {
       underlyingMint,
       name,
       metadataUri,
+      vaultStateSeed,
       regPda
     );
     return this.approveAdapter(authority, adapterProgramId, regPda);
@@ -119,6 +122,38 @@ export class RegistryClient {
         authority,
         registryState: regPda,
         adapterEntry: entryPda,
+      })
+      .rpc();
+  }
+
+  async nominateGovernance(
+    authority: PublicKey,
+    newAuthority: PublicKey,
+    registryStatePda?: PublicKey
+  ): Promise<void> {
+    const regPda = registryStatePda ?? (await this.ensureInitialized(authority));
+
+    await this.program.methods
+      .nominateGovernance()
+      .accounts({
+        authority,
+        registryState: regPda,
+        newAuthority,
+      })
+      .rpc();
+  }
+
+  async acceptGovernance(
+    signer: PublicKey,
+    registryStatePda?: PublicKey
+  ): Promise<void> {
+    const regPda = registryStatePda ?? (await this.ensureInitialized(signer));
+
+    await this.program.methods
+      .acceptGovernance()
+      .accounts({
+        signer,
+        registryState: regPda,
       })
       .rpc();
   }

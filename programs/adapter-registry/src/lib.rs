@@ -38,8 +38,9 @@ pub mod adapter_registry {
         ctx: Context<ProposeAdapter>,
         name: String,
         metadata_uri: String,
+        vault_state_seed: String,
     ) -> Result<()> {
-        instructions::propose_adapter::handler(ctx, name, metadata_uri)
+        instructions::propose_adapter::handler(ctx, name, metadata_uri, vault_state_seed)
     }
 
     /// Approve a proposed adapter. Governance-gated.
@@ -52,8 +53,14 @@ pub mod adapter_registry {
         instructions::revoke_adapter::handler(ctx)
     }
 
-    /// Transfer governance authority to a new address.
-    pub fn transfer_governance(ctx: Context<TransferGovernance>) -> Result<()> {
+    /// Step 1 of two-step governance transfer: nominate a new authority.
+    /// The current authority sets `pending_authority`; the nominee must call `accept_governance`.
+    pub fn nominate_governance(ctx: Context<NominateGovernance>) -> Result<()> {
         instructions::transfer_governance::handler(ctx)
+    }
+
+    /// Step 2 of two-step governance transfer: accept a pending nomination.
+    pub fn accept_governance(ctx: Context<AcceptGovernance>) -> Result<()> {
+        instructions::accept_governance::handler(ctx)
     }
 }

@@ -4,7 +4,7 @@ use crate::error::RegistryError;
 use crate::state::{RegistryState, REGISTRY_STATE_SEED};
 
 #[derive(Accounts)]
-pub struct TransferGovernance<'info> {
+pub struct NominateGovernance<'info> {
     /// Must be the current governance authority.
     pub authority: Signer<'info>,
 
@@ -16,23 +16,21 @@ pub struct TransferGovernance<'info> {
     )]
     pub registry_state: Account<'info, RegistryState>,
 
-    /// The new governance authority.
-    /// CHECK: Any pubkey can be the new authority.
+    /// The new governance authority (nominated).
+    /// CHECK: Any pubkey can be nominated; they must accept via `accept_governance`.
     pub new_authority: UncheckedAccount<'info>,
 }
 
-/// Two-step governance transfer: current authority sets new authority directly.
-/// For production, consider a two-step accept pattern.
-pub fn handler(ctx: Context<TransferGovernance>) -> Result<()> {
+/// Step 1 of two-step governance transfer: nominate a new authority.
+pub fn handler(ctx: Context<NominateGovernance>) -> Result<()> {
     let state = &mut ctx.accounts.registry_state;
-    let old_authority = state.authority;
 
-    state.authority = ctx.accounts.new_authority.key();
+    state.pending_authority = Some(ctx.accounts.new_authority.key());
 
     msg!(
-        "Governance transferred: {} -> {}",
-        old_authority,
-        state.authority
+        "Governance nominated: {} -> {} (pending accept)",
+        state.authority,
+        ctx.accounts.new_authority.key()
     );
 
     Ok(())

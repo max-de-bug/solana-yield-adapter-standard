@@ -32,6 +32,10 @@ Routes a deposit to an approved adapter via CPI.
   Underlying token amount to deposit through the adapter.
 </ParamField>
 
+<ParamField path="min_shares_out" type="u64" required>
+  Minimum receipt shares to accept. Transaction reverts with `SlippageExceeded` if the calculated shares are below this threshold. Pass `0` to disable protection.
+</ParamField>
+
 **Preconditions:**
 
 - Dispatcher not paused (`is_paused == false`)
@@ -41,15 +45,25 @@ Routes a deposit to an approved adapter via CPI.
 
 ### `withdraw`
 
-Routes a withdrawal. The `amount` argument is forwarded to the adapter as **receipt shares to burn**.
+Routes a withdrawal. The `shares` argument is forwarded to the adapter as **receipt shares to burn**.
+
+<ParamField path="shares" type="u64" required>
+  Receipt shares to burn.
+</ParamField>
+
+<ParamField path="min_underlying_out" type="u64" required>
+  Minimum underlying tokens to receive. Transaction reverts with `SlippageExceeded` if the calculated amount is below this threshold. Pass `0` to disable protection.
+</ParamField>
 
 ### `current_value`
 
 CPIs the adapter's read-only `current_value` instruction. Returns per-user underlying value via `CurrentValueEvent`.
 
-### `set_paused` / `transfer_authority`
+### `toggle_pause`
 
-Governance-only. Emergency pause halts all routing until unpaused.
+**Authority only.** Flips the dispatcher's emergency pause flag. When paused (`is_paused == true`), both `deposit` and `withdraw` routing are blocked. This is a global circuit breaker — individual adapters retain their own `toggle_status` for per-vault granularity.
+
+This two-layer safety model matches the pattern used by Kamino (`emergency_mode`) and Marginfi.
 
 ## State accounts
 
@@ -89,7 +103,7 @@ Adapter-level [`DepositEvent`](/reference/events) / [`WithdrawEvent`](/reference
 ```typescript
 // Deposit USDC through dispatcher into Kamino adapter
 await dispatcherProgram.methods
-  .deposit(new BN(1_000_000))
+  .deposit(new BN(1_000_000), new BN(0)) // amount, min_shares_out
   .accounts({
     user: wallet.publicKey,
     dispatcherState,

@@ -46,6 +46,7 @@ export class DispatcherClient {
   async deposit(
     user: PublicKey,
     amount: BN,
+    minSharesOut: BN,
     registryProgramId: PublicKey,
     adapterProgramId: PublicKey,
     adapterEntryPda: PublicKey,
@@ -63,7 +64,7 @@ export class DispatcherClient {
       : dispatcherStatePda(this.program.programId);
 
     const builder = this.program.methods
-      .deposit(amount)
+      .deposit(amount, minSharesOut)
       .accounts({
         user,
         dispatcherState: statePda,
@@ -90,6 +91,7 @@ export class DispatcherClient {
   async withdraw(
     user: PublicKey,
     shares: BN,
+    minUnderlyingOut: BN,
     registryProgramId: PublicKey,
     adapterProgramId: PublicKey,
     adapterEntryPda: PublicKey,
@@ -107,7 +109,7 @@ export class DispatcherClient {
       : dispatcherStatePda(this.program.programId);
 
     await this.program.methods
-      .withdraw(shares)
+      .withdraw(shares, minUnderlyingOut)
       .accounts({
         user,
         dispatcherState: statePda,
