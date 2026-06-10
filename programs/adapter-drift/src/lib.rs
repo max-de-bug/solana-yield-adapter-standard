@@ -24,8 +24,7 @@ declare_id!("2XVcoTcAcsCqnSh7zA1tzBaGxN3fBTmDKX52U8eozk8y");
 
 pub const DRIFT_PROGRAM_ID: &str = "dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH";
 
-pub const DRIFT_V2_ID: Pubkey =
-    pubkey!("dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH");
+pub const DRIFT_V2_ID: Pubkey = pubkey!("dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH");
 
 /// 13-day unstaking cooldown in seconds.
 pub const UNSTAKE_COOLDOWN_SECONDS: i64 = 13 * 24 * 60 * 60;
@@ -38,11 +37,19 @@ pub mod adapter_drift {
         instructions::initialize::handler(ctx, underlying_mint)
     }
 
-    pub fn deposit<'a>(ctx: Context<'a, Deposit<'a>>, amount: u64, min_shares_out: u64) -> Result<()> {
+    pub fn deposit<'a>(
+        ctx: Context<'a, Deposit<'a>>,
+        amount: u64,
+        min_shares_out: u64,
+    ) -> Result<()> {
         instructions::deposit::handler(ctx, amount, min_shares_out)
     }
 
-    pub fn withdraw<'a>(ctx: Context<'a, Withdraw<'a>>, amount: u64, min_underlying_out: u64) -> Result<()> {
+    pub fn withdraw<'a>(
+        ctx: Context<'a, Withdraw<'a>>,
+        amount: u64,
+        min_underlying_out: u64,
+    ) -> Result<()> {
         instructions::withdraw::handler(ctx, amount, min_underlying_out)
     }
 

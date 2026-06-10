@@ -18,8 +18,7 @@ pub fn expected_vault_authority_pda(adapter: &Pubkey) -> Pubkey {
 }
 
 pub fn expected_user_position_pda(adapter: &Pubkey, user: &Pubkey) -> Pubkey {
-    let (pda, _) =
-        Pubkey::find_program_address(&[ADAPTER_POSITION_SEED, user.as_ref()], adapter);
+    let (pda, _) = Pubkey::find_program_address(&[ADAPTER_POSITION_SEED, user.as_ref()], adapter);
     pda
 }
 
@@ -37,11 +36,7 @@ pub fn is_adapter_vault_authority(account: &AccountInfo, adapter: &Pubkey) -> bo
     account.key() == expected
 }
 
-pub fn is_adapter_user_position(
-    account: &AccountInfo,
-    adapter: &Pubkey,
-    user: &Pubkey,
-) -> bool {
+pub fn is_adapter_user_position(account: &AccountInfo, adapter: &Pubkey, user: &Pubkey) -> bool {
     let expected = expected_user_position_pda(adapter, user);
     account.key() == expected && account.owner == adapter
 }

@@ -56,7 +56,11 @@ pub fn on_deposit<'info>(
                 AccountMeta::new_readonly(instruction_sysvar.key(), false),
                 AccountMeta::new_readonly(token_program.key(), false),
             ],
-            data: [KAMINO_DEPOSIT_RESERVE_LIQUIDITY.as_slice(), &amount.to_le_bytes()].concat(),
+            data: [
+                KAMINO_DEPOSIT_RESERVE_LIQUIDITY.as_slice(),
+                &amount.to_le_bytes(),
+            ]
+            .concat(),
         };
 
         let account_infos = [
@@ -125,7 +129,11 @@ pub fn on_withdraw<'info>(
                 AccountMeta::new_readonly(instruction_sysvar.key(), false),
                 AccountMeta::new_readonly(token_program.key(), false),
             ],
-            data: [KAMINO_WITHDRAW_RESERVE_LIQUIDITY.as_slice(), &amount.to_le_bytes()].concat(),
+            data: [
+                KAMINO_WITHDRAW_RESERVE_LIQUIDITY.as_slice(),
+                &amount.to_le_bytes(),
+            ]
+            .concat(),
         };
 
         let account_infos = [

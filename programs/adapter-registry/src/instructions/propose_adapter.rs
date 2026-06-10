@@ -46,7 +46,10 @@ pub fn handler(
     metadata_uri: String,
     vault_state_seed: String,
 ) -> Result<()> {
-    require!(name.len() <= MAX_ADAPTER_NAME_LEN, RegistryError::NameTooLong);
+    require!(
+        name.len() <= MAX_ADAPTER_NAME_LEN,
+        RegistryError::NameTooLong
+    );
     require!(
         metadata_uri.len() <= MAX_METADATA_URI_LEN,
         RegistryError::UriTooLong

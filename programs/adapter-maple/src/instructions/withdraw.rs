@@ -1,9 +1,8 @@
-use anchor_lang::prelude::*;
 use crate::state::AdapterPosition;
+use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 use yield_adapter_trait::{
-    user_position_underlying_value, WithdrawEvent, YieldAdapterError,
-    ADAPTER_POSITION_SEED,
+    user_position_underlying_value, WithdrawEvent, YieldAdapterError, ADAPTER_POSITION_SEED,
 };
 
 use crate::protocol;

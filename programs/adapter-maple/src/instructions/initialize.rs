@@ -30,9 +30,6 @@ pub fn handler(ctx: Context<Initialize>, underlying_mint: Pubkey) -> Result<()> 
     state.status = VaultStatus::Active;
     state.bump = ctx.bumps.vault_state;
 
-    msg!(
-        "Maple Syrup adapter initialized. Mint: {}",
-        underlying_mint,
-    );
+    msg!("Maple Syrup adapter initialized. Mint: {}", underlying_mint,);
     Ok(())
 }

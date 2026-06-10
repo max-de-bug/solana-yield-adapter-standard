@@ -1,9 +1,8 @@
-use anchor_lang::prelude::*;
 use crate::state::AdapterPosition;
+use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 use yield_adapter_trait::{
-    user_position_underlying_value, WithdrawEvent, YieldAdapterError,
-    ADAPTER_POSITION_SEED,
+    user_position_underlying_value, WithdrawEvent, YieldAdapterError, ADAPTER_POSITION_SEED,
 };
 
 use crate::protocol;
@@ -51,7 +50,11 @@ pub struct Withdraw<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler<'a>(ctx: Context<'a, Withdraw<'a>>, shares_to_burn: u64, min_underlying_out: u64) -> Result<()> {
+pub fn handler<'a>(
+    ctx: Context<'a, Withdraw<'a>>,
+    shares_to_burn: u64,
+    min_underlying_out: u64,
+) -> Result<()> {
     require!(shares_to_burn > 0, YieldAdapterError::ZeroWithdrawAmount);
 
     let vault = &mut ctx.accounts.vault_state;

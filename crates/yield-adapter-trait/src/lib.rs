@@ -339,11 +339,7 @@ pub fn shares_to_underlying(share_amount: u64, share_price: u64) -> Result<u64> 
 }
 
 /// Minted shares for a new deposit at the current pool ratio.
-pub fn shares_for_deposit(
-    amount: u64,
-    total_underlying: u64,
-    total_shares: u64,
-) -> Result<u64> {
+pub fn shares_for_deposit(amount: u64, total_underlying: u64, total_shares: u64) -> Result<u64> {
     if total_shares == 0 {
         return Ok(amount);
     }
@@ -581,7 +577,10 @@ mod tests {
 
     #[test]
     fn test_position_value_par() {
-        assert_eq!(user_position_underlying_value(500, 1000, 1000).unwrap(), 500);
+        assert_eq!(
+            user_position_underlying_value(500, 1000, 1000).unwrap(),
+            500
+        );
     }
 
     #[test]

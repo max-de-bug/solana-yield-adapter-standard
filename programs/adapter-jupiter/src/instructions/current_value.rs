@@ -1,8 +1,7 @@
-use anchor_lang::prelude::*;
 use crate::state::AdapterPosition;
+use anchor_lang::prelude::*;
 use yield_adapter_trait::{
-    user_position_underlying_value, CurrentValueEvent, YieldAdapterError,
-    ADAPTER_POSITION_SEED,
+    user_position_underlying_value, CurrentValueEvent, YieldAdapterError, ADAPTER_POSITION_SEED,
 };
 
 use crate::protocol;

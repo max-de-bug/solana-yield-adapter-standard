@@ -19,8 +19,7 @@ declare_id!("LtccLreoDVj2vurvsWpvfC8PvYTnUpTaxz6P9pDg5Y2");
 
 pub const MARGINFI_PROGRAM_ID: &str = "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA";
 
-pub const MARGINFI_V2_ID: Pubkey =
-    pubkey!("MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA");
+pub const MARGINFI_V2_ID: Pubkey = pubkey!("MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA");
 
 #[program]
 pub mod adapter_marginfi {
@@ -30,11 +29,19 @@ pub mod adapter_marginfi {
         instructions::initialize::handler(ctx, underlying_mint)
     }
 
-    pub fn deposit<'a>(ctx: Context<'a, Deposit<'a>>, amount: u64, min_shares_out: u64) -> Result<()> {
+    pub fn deposit<'a>(
+        ctx: Context<'a, Deposit<'a>>,
+        amount: u64,
+        min_shares_out: u64,
+    ) -> Result<()> {
         instructions::deposit::handler(ctx, amount, min_shares_out)
     }
 
-    pub fn withdraw<'a>(ctx: Context<'a, Withdraw<'a>>, amount: u64, min_underlying_out: u64) -> Result<()> {
+    pub fn withdraw<'a>(
+        ctx: Context<'a, Withdraw<'a>>,
+        amount: u64,
+        min_underlying_out: u64,
+    ) -> Result<()> {
         instructions::withdraw::handler(ctx, amount, min_underlying_out)
     }
 

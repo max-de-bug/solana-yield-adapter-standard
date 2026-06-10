@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  SOLANA_CLI_VERSION: 2.2.20
+  ANCHOR_CLI_VERSION: 1.0.1
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: clippy, rustfmt
+          toolchain: stable
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --workspace -- -D warnings
+        continue-on-error: true
+
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+      - uses: .github/actions/setup-anchor
+        with:
+          solana-version: ${{ env.SOLANA_CLI_VERSION }}
+          anchor-version: ${{ env.ANCHOR_CLI_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Build programs
+        run: anchor build
+      - name: Run unit tests
+        run: cargo test
+      - name: Run bounty check
+        run: bash scripts/bounty-check.sh

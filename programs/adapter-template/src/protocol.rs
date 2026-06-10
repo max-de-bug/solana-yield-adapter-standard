@@ -114,10 +114,7 @@ pub fn on_withdraw<'info>(
 ///
 /// On fork, validates the remaining accounts contain a reference to the
 /// protocol program. On localnet, silently succeeds.
-pub fn before_value_query(
-    _vault: &TemplateVaultState,
-    remaining: &[AccountInfo],
-) -> Result<()> {
+pub fn before_value_query(_vault: &TemplateVaultState, remaining: &[AccountInfo]) -> Result<()> {
     if !remaining.is_empty() {
         let program = &remaining[0];
         require!(

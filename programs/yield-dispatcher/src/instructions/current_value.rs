@@ -80,9 +80,8 @@ pub fn handler(ctx: Context<CurrentValue>) -> Result<()> {
 
     let (total_underlying, total_shares) =
         read_vault_totals(&ctx.accounts.adapter_vault_state.to_account_info())?;
-    let adapter_receipt = read_position_receipt(
-        &ctx.accounts.adapter_user_position.to_account_info(),
-    )?;
+    let adapter_receipt =
+        read_position_receipt(&ctx.accounts.adapter_user_position.to_account_info())?;
 
     let value = if total_shares == 0 || adapter_receipt == 0 {
         0u64

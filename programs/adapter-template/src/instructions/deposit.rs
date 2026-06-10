@@ -1,8 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 use yield_adapter_trait::{
-    shares_for_deposit, DepositEvent, YieldAdapterError,
-    ADAPTER_POSITION_SEED,
+    shares_for_deposit, DepositEvent, YieldAdapterError, ADAPTER_POSITION_SEED,
 };
 
 use crate::protocol;

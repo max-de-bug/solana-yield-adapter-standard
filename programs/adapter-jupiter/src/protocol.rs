@@ -48,11 +48,7 @@ pub fn on_deposit<'info>(
                 AccountMeta::new(custody_token_account.key(), false),
                 AccountMeta::new_readonly(token_program.key(), false),
             ],
-            data: [
-                JUPITER_ADD_LIQUIDITY.as_slice(),
-                &amount.to_le_bytes(),
-            ]
-            .concat(),
+            data: [JUPITER_ADD_LIQUIDITY.as_slice(), &amount.to_le_bytes()].concat(),
         };
 
         let account_infos = [

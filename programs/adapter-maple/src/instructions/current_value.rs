@@ -1,7 +1,6 @@
 use anchor_lang::prelude::*;
 use yield_adapter_trait::{
-    user_position_underlying_value, CurrentValueEvent, YieldAdapterError,
-    ADAPTER_POSITION_SEED,
+    user_position_underlying_value, CurrentValueEvent, YieldAdapterError, ADAPTER_POSITION_SEED,
 };
 
 use crate::state::{AdapterPosition, MapleVaultState, VAULT_STATE_SEED};

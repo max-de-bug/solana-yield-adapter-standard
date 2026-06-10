@@ -98,7 +98,13 @@ pub fn cpi_deposit<'info>(
         AccountMeta::new_readonly(accounts.system_program.key(), false),
     ];
 
-    cpi_call(program_id, &account_infos, &account_metas, "deposit", &[amount, min_shares_out])?;
+    cpi_call(
+        program_id,
+        &account_infos,
+        &account_metas,
+        "deposit",
+        &[amount, min_shares_out],
+    )?;
 
     let (_, shares_after) = read_vault_totals(&vault_state)?;
     shares_after
@@ -144,7 +150,13 @@ pub fn cpi_withdraw<'info>(
         AccountMeta::new_readonly(accounts.token_program.key(), false),
     ];
 
-    cpi_call(program_id, &account_infos, &account_metas, "withdraw", &[shares, min_underlying_out])
+    cpi_call(
+        program_id,
+        &account_infos,
+        &account_metas,
+        "withdraw",
+        &[shares, min_underlying_out],
+    )
 }
 
 pub struct AdapterCurrentValueAccounts<'info> {
@@ -169,5 +181,11 @@ pub fn cpi_current_value<'info>(accounts: AdapterCurrentValueAccounts<'info>) ->
         AccountMeta::new_readonly(accounts.user_position.key(), false),
     ];
 
-    cpi_call(program_id, &account_infos, &account_metas, "current_value", &[])
+    cpi_call(
+        program_id,
+        &account_infos,
+        &account_metas,
+        "current_value",
+        &[],
+    )
 }

@@ -19,8 +19,7 @@ declare_id!("8QdkGAkLvpN7JPxf3dgKFUXVGPS2LWW4BumbNkVkXkux");
 /// Jupiter Perpetuals program ID on mainnet.
 pub const JUPITER_PERP_PROGRAM_ID: &str = "PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu";
 
-pub const JUPITER_PERP_ID: Pubkey =
-    pubkey!("PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu");
+pub const JUPITER_PERP_ID: Pubkey = pubkey!("PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu");
 
 #[program]
 pub mod adapter_jupiter {
@@ -30,11 +29,19 @@ pub mod adapter_jupiter {
         instructions::initialize::handler(ctx, underlying_mint)
     }
 
-    pub fn deposit<'a>(ctx: Context<'a, Deposit<'a>>, amount: u64, min_shares_out: u64) -> Result<()> {
+    pub fn deposit<'a>(
+        ctx: Context<'a, Deposit<'a>>,
+        amount: u64,
+        min_shares_out: u64,
+    ) -> Result<()> {
         instructions::deposit::handler(ctx, amount, min_shares_out)
     }
 
-    pub fn withdraw<'a>(ctx: Context<'a, Withdraw<'a>>, amount: u64, min_underlying_out: u64) -> Result<()> {
+    pub fn withdraw<'a>(
+        ctx: Context<'a, Withdraw<'a>>,
+        amount: u64,
+        min_underlying_out: u64,
+    ) -> Result<()> {
         instructions::withdraw::handler(ctx, amount, min_underlying_out)
     }
 

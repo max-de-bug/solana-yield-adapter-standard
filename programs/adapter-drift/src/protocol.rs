@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::{instruction::Instruction, program::invoke_signed};
-use yield_adapter_trait::{YieldAdapterError, verify_protocol_program_account};
+use yield_adapter_trait::{verify_protocol_program_account, YieldAdapterError};
 
 use crate::state::{DriftVaultState, VAULT_AUTHORITY_SEED};
 use crate::DRIFT_V2_ID;
