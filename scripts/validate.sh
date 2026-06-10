@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # =============================================================================
-# bounty-check.sh — Submission verification gate
+# validate.sh — Submission verification gate
 #
 # Validates ALL bounty requirements in one command. Exit code 0 = pass.
 #
 # Usage:
-#   ./scripts/bounty-check.sh              # full suite (no fork tests)
-#   ./scripts/bounty-check.sh --fork        # include mainnet-fork tests
-#   ./scripts/bounty-check.sh --fix         # auto-fix formatting
+#   ./scripts/validate.sh              # full suite (no fork tests)
+#   ./scripts/validate.sh --fork        # include mainnet-fork tests
+#   ./scripts/validate.sh --fix         # auto-fix formatting
 # =============================================================================
 set -euo pipefail
 

@@ -70,6 +70,14 @@ pub fn handler<'a>(
     let position = &mut ctx.accounts.user_position;
     let clock = Clock::get()?;
 
+    let underlying_amount =
+        user_position_underlying_value(shares_to_burn, vault.total_underlying, vault.total_shares)?;
+
+    require!(
+        underlying_amount >= min_underlying_out,
+        YieldAdapterError::SlippageExceeded
+    );
+
     require!(
         position.receipt_token_balance >= shares_to_burn,
         YieldAdapterError::InsufficientReceiptBalance
@@ -84,14 +92,6 @@ pub fn handler<'a>(
             DriftAdapterError::CooldownNotElapsed
         );
     }
-
-    let underlying_amount =
-        user_position_underlying_value(shares_to_burn, vault.total_underlying, vault.total_shares)?;
-
-    require!(
-        underlying_amount >= min_underlying_out,
-        YieldAdapterError::SlippageExceeded
-    );
 
     let bump = ctx.bumps.vault_authority;
     let signer_seeds: &[&[&[u8]]] = &[&[VAULT_AUTHORITY_SEED, &[bump]]];

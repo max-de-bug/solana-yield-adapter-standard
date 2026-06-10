@@ -46,4 +46,4 @@ jobs:
       - name: Run unit tests
         run: cargo test
       - name: Run bounty check
-        run: bash scripts/bounty-check.sh
+        run: bash scripts/validate.sh

@@ -1,8 +1,7 @@
 use anchor_lang::prelude::*;
 use yield_adapter_trait::VaultStatus;
 
-/// Creates the standard `AdapterPosition` account struct (owner, adapter_program_id,
-/// deposited_amount, withdrawn_amount, receipt_token_balance, last_updated, bump).
+// Creates the standard `AdapterPosition` account struct.
 yield_adapter_trait::define_adapter_position!();
 
 /// Per-vault state account for this adapter.

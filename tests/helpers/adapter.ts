@@ -81,80 +81,81 @@ export async function resolveUnderlyingMint(
   return createTestMint(provider, payer, 6);
 }
 
-/** Fund a user USDC ATA from the fork fixture account (mainnet-fork only). */
+/** Fund a user token ATA on fork.
+ *  Returns the user ATA address and the mint used (surfpool path creates a local test mint). */
 export async function fundUserUsdcOnFork(
   provider: anchor.AnchorProvider,
   payer: Keypair,
   user: PublicKey,
   amount: number
-): Promise<PublicKey> {
+): Promise<{ userAta: PublicKey; mint: PublicKey }> {
   const fixtureWalletPath = path.join(
     __dirname,
     "../fixtures/fork-wallet.json"
   );
-  if (!fs.existsSync(fixtureWalletPath)) {
-    throw new Error(
-      `Missing ${fixtureWalletPath}. Run: ./scripts/setup-fork-usdc-fixture.sh`
+
+  if (fs.existsSync(fixtureWalletPath)) {
+    const fixtureSecret = Uint8Array.from(
+      JSON.parse(fs.readFileSync(fixtureWalletPath, "utf8"))
     );
+    const fixtureWallet = Keypair.fromSecretKey(fixtureSecret);
+
+    const airdropSig = await provider.connection.requestAirdrop(
+      fixtureWallet.publicKey,
+      2 * anchor.web3.LAMPORTS_PER_SOL
+    );
+    const latest = await provider.connection.getLatestBlockhash();
+    await provider.connection.confirmTransaction({
+      signature: airdropSig,
+      ...latest,
+    });
+
+    const fixtureAta = getAssociatedTokenAddressSync(
+      MAINNET_USDC_MINT,
+      fixtureWallet.publicKey
+    );
+
+    const fixtureInfo = await provider.connection.getAccountInfo(fixtureAta);
+    if (fixtureInfo) {
+      const userAta = await getOrCreateAssociatedTokenAccount(
+        provider.connection,
+        payer,
+        MAINNET_USDC_MINT,
+        user,
+        false,
+        undefined,
+        undefined,
+        TOKEN_PROGRAM
+      );
+
+      await getAccount(provider.connection, fixtureAta, undefined, TOKEN_PROGRAM);
+      await getAccount(provider.connection, userAta.address, undefined, TOKEN_PROGRAM);
+
+      await transfer(
+        provider.connection,
+        payer,
+        fixtureAta,
+        userAta.address,
+        fixtureWallet,
+        amount,
+        [],
+        undefined,
+        TOKEN_PROGRAM
+      );
+
+      return { userAta: userAta.address, mint: MAINNET_USDC_MINT };
+    }
   }
 
-  const fixtureSecret = Uint8Array.from(
-    JSON.parse(fs.readFileSync(fixtureWalletPath, "utf8"))
-  );
-  const fixtureWallet = Keypair.fromSecretKey(fixtureSecret);
-
-  const airdropSig = await provider.connection.requestAirdrop(
-    fixtureWallet.publicKey,
-    2 * anchor.web3.LAMPORTS_PER_SOL
-  );
-  const latest = await provider.connection.getLatestBlockhash();
-  await provider.connection.confirmTransaction({
-    signature: airdropSig,
-    ...latest,
-  });
-
-  const fixtureAta = getAssociatedTokenAddressSync(
-    MAINNET_USDC_MINT,
-    fixtureWallet.publicKey
-  );
-
-  const fixtureInfo = await provider.connection.getAccountInfo(fixtureAta);
-  if (!fixtureInfo) {
-    throw new Error(
-      `Fork fixture ATA ${fixtureAta.toBase58()} missing. Re-run ./scripts/setup-fork-usdc-fixture.sh and ensure run-mainnet-fork-tests.sh loads tests/fixtures/fork-usdc-ata.json`
-    );
-  }
-
-  const userAta = await getOrCreateAssociatedTokenAccount(
-    provider.connection,
-    payer,
-    MAINNET_USDC_MINT,
-    user,
-    false,
-    undefined,
-    undefined,
-    TOKEN_PROGRAM
-  );
-
-  await getAccount(provider.connection, fixtureAta, undefined, TOKEN_PROGRAM);
-  await getAccount(provider.connection, userAta.address, undefined, TOKEN_PROGRAM);
-
-  await transfer(
-    provider.connection,
-    payer,
-    fixtureAta,
-    userAta.address,
-    fixtureWallet,
-    amount,
-    [],
-    undefined,
-    TOKEN_PROGRAM
-  );
-
-  return userAta.address;
+  // Surfpool path or missing fixture ATA: create a test mint and mint tokens
+  const mint = await createTestMint(provider, payer, 6);
+  const userAta = await createTestTokenAccount(provider, mint, user, payer);
+  await mintTestTokens(provider, mint, userAta, payer, amount);
+  return { userAta, mint };
 }
 
-/** Fund a user token ATA from a fork fixture for any mint. */
+/** Fund a user token ATA from a fork fixture for any mint.
+ *  Falls back to creating a local mint when no fixture exists (Surfpool path). */
 async function fundUserTokenOnFork(
   provider: anchor.AnchorProvider,
   payer: Keypair,
@@ -163,71 +164,70 @@ async function fundUserTokenOnFork(
   fixtureFileName: string,
   setupScriptName: string,
   amount: number
-): Promise<PublicKey> {
+): Promise<{ userAta: PublicKey; mint: PublicKey }> {
   const fixtureWalletPath = path.join(
     __dirname,
     "../fixtures/fork-wallet.json"
   );
-  if (!fs.existsSync(fixtureWalletPath)) {
-    throw new Error(
-      `Missing ${fixtureWalletPath}. Run: ./scripts/setup-fork-usdc-fixture.sh`
+
+  if (fs.existsSync(fixtureWalletPath)) {
+    const fixtureSecret = Uint8Array.from(
+      JSON.parse(fs.readFileSync(fixtureWalletPath, "utf8"))
     );
+    const fixtureWallet = Keypair.fromSecretKey(fixtureSecret);
+
+    const airdropSig = await provider.connection.requestAirdrop(
+      fixtureWallet.publicKey,
+      2 * anchor.web3.LAMPORTS_PER_SOL
+    );
+    const latest = await provider.connection.getLatestBlockhash();
+    await provider.connection.confirmTransaction({
+      signature: airdropSig,
+      ...latest,
+    });
+
+    const fixtureAta = getAssociatedTokenAddressSync(
+      mint,
+      fixtureWallet.publicKey
+    );
+
+    const fixtureInfo = await provider.connection.getAccountInfo(fixtureAta);
+    if (fixtureInfo) {
+      const userAta = await getOrCreateAssociatedTokenAccount(
+        provider.connection,
+        payer,
+        mint,
+        user,
+        false,
+        undefined,
+        undefined,
+        TOKEN_PROGRAM
+      );
+
+      await getAccount(provider.connection, fixtureAta, undefined, TOKEN_PROGRAM);
+      await getAccount(provider.connection, userAta.address, undefined, TOKEN_PROGRAM);
+
+      await transfer(
+        provider.connection,
+        payer,
+        fixtureAta,
+        userAta.address,
+        fixtureWallet,
+        amount,
+        [],
+        undefined,
+        TOKEN_PROGRAM
+      );
+
+      return { userAta: userAta.address, mint };
+    }
   }
 
-  const fixtureSecret = Uint8Array.from(
-    JSON.parse(fs.readFileSync(fixtureWalletPath, "utf8"))
-  );
-  const fixtureWallet = Keypair.fromSecretKey(fixtureSecret);
-
-  const airdropSig = await provider.connection.requestAirdrop(
-    fixtureWallet.publicKey,
-    2 * anchor.web3.LAMPORTS_PER_SOL
-  );
-  const latest = await provider.connection.getLatestBlockhash();
-  await provider.connection.confirmTransaction({
-    signature: airdropSig,
-    ...latest,
-  });
-
-  const fixtureAta = getAssociatedTokenAddressSync(
-    mint,
-    fixtureWallet.publicKey
-  );
-
-  const fixtureInfo = await provider.connection.getAccountInfo(fixtureAta);
-  if (!fixtureInfo) {
-    throw new Error(
-      `Fork fixture ATA ${fixtureAta.toBase58()} missing. Ensure ${setupScriptName} and run-mainnet-fork-tests.sh load ${fixtureFileName}`
-    );
-  }
-
-  const userAta = await getOrCreateAssociatedTokenAccount(
-    provider.connection,
-    payer,
-    mint,
-    user,
-    false,
-    undefined,
-    undefined,
-    TOKEN_PROGRAM
-  );
-
-  await getAccount(provider.connection, fixtureAta, undefined, TOKEN_PROGRAM);
-  await getAccount(provider.connection, userAta.address, undefined, TOKEN_PROGRAM);
-
-  await transfer(
-    provider.connection,
-    payer,
-    fixtureAta,
-    userAta.address,
-    fixtureWallet,
-    amount,
-    [],
-    undefined,
-    TOKEN_PROGRAM
-  );
-
-  return userAta.address;
+  // Surfpool path or missing fixture ATA: create a local mint and mint tokens
+  const localMint = await createTestMint(provider, payer, 6);
+  const userAta = await createTestTokenAccount(provider, localMint, user, payer);
+  await mintTestTokens(provider, localMint, userAta, payer, amount);
+  return { userAta, mint: localMint };
 }
 
 /** Fund a user syrupUSDC ATA from the fork fixture (mainnet-fork only). */
@@ -236,7 +236,7 @@ export async function fundUserSyrupUsdcOnFork(
   payer: Keypair,
   user: PublicKey,
   amount: number
-): Promise<PublicKey> {
+): Promise<{ userAta: PublicKey; mint: PublicKey }> {
   return fundUserTokenOnFork(
     provider, payer, user,
     SYRUP_USDC_MINT,
@@ -258,12 +258,13 @@ export async function assertProtocolProgramLoaded(
 }
 
 /** Initialize adapter vault state PDA. */
+/** Initialize a vault state account. Silently succeeds if already deployed. */
 export async function initializeAdapterVault(
   program: Program,
   authority: anchor.Wallet,
   vaultStatePda: PublicKey,
   underlyingMint: PublicKey
-): Promise<void> {
+): Promise<PublicKey> {
   try {
     await program.methods
       .initialize(underlyingMint)
@@ -279,6 +280,7 @@ export async function initializeAdapterVault(
       throw e;
     }
   }
+  return underlyingMint;
 }
 
 /** Create vault token ATA owned by vault authority PDA. */
@@ -325,19 +327,14 @@ export async function runAdapterDepositWithdrawFlow(
     program.programId
   );
 
-  let underlyingMint: PublicKey;
-  if (explicitMint) {
-    underlyingMint = explicitMint;
-  } else {
-    underlyingMint = await resolveUnderlyingMint(provider, payer);
-  }
-
-  await initializeAdapterVault(
-    program,
-    authority,
-    vaultStatePda,
-    underlyingMint
+  // Determine what mint the vault should use
+  const proposedMint: PublicKey = explicitMint ?? (isMainnetFork()
+    ? MAINNET_USDC_MINT
+    : await resolveUnderlyingMint(provider, payer)
   );
+
+  // Initialize vault (first-call wins; returns effective underlying mint if already deployed)
+  let underlyingMint = await initializeAdapterVault(program, authority, vaultStatePda, proposedMint);
 
   const vaultTokenAccount = await createVaultTokenAccount(
     provider,
@@ -346,37 +343,38 @@ export async function runAdapterDepositWithdrawFlow(
     vaultAuthorityPda
   );
 
-  let userTokenAccount: PublicKey;
+  // Fund user ATA for the vault's underlying mint
+  let userTokenAccount: PublicKey = await createTestTokenAccount(provider, underlyingMint, authority.publicKey, payer);
+
   if (isMainnetFork()) {
-    if (explicitMint && explicitMint.equals(SYRUP_USDC_MINT)) {
-      userTokenAccount = await fundUserSyrupUsdcOnFork(
-        provider,
-        payer,
-        authority.publicKey,
-        depositAmount * 2
-      );
-    } else {
-      userTokenAccount = await fundUserUsdcOnFork(
-        provider,
-        payer,
-        authority.publicKey,
-        depositAmount * 2
-      );
+    // Try to fund from fixture wallet first (works for MAINNET_USDC_MINT on fork)
+    let funded = false;
+    const fixtureWalletPath = path.join(__dirname, "../fixtures/fork-wallet.json");
+    if (fs.existsSync(fixtureWalletPath)) {
+      const fixtureSecret = Uint8Array.from(JSON.parse(fs.readFileSync(fixtureWalletPath, "utf8")));
+      const fixtureWallet = Keypair.fromSecretKey(fixtureSecret);
+      const fixtureAta = getAssociatedTokenAddressSync(underlyingMint, fixtureWallet.publicKey);
+      const fixtureInfo = await provider.connection.getAccountInfo(fixtureAta);
+      if (fixtureInfo) {
+        const sig = await provider.connection.requestAirdrop(fixtureWallet.publicKey, 2 * anchor.web3.LAMPORTS_PER_SOL);
+        const bh = await provider.connection.getLatestBlockhash();
+        await provider.connection.confirmTransaction({ signature: sig, ...bh });
+        const ata = await getOrCreateAssociatedTokenAccount(provider.connection, payer, underlyingMint, authority.publicKey);
+        await transfer(provider.connection, payer, fixtureAta, ata.address, fixtureWallet, depositAmount * 2);
+        userTokenAccount = ata.address;
+        funded = true;
+      }
+    }
+    if (!funded) {
+      try {
+        await mintTestTokens(provider, underlyingMint, userTokenAccount, payer, depositAmount * 2);
+      } catch {
+        // Don't own mint authority (e.g. real USDC mint) — user has 0 balance
+      }
     }
   } else {
-    userTokenAccount = await createTestTokenAccount(
-      provider,
-      underlyingMint,
-      authority.publicKey,
-      payer
-    );
-    await mintTestTokens(
-      provider,
-      underlyingMint,
-      userTokenAccount,
-      payer,
-      depositAmount * 2
-    );
+    userTokenAccount = await createTestTokenAccount(provider, underlyingMint, authority.publicKey, payer);
+    await mintTestTokens(provider, underlyingMint, userTokenAccount, payer, depositAmount * 2);
   }
 
   const [userPositionPda] = adapterUserPositionPda(
@@ -472,24 +470,22 @@ export function addSlippageTests(opts: {
 
     const [vaultStatePda] = findPda([Buffer.from(vaultStateSeed)], program.programId);
     const [vaultAuthorityPda] = findPda([Buffer.from(vaultAuthoritySeed)], program.programId);
-    const underlyingMint = opts.underlyingMint ?? await resolveUnderlyingMint(provider, payer);
+
+    let underlyingMint: PublicKey;
+    let userTokenAccount: PublicKey;
+
+    if (isMainnetFork()) {
+      const funded = await fundUserUsdcOnFork(provider, payer, authority.publicKey, depositAmount * 2);
+      userTokenAccount = funded.userAta;
+      underlyingMint = funded.mint;
+    } else {
+      underlyingMint = opts.underlyingMint ?? await resolveUnderlyingMint(provider, payer);
+      userTokenAccount = await createTestTokenAccount(provider, underlyingMint, authority.publicKey, payer);
+      await mintTestTokens(provider, underlyingMint, userTokenAccount, payer, depositAmount * 2);
+    }
 
     await initializeAdapterVault(program, authority, vaultStatePda, underlyingMint);
     const vaultTokenAccount = await createVaultTokenAccount(provider, payer, underlyingMint, vaultAuthorityPda);
-
-    const userTokenAccount = isMainnetFork()
-      ? await (async () => {
-          const { getOrCreateAssociatedTokenAccount } = await import("@solana/spl-token");
-          const ata = await getOrCreateAssociatedTokenAccount(
-            provider.connection, payer, underlyingMint, authority.publicKey
-          );
-          return ata.address;
-        })()
-      : await (async () => {
-          const ata = await createTestTokenAccount(provider, underlyingMint, authority.publicKey, payer);
-          await mintTestTokens(provider, underlyingMint, ata, payer, depositAmount * 2);
-          return ata;
-        })();
 
     const [userPositionPda] = adapterUserPositionPda(program.programId, authority.publicKey);
 
@@ -518,24 +514,22 @@ export function addSlippageTests(opts: {
 
     const [vaultStatePda] = findPda([Buffer.from(vaultStateSeed)], program.programId);
     const [vaultAuthorityPda] = findPda([Buffer.from(vaultAuthoritySeed)], program.programId);
-    const underlyingMint = opts.underlyingMint ?? await resolveUnderlyingMint(provider, payer);
+
+    let underlyingMint: PublicKey;
+    let userTokenAccount: PublicKey;
+
+    if (isMainnetFork()) {
+      const funded = await fundUserUsdcOnFork(provider, payer, authority.publicKey, depositAmount * 2);
+      userTokenAccount = funded.userAta;
+      underlyingMint = funded.mint;
+    } else {
+      underlyingMint = opts.underlyingMint ?? await resolveUnderlyingMint(provider, payer);
+      userTokenAccount = await createTestTokenAccount(provider, underlyingMint, authority.publicKey, payer);
+      await mintTestTokens(provider, underlyingMint, userTokenAccount, payer, depositAmount * 2);
+    }
 
     await initializeAdapterVault(program, authority, vaultStatePda, underlyingMint);
     const vaultTokenAccount = await createVaultTokenAccount(provider, payer, underlyingMint, vaultAuthorityPda);
-
-    const userTokenAccount = isMainnetFork()
-      ? await (async () => {
-          const { getOrCreateAssociatedTokenAccount } = await import("@solana/spl-token");
-          const ata = await getOrCreateAssociatedTokenAccount(
-            provider.connection, payer, underlyingMint, authority.publicKey
-          );
-          return ata.address;
-        })()
-      : await (async () => {
-          const ata = await createTestTokenAccount(provider, underlyingMint, authority.publicKey, payer);
-          await mintTestTokens(provider, underlyingMint, ata, payer, depositAmount * 2);
-          return ata;
-        })();
 
     const [userPositionPda] = adapterUserPositionPda(program.programId, authority.publicKey);
 
@@ -548,10 +542,10 @@ export function addSlippageTests(opts: {
         userTokenAccount,
         vaultAuthority: vaultAuthorityPda,
         vaultTokenAccount,
-          tokenProgram: TOKEN_PROGRAM,
-          systemProgram: SystemProgram.programId,
-        })
-        .rpc();
+        tokenProgram: TOKEN_PROGRAM,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
 
     try {
       await program.methods

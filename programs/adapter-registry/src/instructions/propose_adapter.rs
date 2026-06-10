@@ -45,6 +45,7 @@ pub fn handler(
     name: String,
     metadata_uri: String,
     vault_state_seed: String,
+    vault_authority_seed: String,
 ) -> Result<()> {
     require!(
         name.len() <= MAX_ADAPTER_NAME_LEN,
@@ -58,6 +59,10 @@ pub fn handler(
         vault_state_seed.len() <= 32 && !vault_state_seed.is_empty(),
         RegistryError::InvalidVaultStateSeed,
     );
+    require!(
+        vault_authority_seed.len() <= 32 && !vault_authority_seed.is_empty(),
+        RegistryError::InvalidVaultStateSeed,
+    );
 
     let clock = Clock::get()?;
     let entry = &mut ctx.accounts.adapter_entry;
@@ -68,6 +73,7 @@ pub fn handler(
     entry.underlying_mint = ctx.accounts.underlying_mint.key();
     entry.metadata_uri = metadata_uri;
     entry.vault_state_seed = vault_state_seed.into_bytes();
+    entry.vault_authority_seed = vault_authority_seed.into_bytes();
     entry.proposer = ctx.accounts.proposer.key();
     entry.proposed_at = clock.unix_timestamp;
     entry.approved_at = 0;

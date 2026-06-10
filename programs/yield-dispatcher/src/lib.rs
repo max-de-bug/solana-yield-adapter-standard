@@ -4,6 +4,9 @@
 //! Acts as a unified entry point that validates adapters against the registry,
 //! tracks user positions, and performs CPI calls to registered adapter programs.
 
+#![allow(clippy::diverging_sub_expression)]
+#![allow(unexpected_cfgs)]
+
 use anchor_lang::prelude::*;
 
 pub mod adapter_cpi;

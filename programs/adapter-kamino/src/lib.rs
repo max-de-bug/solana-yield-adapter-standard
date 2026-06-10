@@ -12,6 +12,9 @@
 //! 2. `withdraw` — Burns receipt tokens, returns proportional USDC from the vault.
 //! 3. `current_value` — Calculates current USDC value based on receipt token balance × share price.
 
+#![allow(clippy::diverging_sub_expression)]
+#![allow(unexpected_cfgs)]
+
 use anchor_lang::prelude::*;
 
 pub mod instructions;

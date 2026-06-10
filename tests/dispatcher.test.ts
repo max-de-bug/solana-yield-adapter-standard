@@ -40,12 +40,13 @@ describe("yield-dispatcher", () => {
     amount: number
   ): Promise<PublicKey> {
     if (isMainnetFork() && mint.equals(MAINNET_USDC_MINT)) {
-      return fundUserUsdcOnFork(
+      const funded = await fundUserUsdcOnFork(
         provider,
         payer,
         authority.publicKey,
         amount * 2
       );
+      return funded.userAta;
     }
     const ata = await createTestTokenAccount(
       provider,
@@ -289,7 +290,7 @@ describe("yield-dispatcher", () => {
     const vaultMint = await resolveKaminoVaultMint(kaminoProgram, usdcMint);
 
     await registryProgram.methods
-      .proposeAdapter("Fake", "https://example.com/fake.json", "test_vault_state")
+      .proposeAdapter("Fake", "https://example.com/fake.json", "test_vault_state", "vault_authority")
       .accounts({
         proposer: authority.publicKey,
         registryState: registryStatePda,

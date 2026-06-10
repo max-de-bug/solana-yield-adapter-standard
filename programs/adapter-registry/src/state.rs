@@ -69,6 +69,11 @@ pub struct AdapterEntry {
     #[max_len(32)]
     pub vault_state_seed: Vec<u8>,
 
+    /// The PDA seed bytes used by this adapter for its vault authority account.
+    /// Allows the dispatcher to validate vault authority PDAs generically.
+    #[max_len(32)]
+    pub vault_authority_seed: Vec<u8>,
+
     /// The account that proposed this adapter.
     pub proposer: Pubkey,
 

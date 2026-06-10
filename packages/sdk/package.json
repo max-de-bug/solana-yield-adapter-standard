@@ -9,7 +9,8 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
-    "test:fork": "npx tsx run-fork.ts",
+    "test:fork": "bash ../../scripts/run-fork-surfpool.sh",
+    "test:fork:legacy": "npx tsx run-fork.ts",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {

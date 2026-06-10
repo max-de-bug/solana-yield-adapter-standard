@@ -13,6 +13,9 @@
 //! The registry is controlled by a single governance authority (initially the deployer).
 //! Governance can be transferred to a multisig, DAO, or other program via `nominate_governance` / `accept_governance`.
 
+#![allow(clippy::diverging_sub_expression)]
+#![allow(unexpected_cfgs)]
+
 use anchor_lang::prelude::*;
 
 pub mod error;
@@ -39,8 +42,9 @@ pub mod adapter_registry {
         name: String,
         metadata_uri: String,
         vault_state_seed: String,
+        vault_authority_seed: String,
     ) -> Result<()> {
-        instructions::propose_adapter::handler(ctx, name, metadata_uri, vault_state_seed)
+        instructions::propose_adapter::handler(ctx, name, metadata_uri, vault_state_seed, vault_authority_seed)
     }
 
     /// Approve a proposed adapter. Governance-gated.

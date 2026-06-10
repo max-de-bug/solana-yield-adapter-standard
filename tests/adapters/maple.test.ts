@@ -9,8 +9,7 @@ import {
   runAdapterDepositWithdrawFlow,
 } from "../helpers/adapter";
 import { createTestMint, createTestTokenAccount, findPda, adapterUserPositionPda } from "../helpers";
-import { isMainnetFork, SYRUP_USDC_MINT } from "../helpers/constants";
-import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
+import { isMainnetFork, MAINNET_USDC_MINT, SYRUP_USDC_MINT } from "../helpers/constants";
 import { TOKEN_PROGRAM_ID } from "../helpers/constants";
 
 describe("adapter-maple", () => {
@@ -26,8 +25,7 @@ describe("adapter-maple", () => {
 
   let vaultStatePda: anchor.web3.PublicKey;
   let vaultAuthorityPda: anchor.web3.PublicKey;
-  let underlyingMint: anchor.web3.PublicKey;
-  let vaultTokenAccount: anchor.web3.PublicKey;
+  let testedMint: anchor.web3.PublicKey | undefined;
 
   before(async () => {
     [vaultStatePda] = findPda(
@@ -38,32 +36,30 @@ describe("adapter-maple", () => {
       [Buffer.from(vaultAuthoritySeed)],
       program.programId
     );
-
-    underlyingMint = isMainnetFork()
-      ? SYRUP_USDC_MINT
-      : await createTestMint(provider, payer, 6);
-
-    await initializeAdapterVault(program, authority, vaultStatePda, underlyingMint);
-    vaultTokenAccount = await createVaultTokenAccount(
-      provider, payer, underlyingMint, vaultAuthorityPda
-    );
   });
 
   it("deposit → current_value → withdraw (syrupUSDC model)", async () => {
+    // On fork, flow determines the mint (test mint on Surfpool, SYRUP_USDC_MINT via fixture on legacy);
+    // on localnet, pass the on-chain local USDC mint.
+    const flowMint = isMainnetFork() ? undefined : await createTestMint(provider, payer, 6);
     await runAdapterDepositWithdrawFlow(provider, authority, payer, {
       program,
       vaultStateSeed,
       vaultAuthoritySeed,
-      underlyingMint,
+      underlyingMint: flowMint,
     });
+    // Save the mint used by the flow for subsequent tests
+    testedMint = flowMint ?? MAINNET_USDC_MINT;
   });
 
   it("rejects zero amount deposit", async () => {
-    const userTokenAccount = isMainnetFork()
-      ? await getOrCreateAssociatedTokenAccount(
-          provider.connection, payer, underlyingMint, authority.publicKey
-        ).then(a => a.address)
-      : await createTestTokenAccount(provider, underlyingMint, authority.publicKey, payer);
+    const underlyingMint = testedMint!;
+    const vaultTokenAccount = await createVaultTokenAccount(
+      provider, payer, underlyingMint, vaultAuthorityPda
+    );
+
+    // No need to fund — zero-amount check fires before token transfer
+    const userTokenAccount = await createTestTokenAccount(provider, underlyingMint, authority.publicKey, payer);
 
     const [userPositionPda] = adapterUserPositionPda(program.programId, authority.publicKey);
 

@@ -180,7 +180,8 @@ solana-yield-adapter-standard/
 │   ├── registry.test.ts         # Registry governance tests
 │   └── dispatcher.test.ts       # Dispatcher routing tests
 ├── scripts/
-│   ├── run-mainnet-fork-tests.sh
+│   ├── run-fork-surfpool.sh        # Surfpool-based fork tests (default)
+│   ├── run-mainnet-fork-tests.sh   # Legacy fork tests (manual --clone)
 │   └── deploy-devnet.sh
 ├── docs/
 │   ├── ADAPTER_STANDARD.md      # Formal specification
@@ -195,26 +196,43 @@ solana-yield-adapter-standard/
 
 ## Testing
 
-### Unit Tests
+### Test Suites
 
-```bash
-anchor test
-```
+| Suite | Command | Count |
+|-------|---------|-------|
+| Unit | `cargo test` | 28 |
+| Localnet integration | `anchor test` | 17 |
+| Mainnet-fork integration | see below | 31 |
 
 Tests cover:
 - **Registry**: Initialize → Propose → Approve → Revoke → Transfer governance
-- **Dispatcher**: Initialize → Deposit → Withdraw → Current value → Error cases
-- **Adapters**: Deposit → Verify shares → Withdraw → Verify balances
+- **Dispatcher**: Initialize → Deposit → Withdraw → Current value → Error cases  
+- **Adapters**: Deposit → Verify shares → Withdraw → Verify balances (CPI round-trip on fork)
 
 ### Mainnet-Fork Tests
 
+Requires `solana-test-validator` with cloned mainnet program accounts and pre-funded fixture token ATAs:
+
 ```bash
-./scripts/run-mainnet-fork-tests.sh
+# Start validator with cloned programs + fixture ATAs
+solana-test-validator \
+  --reset --ledger test-ledger --url mainnet-beta --quiet \
+  --clone KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD \
+  --clone MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA \
+  --clone PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu \
+  --clone dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH \
+  --clone EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v \
+  --clone AvZZF1YaZDziPY2RCK4oJrRVrbN3mTD9NL24hPeaZeUj \
+  --clone ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL \
+  --account 7pyXgHEbAxkPNTZaaAEc21UGyoLKME5a3mMvxpseHeHz tests/fixtures/fork-usdc-ata.json \
+  --account GLnPMjfFemGFhhMnKwpDEt9F56pvBgmTqyug3xQPQTHE tests/fixtures/fork-syrup-usdc-ata.json
+
+# Deploy programs and run tests
+MAINNET_FORK=1 ANCHOR_PROVIDER_URL=http://127.0.0.1:8899 ANCHOR_WALLET=~/.config/solana/id.json \
+  npx ts-mocha -p ./tsconfig.json -t 1000000 'tests/**/*.test.ts'
 ```
 
-Clones live program state from mainnet (Kamino, MarginFi, Drift) and runs integration tests against real on-chain state.
-
-![Mainnet-fork tests passing](https://github.com/user-attachments/assets/f29d6e7b-063e-4905-8859-1ce56983bec0)
+Runs all 31 integration tests including real CPI round-trips against all five protocols (Kamino, MarginFi, Jupiter, Drift, Maple) via `invoke_signed`.
 
 ---
 

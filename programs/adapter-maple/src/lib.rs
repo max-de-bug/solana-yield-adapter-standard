@@ -8,6 +8,9 @@
 //! - **Underlying**: syrupUSDC (yield-bearing SPL token)
 //! - **Status**: Production-ready vault; no CPI to EVM-primary Maple contracts needed
 
+#![allow(clippy::diverging_sub_expression)]
+#![allow(unexpected_cfgs)]
+
 use anchor_lang::prelude::*;
 
 pub mod instructions;

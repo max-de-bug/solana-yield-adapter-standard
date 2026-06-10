@@ -7,6 +7,9 @@
 //! - **Model**: Lending account with JIT risk engine
 //! - **Underlying**: USDC
 
+#![allow(clippy::diverging_sub_expression)]
+#![allow(unexpected_cfgs)]
+
 use anchor_lang::prelude::*;
 
 pub mod instructions;

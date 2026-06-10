@@ -1,0 +1,11 @@
+# Surfpool configuration for mainnet-fork testing.
+# Surfpool auto-detects Anchor.toml and generates IaC for program deploys.
+# JIT-fetching pulls missing accounts/programs from mainnet on first touch.
+
+[surfnet]
+# Override at CLI: surfpool start -u $MAINNET_RPC_URL
+remote_rpc_url = "set-via-cli"
+
+[rpc]
+bind_host = "127.0.0.1"
+bind_port = 8899

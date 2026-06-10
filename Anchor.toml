@@ -17,7 +17,7 @@ adapter_template = "jbLUHXvc9P26MpQdGXht4aKnbn68i2GijxsFX6RXahV"
 yield_dispatcher = "7oUKys5XKMzD2NmFCZyLDyTF2Hm1VH3qX8jVfZEY4f3r"
 
 [programs.localnet]
-adapter_drift = "2XVcoTcAcsCqnSh7zA1tzBaGxN3fBTmDKX52U8eozk8y"
+adapter_drift = "2zMNZcFzAx9bFNchTWDqiJGt5H3bCDgo8PW1TTskwcLJ"
 adapter_jupiter = "8QdkGAkLvpN7JPxf3dgKFUXVGPS2LWW4BumbNkVkXkux"
 adapter_kamino = "BQMHrbTGx9ruKQN54XzMajLq769ax3e33YJ5FMkowrg9"
 adapter_maple = "Ft2Yvaiqwsjvo1yyYEWvt12YCsDB4kjGBd7vrF8RwwjU"
@@ -32,7 +32,7 @@ wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 'tests/**/*.test.ts'"
-test-fork = "bash scripts/run-mainnet-fork-tests.sh"
+test-fork = "bash scripts/run-fork-surfpool.sh"
 
 [hooks]
 

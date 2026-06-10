@@ -6,6 +6,9 @@
 //! - **Model**: JLP (Jupiter Liquidity Provider) pool
 //! - **Underlying**: USDC (contributed as liquidity to perp markets)
 
+#![allow(clippy::diverging_sub_expression)]
+#![allow(unexpected_cfgs)]
+
 use anchor_lang::prelude::*;
 
 pub mod instructions;

@@ -61,7 +61,7 @@ describe("adapter-registry", () => {
     );
 
     await program.methods
-      .proposeAdapter("Test Adapter", "https://example.com/metadata.json", "test_vault_state")
+      .proposeAdapter("Test Adapter", "https://example.com/metadata.json", "test_vault_state", "vault_authority")
       .accounts({
         proposer: authority.publicKey,
         registryState: registryStatePda,
@@ -94,7 +94,7 @@ describe("adapter-registry", () => {
 
     // First propose
     await program.methods
-      .proposeAdapter("Approved Adapter", "https://example.com/meta.json", "test_vault_state")
+      .proposeAdapter("Approved Adapter", "https://example.com/meta.json", "test_vault_state", "vault_authority")
       .accounts({
         proposer: authority.publicKey,
         registryState: registryStatePda,
@@ -131,7 +131,7 @@ describe("adapter-registry", () => {
 
     // Propose then approve
     await program.methods
-      .proposeAdapter("Revoke Target", "https://example.com/meta.json", "test_vault_state")
+      .proposeAdapter("Revoke Target", "https://example.com/meta.json", "test_vault_state", "vault_authority")
       .accounts({
         proposer: authority.publicKey,
         registryState: registryStatePda,
@@ -180,7 +180,7 @@ describe("adapter-registry", () => {
 
     // Propose first
     await program.methods
-      .proposeAdapter("Unauth Test", "https://example.com/meta.json", "test_vault_state")
+      .proposeAdapter("Unauth Test", "https://example.com/meta.json", "test_vault_state", "vault_authority")
       .accounts({
         proposer: authority.publicKey,
         registryState: registryStatePda,

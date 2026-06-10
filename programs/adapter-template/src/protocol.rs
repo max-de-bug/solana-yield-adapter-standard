@@ -1,8 +1,7 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::{instruction::Instruction, program::invoke_signed};
 use yield_adapter_trait::YieldAdapterError;
 
-use crate::state::{TemplateVaultState, VAULT_AUTHORITY_SEED};
+use crate::state::TemplateVaultState;
 use crate::EXTERNAL_PROGRAM_ID;
 
 // ─── DISCRIMINATORS ───────────────────────────────────────────────────────────
@@ -28,6 +27,7 @@ use crate::EXTERNAL_PROGRAM_ID;
 /// 2. Set `EXTERNAL_PROGRAM_ID` in `lib.rs` to your protocol's program ID.
 /// 3. Build the `Instruction` with the correct accounts and data layout.
 /// 4. Pass the correct `AccountInfo` slice to `invoke_signed`.
+#[allow(unused_variables)]
 pub fn on_deposit<'info>(
     vault: &mut TemplateVaultState,
     vault_authority: &AccountInfo<'info>,
@@ -89,6 +89,7 @@ pub fn on_deposit<'info>(
 /// ### Customizing
 /// Follow the same pattern as `on_deposit` above, using the withdraw
 /// discriminator and account layout from your protocol.
+#[allow(unused_variables)]
 pub fn on_withdraw<'info>(
     vault: &mut TemplateVaultState,
     vault_authority: &AccountInfo<'info>,

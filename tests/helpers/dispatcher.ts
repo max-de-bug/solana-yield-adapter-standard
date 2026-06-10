@@ -53,7 +53,8 @@ export async function approveAdapterInRegistry(
   underlyingMint: PublicKey,
   name: string,
   metadataUri: string,
-  vaultStateSeed: string = "test_vault_state"
+  vaultStateSeed: string = "test_vault_state",
+  vaultAuthoritySeed: string = "vault_authority"
 ): Promise<PublicKey> {
   const [adapterEntryPda] = findPda(
     [Buffer.from("adapter_entry"), adapterProgram.toBuffer()],
@@ -68,7 +69,7 @@ export async function approveAdapterInRegistry(
   }
 
   await registryProgram.methods
-    .proposeAdapter(name, metadataUri, vaultStateSeed)
+    .proposeAdapter(name, metadataUri, vaultStateSeed, vaultAuthoritySeed)
     .accounts({
       proposer: authority.publicKey,
       registryState: registryStatePda,
@@ -181,7 +182,8 @@ export async function setupApprovedKaminoForDispatcher(
     vaultMint,
     "Kamino USDC (reference)",
     "https://example.com/kamino-reference.json",
-    vaultStateSeed
+    vaultStateSeed,
+    "kamino_vault_authority"
   );
 
   const { vaultStatePda, vaultAuthorityPda, vaultTokenAccount } =

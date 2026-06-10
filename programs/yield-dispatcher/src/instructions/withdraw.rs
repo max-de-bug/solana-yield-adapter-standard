@@ -83,6 +83,7 @@ pub struct Withdraw<'info> {
     #[account(
         constraint = adapter_validation::is_adapter_vault_authority(
             &adapter_vault_authority.to_account_info(),
+            &adapter_entry.vault_authority_seed,
             &adapter_program.key(),
         ) @ DispatcherError::AdapterCpiError,
     )]

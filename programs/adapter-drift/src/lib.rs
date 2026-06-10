@@ -12,6 +12,9 @@
 //! This adapter implements the correct interface against the protocol-v2
 //! program specification. The cooldown period is tracked in adapter state.
 
+#![allow(clippy::diverging_sub_expression)]
+#![allow(unexpected_cfgs)]
+
 use anchor_lang::prelude::*;
 
 pub mod instructions;
@@ -20,7 +23,7 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("2XVcoTcAcsCqnSh7zA1tzBaGxN3fBTmDKX52U8eozk8y");
+declare_id!("2zMNZcFzAx9bFNchTWDqiJGt5H3bCDgo8PW1TTskwcLJ");
 
 pub const DRIFT_PROGRAM_ID: &str = "dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH";
 

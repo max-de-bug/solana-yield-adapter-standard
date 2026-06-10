@@ -71,12 +71,75 @@ export async function runAdapterDepositWithdrawFlow(
   const [vaultAuthorityPda] = findPda([vaultAuthoritySeed], program.programId);
 
   let underlyingMint: PublicKey;
-  if (options.underlyingMint) {
-    underlyingMint = options.underlyingMint;
-  } else if (isMainnetFork()) {
-    underlyingMint = adapterName === "maple" ? SYRUP_USDC_MINT : MAINNET_USDC_MINT;
+  let userTokenAccount: PublicKey;
+
+  if (isMainnetFork()) {
+    const fixtureWalletPath = path.join(
+      __dirname,
+      "..", "..", "..", "tests", "fixtures", "fork-wallet.json"
+    );
+    if (fs.existsSync(fixtureWalletPath)) {
+      // Legacy fixture path: use MAINNET_USDC_MINT and transfer from fixture wallet
+      underlyingMint = options.underlyingMint ?? (adapterName === "maple" ? SYRUP_USDC_MINT : MAINNET_USDC_MINT);
+      const fixtureSecret = Uint8Array.from(
+        JSON.parse(fs.readFileSync(fixtureWalletPath, "utf8"))
+      );
+      const fixtureWallet = Keypair.fromSecretKey(fixtureSecret);
+
+      await connection.requestAirdrop(
+        fixtureWallet.publicKey,
+        2 * LAMPORTS_PER_SOL
+      );
+
+      const fixtureAta = getAssociatedTokenAddressSync(
+        underlyingMint,
+        fixtureWallet.publicKey
+      );
+      userTokenAccount = (
+        await getOrCreateAssociatedTokenAccount(
+          connection,
+          payer,
+          underlyingMint,
+          authority.publicKey,
+          false,
+          undefined,
+          undefined,
+          TOKEN_PROGRAM_ID
+        )
+      ).address;
+
+      await transfer(
+        connection,
+        payer,
+        fixtureAta,
+        userTokenAccount,
+        fixtureWallet,
+        depositAmount * 2,
+        [],
+        undefined,
+        TOKEN_PROGRAM_ID
+      );
+    } else {
+      // Surfpool path: create test mint and use it for vault + user
+      underlyingMint = await createTestMint(connection, payer, 6);
+      userTokenAccount = await createTokenAccount(connection, underlyingMint, authority.publicKey, payer);
+      await mintTestTokens(connection, underlyingMint, userTokenAccount, payer, depositAmount * 2);
+    }
   } else {
-    underlyingMint = await createTestMint(connection, payer, 6);
+    underlyingMint = options.underlyingMint ?? await createTestMint(connection, payer, 6);
+    userTokenAccount = await createTokenAccount(
+      connection,
+      underlyingMint,
+      authority.publicKey,
+      payer
+    );
+    await mintTestTokens(
+      connection,
+      underlyingMint,
+      userTokenAccount,
+      payer,
+      depositAmount * 2
+    );
   }
 
   try {
@@ -102,72 +165,6 @@ export async function runAdapterDepositWithdrawFlow(
     vaultAuthorityPda,
     true
   );
-
-  let userTokenAccount: PublicKey;
-  if (isMainnetFork()) {
-    const fixtureWalletPath = path.join(
-      __dirname,
-      "..", "..", "..", "tests", "fixtures", "fork-wallet.json"
-    );
-    if (!fs.existsSync(fixtureWalletPath)) {
-      throw new Error(
-        `Missing fork fixture wallet at ${fixtureWalletPath}. ` +
-        "Run: scripts/setup-fork-usdc-fixture.sh"
-      );
-    }
-    const fixtureSecret = Uint8Array.from(
-      JSON.parse(fs.readFileSync(fixtureWalletPath, "utf8"))
-    );
-    const fixtureWallet = Keypair.fromSecretKey(fixtureSecret);
-
-    await connection.requestAirdrop(
-      fixtureWallet.publicKey,
-      2 * LAMPORTS_PER_SOL
-    );
-
-    const fixtureAta = getAssociatedTokenAddressSync(
-      underlyingMint,
-      fixtureWallet.publicKey
-    );
-    userTokenAccount = (
-      await getOrCreateAssociatedTokenAccount(
-        connection,
-        payer,
-        underlyingMint,
-        authority.publicKey,
-        false,
-        undefined,
-        undefined,
-        TOKEN_PROGRAM_ID
-      )
-    ).address;
-
-    await transfer(
-      connection,
-      payer,
-      fixtureAta,
-      userTokenAccount,
-      fixtureWallet,
-      depositAmount * 2,
-      [],
-      undefined,
-      TOKEN_PROGRAM_ID
-    );
-  } else {
-    userTokenAccount = await createTokenAccount(
-      connection,
-      underlyingMint,
-      authority.publicKey,
-      payer
-    );
-    await mintTestTokens(
-      connection,
-      underlyingMint,
-      userTokenAccount,
-      payer,
-      depositAmount * 2
-    );
-  }
 
   const userPositionPdaAddr = adapterUserPositionPda(
     program.programId,
