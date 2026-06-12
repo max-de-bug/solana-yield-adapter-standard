@@ -9,8 +9,11 @@ use yield_adapter_trait::{MAX_ADAPTER_NAME_LEN, MAX_METADATA_URI_LEN};
 #[account]
 #[derive(Debug, InitSpace)]
 pub struct RegistryState {
-    /// The governance authority who can approve/revoke adapters.
+    /// The governance authority who can approve/revoke adapters and transfer governance.
     pub authority: Pubkey,
+
+    /// Optional guardian with day-to-day approval/revoke powers (authority-only to set).
+    pub guardian: Option<Pubkey>,
 
     /// Pending governance authority for two-step transfer.
     pub pending_authority: Option<Pubkey>,
@@ -23,6 +26,18 @@ pub struct RegistryState {
 
     /// Bump seed for the PDA.
     pub bump: u8,
+}
+
+impl RegistryState {
+    /// Returns `true` if `signer` is the core authority.
+    pub fn is_authority(&self, signer: &Pubkey) -> bool {
+        signer == &self.authority
+    }
+
+    /// Returns `true` if `signer` is either the authority or the guardian.
+    pub fn is_authority_or_guardian(&self, signer: &Pubkey) -> bool {
+        self.is_authority(signer) || self.guardian.as_ref() == Some(signer)
+    }
 }
 
 pub const REGISTRY_STATE_SEED: &[u8] = b"registry_state";

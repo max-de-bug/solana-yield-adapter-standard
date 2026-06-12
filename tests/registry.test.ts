@@ -209,6 +209,188 @@ describe("adapter-registry", () => {
     }
   });
 
+  it("sets a guardian", async () => {
+    const guardian = Keypair.generate();
+    await airdrop(provider.connection, guardian.publicKey);
+
+    await program.methods
+      .setGuardian(guardian.publicKey)
+      .accounts({
+        authority: authority.publicKey,
+        registryState: registryStatePda,
+      })
+      .rpc();
+
+    const state = await program.account.registryState.fetch(registryStatePda);
+    expect(state.guardian.toString()).to.equal(guardian.publicKey.toString());
+    expect(state.authority.toString()).to.equal(authority.publicKey.toString());
+  });
+
+  it("guardian can approve a proposed adapter", async () => {
+    const guardian = anchor.web3.Keypair.generate();
+    await airdrop(provider.connection, guardian.publicKey);
+
+    // Set guardian
+    await program.methods
+      .setGuardian(guardian.publicKey)
+      .accounts({
+        authority: authority.publicKey,
+        registryState: registryStatePda,
+      })
+      .rpc();
+
+    const adapterProgram = Keypair.generate();
+    const underlyingMint = Keypair.generate();
+
+    const [adapterEntryPda] = findPda(
+      [Buffer.from("adapter_entry"), adapterProgram.publicKey.toBuffer()],
+      program.programId
+    );
+
+    // Propose first
+    await program.methods
+      .proposeAdapter("Guardian Approved", "https://example.com/meta.json", "test_vault_state", "vault_authority")
+      .accounts({
+        proposer: authority.publicKey,
+        registryState: registryStatePda,
+        adapterEntry: adapterEntryPda,
+        adapterProgram: adapterProgram.publicKey,
+        underlyingMint: underlyingMint.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+
+    // Guardian approves (not authority)
+    await program.methods
+      .approveAdapter()
+      .accounts({
+        authority: guardian.publicKey,
+        registryState: registryStatePda,
+        adapterEntry: adapterEntryPda,
+      })
+      .signers([guardian])
+      .rpc();
+
+    const entry = await program.account.adapterEntry.fetch(adapterEntryPda);
+    expect(entry.status).to.deep.equal({ approved: {} });
+  });
+
+  it("guardian can revoke an approved adapter", async () => {
+    const guardian = anchor.web3.Keypair.generate();
+    await airdrop(provider.connection, guardian.publicKey);
+
+    await program.methods
+      .setGuardian(guardian.publicKey)
+      .accounts({
+        authority: authority.publicKey,
+        registryState: registryStatePda,
+      })
+      .rpc();
+
+    const adapterProgram = Keypair.generate();
+    const underlyingMint = Keypair.generate();
+
+    const [adapterEntryPda] = findPda(
+      [Buffer.from("adapter_entry"), adapterProgram.publicKey.toBuffer()],
+      program.programId
+    );
+
+    // Propose then approve (as authority)
+    await program.methods
+      .proposeAdapter("Guardian Revoke", "https://example.com/meta.json", "test_vault_state", "vault_authority")
+      .accounts({
+        proposer: authority.publicKey,
+        registryState: registryStatePda,
+        adapterEntry: adapterEntryPda,
+        adapterProgram: adapterProgram.publicKey,
+        underlyingMint: underlyingMint.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+
+    await program.methods
+      .approveAdapter()
+      .accounts({
+        authority: authority.publicKey,
+        registryState: registryStatePda,
+        adapterEntry: adapterEntryPda,
+      })
+      .rpc();
+
+    // Guardian revokes
+    await program.methods
+      .revokeAdapter()
+      .accounts({
+        authority: guardian.publicKey,
+        registryState: registryStatePda,
+        adapterEntry: adapterEntryPda,
+      })
+      .signers([guardian])
+      .rpc();
+
+    const entry = await program.account.adapterEntry.fetch(adapterEntryPda);
+    expect(entry.status).to.deep.equal({ revoked: {} });
+  });
+
+  it("clears the guardian via Pubkey.default()", async () => {
+    // Set a guardian first
+    const guardian = Keypair.generate();
+    await airdrop(provider.connection, guardian.publicKey);
+
+    await program.methods
+      .setGuardian(guardian.publicKey)
+      .accounts({
+        authority: authority.publicKey,
+        registryState: registryStatePda,
+      })
+      .rpc();
+
+    let state = await program.account.registryState.fetch(registryStatePda);
+    expect(state.guardian.toString()).to.equal(guardian.publicKey.toString());
+
+    // Clear it
+    await program.methods
+      .setGuardian(anchor.web3.PublicKey.default)
+      .accounts({
+        authority: authority.publicKey,
+        registryState: registryStatePda,
+      })
+      .rpc();
+
+    state = await program.account.registryState.fetch(registryStatePda);
+    expect(state.guardian).to.be.null;
+  });
+
+  it("guardian cannot set a new guardian", async () => {
+    const guardian = Keypair.generate();
+    await airdrop(provider.connection, guardian.publicKey);
+
+    await program.methods
+      .setGuardian(guardian.publicKey)
+      .accounts({
+        authority: authority.publicKey,
+        registryState: registryStatePda,
+      })
+      .rpc();
+
+    const anotherGuardian = Keypair.generate();
+    await airdrop(provider.connection, anotherGuardian.publicKey);
+
+    try {
+      await program.methods
+        .setGuardian(anotherGuardian.publicKey)
+        .accounts({
+          authority: guardian.publicKey,
+          registryState: registryStatePda,
+        })
+        .signers([guardian])
+        .rpc();
+      expect.fail("Should have rejected guardian setting a new guardian");
+    } catch (err: any) {
+      expect(err.toString()).to.contain("Unauthorized");
+    }
+  });
+
   it("transfers governance via two-step nominate + accept", async () => {
     const newAuthority = Keypair.generate();
     await airdrop(provider.connection, newAuthority.publicKey);

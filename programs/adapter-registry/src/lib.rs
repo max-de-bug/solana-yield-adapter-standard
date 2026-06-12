@@ -67,4 +67,10 @@ pub mod adapter_registry {
     pub fn accept_governance(ctx: Context<AcceptGovernance>) -> Result<()> {
         instructions::accept_governance::handler(ctx)
     }
+
+    /// Set or remove the guardian role.
+    /// Authority-only. Pass `Pubkey::default()` to clear the guardian.
+    pub fn set_guardian(ctx: Context<SetGuardian>, new_guardian: Pubkey) -> Result<()> {
+        instructions::set_guardian::handler(ctx, new_guardian)
+    }
 }

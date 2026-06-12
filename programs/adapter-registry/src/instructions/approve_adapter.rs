@@ -7,14 +7,14 @@ use crate::state::{
 
 #[derive(Accounts)]
 pub struct ApproveAdapter<'info> {
-    /// Must be the governance authority.
+    /// Must be the governance authority or guardian.
     pub authority: Signer<'info>,
 
     #[account(
         mut,
         seeds = [REGISTRY_STATE_SEED],
         bump = registry_state.bump,
-        constraint = registry_state.authority == authority.key() @ RegistryError::Unauthorized,
+        constraint = registry_state.is_authority_or_guardian(&authority.key()) @ RegistryError::Unauthorized,
     )]
     pub registry_state: Account<'info, RegistryState>,
 
