@@ -23,7 +23,7 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("2zMNZcFzAx9bFNchTWDqiJGt5H3bCDgo8PW1TTskwcLJ");
+declare_id!("4FyuKY2HeXemKoDYoPo1J2xPoeY29YJj7tF7PJLjhS91");
 
 pub const DRIFT_PROGRAM_ID: &str = "dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH";
 

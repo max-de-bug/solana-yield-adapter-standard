@@ -19,7 +19,7 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("Ft2Yvaiqwsjvo1yyYEWvt12YCsDB4kjGBd7vrF8RwwjU");
+declare_id!("GohmCi1aDJAfSg4Sp4rELDwku8ptUs8qafF5aju6p5gz");
 
 #[program]
 pub mod adapter_maple {

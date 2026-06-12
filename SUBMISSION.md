@@ -49,39 +49,23 @@ See [docs/REFERENCE_IMPLEMENTATION.md](docs/REFERENCE_IMPLEMENTATION.md) for the
 
 ## Program IDs (devnet)
 
-Synced in `Anchor.toml` via `anchor keys sync`:
+All programs built and deployed with CPI-capable code (Anchor 1.0.1, Solana 2.2.20):
 
-| Program | Devnet address | Deployed |
-|---------|----------------|----------|
-| `adapter_registry` | `CeyDkRgegNUz2TeFfFjRdL89G9EGGDymiqHoJkeFGcZ4` | ✅ Live (slot 467592247) |
-| `yield_dispatcher` | `7oUKys5XKMzD2NmFCZyLDyTF2Hm1VH3qX8jVfZEY4f3r` | ✅ Live (slot 467592287) |
-| `adapter_kamino` | `BzuVWb3UgCW6axee6ZNb812D268XrWkJsE7mxkX9b3Kp` | ⚠️ Needs redeploy (pre-CPI build at slot 467592306) |
-| `adapter_marginfi` | `FrCvyyGSukMZcLhpU7EneuhfPmqS5p8E2ysnFdwHhopR` | ⚠️ Needs redeploy (pre-CPI build at slot 467592323) |
-| `adapter_jupiter` | `2acqkTDi2VQ4FCZVDB8PeMVLVWnREogE5HA2GxvHdWxu` | ❌ Not deployed |
-| `adapter_maple` | `Ft2Yvaiqwsjvo1yyYEWvt12YCsDB4kjGBd7vrF8RwwjU` | ❌ Not deployed |
-| `adapter_drift` | `CVfb8T9tf9WEeus4mKWsxTehVezeY9TGwYsSc3JmxWYz` | ❌ Not deployed |
+| Program | Devnet address | Status | Slot |
+|---------|---------------|--------|------|
+| `adapter_registry` | `3DQGCPAjHcoT7uf9MJDM5ZTL7GEvTKU3MXFzzrHvqSWt` | ✅ LIVE | 456614738 |
+| `yield_dispatcher` | `HUGWpAwFyeWrnH7f9pfWX93puZdC2ud4MYZQT8FtEBvH` | ✅ LIVE | 456614815 |
+| `adapter_kamino` | `AjvTbsYhcEehGTSx7yvF4qSiQLWyfeqe3PRhHVyZB3Xe` | ✅ LIVE | 456614820 |
+| `adapter_marginfi` | `5yQiba9TNit1FJx3KqXY5nJM3zuQTreqBFWfeGohBqat` | ✅ LIVE | 456614821 |
+| `adapter_jupiter` | `AwpaZYbeNe3vD17JuGMjsv73b3JuqM3eEoqEVnQk9NMo` | ✅ LIVE | 456614822 |
+| `adapter_maple` | `GohmCi1aDJAfSg4Sp4rELDwku8ptUs8qafF5aju6p5gz` | ✅ LIVE | 468853598 |
+| `adapter_drift` | `4FyuKY2HeXemKoDYoPo1J2xPoeY29YJj7tF7PJLjhS91` | ✅ LIVE | 468853706 |
 
-All `.so` binaries and keypairs are built and ready. Deployment to devnet requires ~8 SOL in wallet `5FsXjNmmudnBndWPgQWj8uvY7kfs3dSpf655i39Q6A9A` (current balance: 0.043 SOL). Run:
-
-```bash
-./scripts/deploy-devnet.sh
-```
-
-> **Note**: Devnet faucet rate-limits impede automated deployment. Fund the wallet above and re-run the script.
+**All 7 programs are live on devnet** under authority `5FsXjNmmudnBndWPgQWj8uvY7kfs3dSpf655i39Q6A9A`.
 
 ## Devnet deployment
 
-**Registry and dispatcher are live on devnet** at the addresses above, both owned by authority `5FsXjNmmudnBndWPgQWj8uvY7kfs3dSpf655i39Q6A9A`.
-
-Kamino and MarginFi adapters were deployed in an earlier session but contain **pre-CPI code** and need redeployment. Jupiter, Maple, and Drift have never been deployed.
-
-To finish devnet deployment, fund the wallet and run:
-
-```bash
-./scripts/deploy-devnet.sh
-```
-
-Then initialize registry and dispatcher from your wallet (see `tests/registry.test.ts` / `tests/dispatcher.test.ts` account layout).
+All 7 programs are deployed and live on devnet. To initialize the registry and dispatcher from your wallet, refer to the account layout in `tests/registry.test.ts` and `tests/dispatcher.test.ts`.
 
 ## Test commands
 

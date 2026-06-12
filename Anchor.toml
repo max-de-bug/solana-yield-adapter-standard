@@ -7,14 +7,14 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-adapter_drift = "CVfb8T9tf9WEeus4mKWsxTehVezeY9TGwYsSc3JmxWYz"
-adapter_jupiter = "2acqkTDi2VQ4FCZVDB8PeMVLVWnREogE5HA2GxvHdWxu"
-adapter_kamino = "BzuVWb3UgCW6axee6ZNb812D268XrWkJsE7mxkX9b3Kp"
-adapter_maple = "Ft2Yvaiqwsjvo1yyYEWvt12YCsDB4kjGBd7vrF8RwwjU"
-adapter_marginfi = "FrCvyyGSukMZcLhpU7EneuhfPmqS5p8E2ysnFdwHhopR"
-adapter_registry = "CeyDkRgegNUz2TeFfFjRdL89G9EGGDymiqHoJkeFGcZ4"
+adapter_drift = "4FyuKY2HeXemKoDYoPo1J2xPoeY29YJj7tF7PJLjhS91"
+adapter_jupiter = "AwpaZYbeNe3vD17JuGMjsv73b3JuqM3eEoqEVnQk9NMo"
+adapter_kamino = "AjvTbsYhcEehGTSx7yvF4qSiQLWyfeqe3PRhHVyZB3Xe"
+adapter_maple = "GohmCi1aDJAfSg4Sp4rELDwku8ptUs8qafF5aju6p5gz"
+adapter_marginfi = "5yQiba9TNit1FJx3KqXY5nJM3zuQTreqBFWfeGohBqat"
+adapter_registry = "3DQGCPAjHcoT7uf9MJDM5ZTL7GEvTKU3MXFzzrHvqSWt"
 adapter_template = "jbLUHXvc9P26MpQdGXht4aKnbn68i2GijxsFX6RXahV"
-yield_dispatcher = "7oUKys5XKMzD2NmFCZyLDyTF2Hm1VH3qX8jVfZEY4f3r"
+yield_dispatcher = "HUGWpAwFyeWrnH7f9pfWX93puZdC2ud4MYZQT8FtEBvH"
 
 [programs.localnet]
 adapter_drift = "2zMNZcFzAx9bFNchTWDqiJGt5H3bCDgo8PW1TTskwcLJ"

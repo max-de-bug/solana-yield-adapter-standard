@@ -23,7 +23,7 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("BQMHrbTGx9ruKQN54XzMajLq769ax3e33YJ5FMkowrg9");
+declare_id!("AjvTbsYhcEehGTSx7yvF4qSiQLWyfeqe3PRhHVyZB3Xe");
 
 /// Kamino K-Lend program ID on mainnet.
 pub const KAMINO_PROGRAM_ID: &str = "KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD";
