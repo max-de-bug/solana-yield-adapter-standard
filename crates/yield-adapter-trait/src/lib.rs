@@ -272,86 +272,126 @@ pub enum YieldAdapterError {
 }
 
 // ---------------------------------------------------------------------------
-// Utility helpers
+// Protocol-exact value math: u256 long-division for Kamino-style big-fraction
 // ---------------------------------------------------------------------------
 
-/// Calculates the share price given total underlying and total shares.
-/// Returns the value in underlying units per share, scaled by 1e9 for precision.
+/// Multiply a u64 by a u128, then divide by a u64, using exact u256 arithmetic.
 ///
-/// # Arguments
-/// * `total_underlying` — Total underlying tokens in the pool/vault.
-/// * `total_shares` — Total receipt/share tokens outstanding.
+/// The computation `a * b / divisor` is performed with a 192-bit intermediate
+/// (three 64-bit limbs) to avoid overflow. This is needed for protocol-exact
+/// `current_value` computations where the intermediate product exceeds 128 bits
+/// (e.g. Kamino's collateral→liquidity conversion which uses U68F60 big-fraction
+/// math, or Drift's insurance-fund share calculations).
 ///
-/// # Returns
-/// Price per share scaled by 1e9, or 1e9 if no shares exist (1:1 initial ratio).
+/// Returns `None` if `divisor` is zero or the quotient exceeds u128.
+pub fn mul_div_u64(a: u64, b: u128, divisor: u64) -> Option<u128> {
+    if divisor == 0 {
+        return None;
+    }
+    // Split b into low and high 64-bit halves.
+    let mask = u64::MAX as u128;
+    let lo = (a as u128) * (b & mask); // a * b_lo   (≤ u64::MAX * u64::MAX ≈ 3.4e38)
+    let hi = (a as u128) * (b >> 64); // a * b_hi   (≥ 0)
+    // Distribute across three 64-bit limbs [p2, p1, p0] = a * b:
+    //   p0 = low 64 bits of lo
+    //   p1 = high 64 bits of lo + low 64 bits of hi
+    //   p2 = high 64 bits of hi + carry from p1
+    let p0 = (lo & mask) as u64;
+    let mid = (lo >> 64) + (hi & mask);
+    let p1 = (mid & mask) as u64;
+    let p2 = ((hi >> 64) + (mid >> 64)) as u64;
+    // Schoolbook long-division over the three limb words.
+    let d = divisor as u128;
+    let mut rem: u128 = 0;
+    let mut q = [0u64; 3];
+    for (i, &limb) in [p2, p1, p0].iter().enumerate() {
+        let acc = (rem << 64) | (limb as u128);
+        q[i] = (acc / d) as u64;
+        rem = acc % d;
+    }
+    // If the high limb of the quotient is non-zero, the result overflows u128.
+    if q[0] != 0 {
+        return None;
+    }
+    Some(((q[1] as u128) << 64) | (q[2] as u128))
+}
+
+/// Multiply two u64 values and divide by a third, using exact u256 arithmetic.
+///
+/// Equivalent to `a * b / divisor` but computed with a 128-bit intermediate
+/// (promoted to u128 within [`mul_div_u64`]) to guarantee no overflow.
+///
+/// Returns `None` if `divisor` is zero or the quotient exceeds u64.
+pub fn mul_div_u64_u64(a: u64, b: u64, divisor: u64) -> Option<u64> {
+    let result = mul_div_u64(a, b as u128, divisor)?;
+    if result > u64::MAX as u128 {
+        return None;
+    }
+    Some(result as u64)
+}
+
+// ---------------------------------------------------------------------------
+// Legacy 1e9-scaled helpers — kept for backward compatibility
+// ---------------------------------------------------------------------------
+
+/// Calculate share price (scaled by 1e9) using exact u256 arithmetic.
+///
+/// Returns 1e9 (1:1 ratio) when `total_shares` is zero (empty pool).
 pub fn calculate_share_price(total_underlying: u64, total_shares: u64) -> Result<u64> {
     if total_shares == 0 {
-        return Ok(1_000_000_000); // 1:1 initial ratio
+        return Ok(1_000_000_000);
     }
-
-    let price = (total_underlying as u128)
-        .checked_mul(1_000_000_000)
-        .ok_or(YieldAdapterError::ArithmeticOverflow)?
-        .checked_div(total_shares as u128)
+    let price = mul_div_u64(total_underlying, 1_000_000_000u128, total_shares)
         .ok_or(YieldAdapterError::ArithmeticOverflow)?;
-
+    if price > u64::MAX as u128 {
+        return Err(YieldAdapterError::ArithmeticOverflow.into());
+    }
     Ok(price as u64)
 }
 
-/// Converts an amount of underlying tokens to shares at a given share price.
-///
-/// # Arguments
-/// * `underlying_amount` — Amount of underlying tokens to convert.
-/// * `share_price` — Current price per share (scaled by 1e9).
-///
-/// # Returns
-/// Number of shares (receipt tokens) corresponding to the underlying amount.
+/// Convert underlying tokens to shares at a given (1e9-scaled) share price.
 pub fn underlying_to_shares(underlying_amount: u64, share_price: u64) -> Result<u64> {
     if share_price == 0 {
         return Err(YieldAdapterError::ArithmeticOverflow.into());
     }
-
-    let shares = (underlying_amount as u128)
-        .checked_mul(1_000_000_000)
-        .ok_or(YieldAdapterError::ArithmeticOverflow)?
-        .checked_div(share_price as u128)
+    let shares = mul_div_u64(underlying_amount, 1_000_000_000u128, share_price)
         .ok_or(YieldAdapterError::ArithmeticOverflow)?;
-
+    if shares > u64::MAX as u128 {
+        return Err(YieldAdapterError::ArithmeticOverflow.into());
+    }
     Ok(shares as u64)
 }
 
-/// Converts an amount of shares to underlying tokens at a given share price.
-///
-/// # Arguments
-/// * `share_amount` — Number of shares to convert.
-/// * `share_price` — Current price per share (scaled by 1e9).
-///
-/// # Returns
-/// Amount of underlying tokens corresponding to the shares.
+/// Convert shares to underlying tokens at a given (1e9-scaled) share price.
 pub fn shares_to_underlying(share_amount: u64, share_price: u64) -> Result<u64> {
-    let underlying = (share_amount as u128)
-        .checked_mul(share_price as u128)
-        .ok_or(YieldAdapterError::ArithmeticOverflow)?
-        .checked_div(1_000_000_000)
+    let underlying = mul_div_u64(share_amount, share_price as u128, 1_000_000_000)
         .ok_or(YieldAdapterError::ArithmeticOverflow)?;
-
+    if underlying > u64::MAX as u128 {
+        return Err(YieldAdapterError::ArithmeticOverflow.into());
+    }
     Ok(underlying as u64)
 }
 
-/// Minted shares for a new deposit at the current pool ratio.
+/// Compute shares minted for a deposit at the current pool ratio (protocol-exact).
+///
+/// Uses u256 arithmetic so that `amount * total_shares / total_underlying` never
+/// overflows even when both `amount` and `total_shares` are near u64::MAX.
+///
+/// Returns `amount` when `total_shares == 0` (first depositor, 1:1 ratio).
 pub fn shares_for_deposit(amount: u64, total_underlying: u64, total_shares: u64) -> Result<u64> {
     if total_shares == 0 {
         return Ok(amount);
     }
-    let shares = (amount as u128)
-        .checked_mul(total_shares as u128)
-        .ok_or(YieldAdapterError::ArithmeticOverflow)?
-        .checked_div(total_underlying as u128)
-        .ok_or(YieldAdapterError::ArithmeticOverflow)?;
-    Ok(shares as u64)
+    mul_div_u64_u64(amount, total_shares, total_underlying)
+        .ok_or(YieldAdapterError::ArithmeticOverflow.into())
 }
 
-/// User position value in underlying token units (not scaled share price).
+/// Compute user position value in underlying tokens (protocol-exact).
+///
+/// Uses u256 arithmetic so that `receipt_token_balance * total_underlying / total_shares`
+/// never overflows even when both operands are near u64::MAX.
+///
+/// Returns 0 when `receipt_token_balance` or `total_shares` is zero.
 pub fn user_position_underlying_value(
     receipt_token_balance: u64,
     total_underlying: u64,
@@ -360,12 +400,8 @@ pub fn user_position_underlying_value(
     if receipt_token_balance == 0 || total_shares == 0 {
         return Ok(0);
     }
-    let value = (receipt_token_balance as u128)
-        .checked_mul(total_underlying as u128)
-        .ok_or(YieldAdapterError::ArithmeticOverflow)?
-        .checked_div(total_shares as u128)
-        .ok_or(YieldAdapterError::ArithmeticOverflow)?;
-    Ok(value as u64)
+    mul_div_u64_u64(receipt_token_balance, total_underlying, total_shares)
+        .ok_or(YieldAdapterError::ArithmeticOverflow.into())
 }
 
 /// Verifies a remaining account is the expected on-chain protocol program.
