@@ -10,12 +10,12 @@ A **reference standard** and five **reference adapters** — not live protocol i
 ## What this repo implements
 
 | Component | Status | Role |
-|---|---|---|
+|---|---|---|---|
 | Yield Dispatcher | Complete | Routes CPI to approved adapters |
-| Adapter Registry | Deployed (devnet) | propose → approve → revoke |
-| `yield-adapter-trait` | Complete | Events, errors, math, position macro |
-| 5 reference adapters | Complete | Share-based SPL vaults |
-| Integration tests | 48 total | 17 local + 31 fork |
+| Adapter Registry | Deployed (devnet) | propose → approve → revoke, guardian role |
+| `yield-adapter-trait` | Complete | Events, errors, u256 math, position macros |
+| 5 reference adapters | Complete | Share-based SPL vaults (Drift: two-phase withdrawal) |
+| Integration tests | 63 total | 32 local + 31 fork |
 
 ## What it deliberately does not do
 
@@ -27,7 +27,7 @@ Do not present this repo as production yield routing into Kamino, MarginFi, Jupi
 |---|---|
 | **No live protocol CPI** | USDC moves between user ATAs and adapter vault ATAs only |
 | **Maple** | No Solana program — holds real syrupUSDC (yield-bearing SPL token) |
-| **Drift cooldown** | Tracked on `AdapterPosition`, not enforced by Drift program |
+| **Drift cooldown** | Two-phase withdrawal model, not enforced by Drift program |
 | **Oracle / risk accounts** | Not wired for MarginFi JIT or Kamino reserve health |
 
 ## What tests actually prove

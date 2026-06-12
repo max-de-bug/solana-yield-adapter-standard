@@ -180,7 +180,7 @@ description: Ship a conformant yield adapter in under one day using this referen
   </Step>
 
   <Step title="7. Register (10 min)">
-    Pass the vault state seed your adapter uses for its vault state PDA. The dispatcher reads this seed from the registry to validate adapter accounts at runtime.
+    Pass the vault state seed and vault authority seed your adapter uses for its PDAs. The dispatcher reads these seeds from the registry to validate adapter accounts at runtime.
 
     ```typescript
     await registryProgram.methods
@@ -188,12 +188,13 @@ description: Ship a conformant yield adapter in under one day using this referen
         "My Adapter",                          // name
         "https://example.com/adapter.json",    // metadata_uri
         "my_vault_state",                      // vault_state_seed
+        "my_vault_authority",                  // vault_authority_seed
       )
       .accounts({ /* registryState, adapterEntry, adapterProgram, underlyingMint */ })
       .rpc();
     ```
 
-    Governance calls `approve_adapter`. Until approved, the [dispatcher](/dispatcher) rejects CPI.
+    Governance (or guardian) calls `approve_adapter`. Until approved, the [dispatcher](/dispatcher) rejects CPI.
 
     To transfer governance to a multisig, use the two-step pattern:
 

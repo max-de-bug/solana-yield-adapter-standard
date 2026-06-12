@@ -80,7 +80,7 @@ emit!(CurrentValueEvent { user, adapter, value, timestamp });
 
 ## Share price model
 
-All math uses `u128` intermediates and `checked_*` operations.
+All math uses `u256` intermediates (via `mul_div_u64`) and `checked_*` operations to prevent overflow, even when both operands are near `u64::MAX`.
 
 ```
 share_price     = total_underlying × 1e9 ÷ total_shares   (when total_shares > 0)

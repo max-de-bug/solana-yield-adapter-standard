@@ -53,11 +53,12 @@ npm run build
     npm test
     ```
 
-    Runs **17 integration tests** against a local validator:
+    Runs **32 integration tests** (26 passing, 6 pre-existing slippage failures on localnet) against a local validator:
 
-    - Registry governance lifecycle
+    - Registry governance lifecycle (including guardian role)
     - Dispatcher routing and pause
     - All five adapters: deposit → `current_value` → withdraw
+    - Drift two-phase withdrawal + cooldown enforcement
     - Error paths (zero amounts, insufficient balance)
   </Tab>
   <Tab title="Mainnet fork">

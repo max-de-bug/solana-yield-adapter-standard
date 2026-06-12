@@ -92,10 +92,10 @@ The Yield Adapter Standard solves this by providing a **single interface** that 
 ### Components
 
 | Component | Description |
-|---|---|
-| **Yield Adapter Trait** | Shared crate defining the standard interface, types, events, and errors |
+|---|---|---|
+| **Yield Adapter Trait** | Shared crate defining the standard interface, types, events, math, and account macros |
 | **Yield Dispatcher** | Router that validates adapters and tracks user positions |
-| **Adapter Registry** | Governance-gated on-chain registry for adapter approval |
+| **Adapter Registry** | Governance-gated on-chain registry with guardian role for adapter approval/revocation |
 | **Reference Adapters** | Five production-grade adapter implementations |
 
 ---
@@ -201,12 +201,12 @@ solana-yield-adapter-standard/
 | Suite | Command | Count |
 |-------|---------|-------|
 | Unit | `cargo test` | 28 |
-| Localnet integration | `anchor test` | 17 |
+| Localnet integration | `anchor test` | 32 (26 passing, 6 pre-existing slippage failures on localnet-only) |
 | Mainnet-fork integration | see below | 31 |
 
 Tests cover:
-- **Registry**: Initialize → Propose → Approve → Revoke → Transfer governance
-- **Dispatcher**: Initialize → Deposit → Withdraw → Current value → Error cases  
+- **Registry**: Initialize → Propose → Approve → Revoke → Set guardian → Transfer governance
+- **Dispatcher**: Initialize → Deposit → Withdraw → Current value → Pause → Error cases  
 - **Adapters**: Deposit → Verify shares → Withdraw → Verify balances (CPI round-trip on fork)
 
 ### Mainnet-Fork Tests
@@ -304,11 +304,11 @@ anchor init my-adapter && cd my-adapter
 ## Security Model
 
 | Layer | Protection |
-|---|---|
-| **Adapter Registry** | Governance-gated approval prevents malicious adapters |
+|---|---|---|
+| **Adapter Registry** | Governance-gated approval with optional guardian role prevents malicious adapters |
 | **Dispatcher Validation** | All CPI routes are validated against the registry |
 | **PDA Authority** | Vault funds are controlled by program-derived addresses |
-| **Checked Arithmetic** | All math uses `checked_*` operations to prevent overflows |
+| **Checked Arithmetic** | All math uses `checked_*` and u256 operations to prevent overflows |
 | **Event Auditability** | All operations emit standardized events for monitoring |
 | **Emergency Pause** | Dispatcher can be paused by governance in emergencies |
 

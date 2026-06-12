@@ -8,8 +8,8 @@ The test suite validates registry governance, dispatcher routing, and all five a
 ## Test matrix
 
 | Command | Tests | Environment | Duration |
-|---|---|---|---|
-| `npm test` | 17 | Local validator | ~2 min |
+|---|---|---|---|---|
+| `npm test` | 32 (26 passing, 6 pre-existing slippage failures on localnet) | Local validator | ~2 min |
 | `MAINNET_FORK=1` (see below) | 31 | Cloned mainnet programs | ~5–15 min (first run) |
 
 <Tip>
@@ -26,10 +26,11 @@ npm test
 ### Coverage
 
 | Suite | File | What it verifies |
-|---|---|---|
-| Registry | `tests/registry.test.ts` | propose → approve → revoke lifecycle |
+|---|---|---|---|
+| Registry | `tests/registry.test.ts` | propose → approve → revoke → set guardian → governance transfer |
 | Dispatcher | `tests/dispatcher.test.ts` | Routing, pause, registry rejection |
 | Adapters | `tests/adapters/*.test.ts` | deposit → `current_value` → withdraw per adapter |
+| Drift | `tests/adapters/drift.test.ts` | Two-phase withdraw, cooldown enforcement, slippage at request time |
 | Errors | Across suites | Zero amounts, insufficient balance, revoked adapters |
 
 ### Test helpers

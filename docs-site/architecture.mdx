@@ -40,11 +40,11 @@ Reference adapters in this repo route USDC through **local SPL vaults**. Dashed 
 A shared library — not a deployable program — that every adapter depends on:
 
 | Export | Purpose |
-|---|---|
+|---|---|---|
 | `DepositEvent`, `WithdrawEvent`, `CurrentValueEvent` | Standardized indexing surface |
 | `YieldAdapterError` | Codes `6000–6099` |
-| `shares_for_deposit`, `user_position_underlying_value` | Overflow-safe share math |
-| `define_adapter_position!` | Per-user `AdapterPosition` PDA in the adapter's program scope |
+| `shares_for_deposit`, `user_position_underlying_value`, `mul_div_u64` | Overflow-safe share math (u256 where needed) |
+| `define_adapter_position!` / `declare_standard_accounts!` | Per-user position PDA (`AdapterPosition` / `Position` + `WithdrawalTicket`) |
 
 ### Yield Dispatcher
 
@@ -64,7 +64,7 @@ Responsibilities:
 
 Program ID (devnet): `3DQGCPAjHcoT7uf9MJDM5ZTL7GEvTKU3MXFzzrHvqSWt`
 
-Governance-gated adapter lifecycle:
+Governance-gated adapter lifecycle with two-tier authority:
 
 ```mermaid
 stateDiagram-v2
@@ -74,7 +74,7 @@ stateDiagram-v2
     Revoked --> [*]
 ```
 
-Anyone may **propose**; only governance may **approve** or **revoke**. The dispatcher rejects CPI to non-approved adapters.
+Anyone may **propose**; the **governance authority** or optional **guardian** may **approve** or **revoke**. Only the authority can transfer governance or set a new guardian. The dispatcher rejects CPI to non-approved adapters.
 
 [Full registry reference →](/registry)
 

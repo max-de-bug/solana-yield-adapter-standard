@@ -3,7 +3,7 @@ title: Registry
 description: On-chain governance for proposing, approving, and revoking yield adapters
 ---
 
-The **Adapter Registry** is the trust anchor for the ecosystem. Only adapters with `Approved` status can be routed through the [dispatcher](/dispatcher).
+The **Adapter Registry** is the trust anchor for the ecosystem. Only adapters with `Approved` status can be routed through the [dispatcher](/dispatcher). The registry supports a two-tier authority model: a **governance authority** (full control) and an optional **guardian** (day-to-day approval/revocation).
 
 <Info>
 **Devnet program ID:** [`3DQGCPAjHcoT7uf9MJDM5ZTL7GEvTKU3MXFzzrHvqSWt`](https://explorer.solana.com/address/3DQGCPAjHcoT7uf9MJDM5ZTL7GEvTKU3MXFzzrHvqSWt?cluster=devnet)
@@ -20,10 +20,10 @@ stateDiagram-v2
 ```
 
 | Status | Dispatcher routing | Who can set |
-|---|---|---|
+|---|---|---|---|
 | `Proposed` | Blocked | Anyone via `propose_adapter` |
-| `Approved` | Allowed | Governance via `approve_adapter` |
-| `Revoked` | Blocked | Governance via `revoke_adapter` |
+| `Approved` | Allowed | Authority or guardian via `approve_adapter` |
+| `Revoked` | Blocked | Authority or guardian via `revoke_adapter` |
 
 ## Instructions
 
@@ -47,19 +47,35 @@ Also requires: `adapter_program_id`, `underlying_mint`.
 
 ### `approve_adapter`
 
-**Governance only.** Transitions `Proposed` → `Approved`. Sets `approved_at` timestamp.
+**Authority or guardian.** Transitions `Proposed` → `Approved`. Sets `approved_at` timestamp.
 
 ### `revoke_adapter`
 
-**Governance only.** Transitions `Approved` → `Revoked`. Existing positions are not auto-closed — integrators should surface revocation to users.
+**Authority or guardian.** Transitions `Approved` → `Revoked`. Existing positions are not auto-closed — integrators should surface revocation to users.
+
+### `set_guardian`
+
+**Authority only.** Sets or clears the optional guardian role. Pass `Pubkey::default()` to remove the guardian.
+
+The guardian can approve and revoke adapters but cannot set a new guardian or transfer governance.
 
 ### `nominate_governance`
 
-**Governance only.** Sets the `pending_authority` field. The current authority nominates a successor; governance is not transferred until the nominee accepts.
+**Authority only.** Sets the `pending_authority` field. The current authority nominates a successor; governance is not transferred until the nominee accepts.
 
 ### `accept_governance`
 
 **Pending authority only.** Finalizes the transfer: upgrades `pending_authority` to `authority` and clears the nomination. This two-step pattern prevents accidental loss of control — if a nomination is sent to the wrong address, the current authority can overwrite it before acceptance.
+
+## `RegistryState` account
+
+| Field | Type | Description |
+|---|---|---|
+| `authority` | `Pubkey` | Governance authority (transfer governance, set guardian) |
+| `guardian` | `Option<Pubkey>` | Optional guardian (approve/revoke adapters) |
+| `pending_authority` | `Option<Pubkey>` | Nominated successor for two-step transfer |
+| `total_proposed` | `u64` | Cumulative proposals |
+| `total_approved` | `u64` | Current approved count |
 
 ## `AdapterEntry` account
 

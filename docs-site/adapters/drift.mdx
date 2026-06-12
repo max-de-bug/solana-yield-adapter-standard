@@ -1,59 +1,83 @@
 ---
 title: Drift Adapter
-description: Reference adapter — Insurance Fund staking with 13-day cooldown tracking
+description: Reference adapter — Insurance Fund staking with two-phase withdrawal (13-day cooldown)
 ---
 
 <Warning>
-This adapter tracks a **13-day unstaking cooldown** on `AdapterPosition` — it does not enforce Drift Protocol's on-chain insurance fund rules. Check [Drift](https://drift.trade) official channels for current protocol status.
+This adapter models Drift's 13-day unstaking cooldown using a **two-phase withdrawal model** with `WithdrawalTicket` — it does not CPI into Drift's on-chain insurance fund. Check [Drift](https://drift.trade) official channels for current protocol status.
 </Warning>
 
 | | |
 |---|---|
 | **Inspired by** | [Drift Protocol](https://drift.trade) v2 Insurance Fund |
 | **Mainnet protocol ID** | `dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH` |
-| **Adapter program (devnet)** | `4FyuKY2HeXemKoDYoPo1J2xPoeY29YJj7tF7PJLjhS91` |
+| **Adapter program (localnet)** | `2zMNZcFzAx9bFNchTWDqiJGt5H3bCDgo8PW1TTskwcLJ` |
 | **Underlying** | USDC |
-| **Model** | Staking vault + cooldown constraint |
+| **Model** | Two-phase withdrawal with 13-day cooldown |
 
 ## Overview
 
-Drift's Insurance Fund lets stakers backstop the protocol and earn rewards. This reference adapter adds a **protocol-specific constraint** on top of the standard interface: withdrawals fail until a 13-day cooldown elapses after the first unstake request.
+Drift's Insurance Fund unstaking has a protocol-enforced cooldown. This adapter uses a **two-phase withdrawal model** that directly maps to Drift's lifecycle:
 
-## 13-day cooldown
+1. **`withdraw` (request phase)** — locks shares, records slippage floor, creates a `WithdrawalTicket`
+2. **`settle_withdrawal` (execution phase)** — after cooldown, runs CPI and transfers underlying
+
+## Two-phase withdrawal
 
 ```rust
 pub const UNSTAKE_COOLDOWN_SECONDS: i64 = 13 * 24 * 60 * 60; // 1,123,200s
 ```
 
-<Steps>
-  <Step title="User calls withdraw">
-    First withdraw sets `last_unstake_request` on `AdapterPosition`.
-  </Step>
-  <Step title="Cooldown enforced">
-    Subsequent withdraws check `clock.unix_timestamp - last_unstake_request >= UNSTAKE_COOLDOWN_SECONDS`.
-  </Step>
-  <Step title="Error on early exit">
-    Returns `CooldownNotElapsed` (error code `7000`) if cooldown not met.
-  </Step>
-</Steps>
+### Phase 1 — `withdraw` (request)
 
-## Protocol-specific error
+Shares are locked (deducted from `Position.shares`) and a `WithdrawalTicket` is created with `unlock_ts = now + cooldown`. Slippage is checked against the pool ratio **at request time**, not 13 days later. No CPI call or token transfer occurs.
+
+### Phase 2 — `settle_withdrawal`
+
+After `unlock_ts` has passed, the user calls `settle_withdrawal`. The adapter:
+1. Verifies `clock.unix_timestamp >= ticket.unlock_ts`
+2. Computes underlying at the current pool ratio (not the request-time ratio — the user accepted this when requesting)
+3. Transfers underlying from vault to user
+4. Emits `WithdrawEvent`
+5. Closes the ticket account
+
+### `cancel_unstake`
+
+During the cooldown window, the user may cancel the unstake request. Locked shares are returned to `Position.shares` and the ticket is closed.
+
+## Instructions
+
+| Instruction | Who can call | Description |
+|---|---|---|
+| `initialize` | Authority | Creates vault state |
+| `deposit` | Anyone | Deposit underlying, mint shares |
+| `withdraw` | Anyone | **Request phase** — locks shares, creates ticket |
+| `settle_withdrawal` | Position owner | **Execution phase** — after cooldown, claim underlying |
+| `cancel_unstake` | Position owner | Cancel pending unstake during cooldown |
+| `current_value` | Anyone | Query position value in underlying units |
+| `toggle_status` | Vault authority | Active ↔ DepositsPaused ↔ Paused |
+| `set_unstake_cooldown` | Vault authority | Configure cooldown duration (seconds) |
+
+## Error codes
 
 | Code | Name | Description |
 |---|---|---|
-| `7000` | `CooldownNotElapsed` | 13-day unstaking period has not passed |
+| `7000` | `CooldownNotElapsed` | Settlement called before `unlock_ts` |
+| `7001` | `TicketNotSettled` | Withdrawal ticket has not been settled |
+| `7002` | `TicketAlreadySettled` | Ticket has already been settled |
 
 ## PDA seeds
 
 ```
-vault_state:     ["drift_vault_state"]
-vault_authority: ["drift_vault_authority"]
-user_position:   ["adapter_position", user_pubkey]
+vault_state:       ["drift_vault_state"]
+vault_authority:   ["drift_vault_authority"]
+user_position:     ["adapter_position", user_pubkey]
+withdrawal_ticket: ["drift_ticket", user_pubkey]
 ```
 
-## Production path
+## Cooldown configuration
 
-A production Drift adapter would CPI into insurance fund stake/unstake instructions and respect Drift's own cooldown and account layout.
+Each vault stores `unstake_cooldown_seconds` (default: `1_123_200` = 13 days). The authority can change this per-vault via `set_unstake_cooldown`. For testing, set to `0` for instant settlement.
 
 <CardGroup cols={2}>
   <Card title="Error codes" icon="triangle-exclamation" href="/reference/errors">
