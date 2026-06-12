@@ -17,7 +17,7 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("AwpaZYbeNe3vD17JuGMjsv73b3JuqM3eEoqEVnQk9NMo");
+declare_id!("8QdkGAkLvpN7JPxf3dgKFUXVGPS2LWW4BumbNkVkXkux");
 
 /// Jupiter Perpetuals program ID on mainnet.
 pub const JUPITER_PERP_PROGRAM_ID: &str = "PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu";

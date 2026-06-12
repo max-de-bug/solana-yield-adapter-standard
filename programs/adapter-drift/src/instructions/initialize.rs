@@ -31,12 +31,14 @@ pub fn handler(ctx: Context<Initialize>, underlying_mint: Pubkey) -> Result<()> 
     state.protocol_routed_underlying = 0;
     state.last_yield_sync_ts = 0;
     state.status = VaultStatus::Active;
+    state.unstake_cooldown_seconds = crate::UNSTAKE_COOLDOWN_SECONDS;
     state.bump = ctx.bumps.vault_state;
 
     msg!(
-        "Drift IF adapter initialized. Mint: {}, protocol: {}",
+        "Drift IF adapter initialized. Mint: {}, protocol: {}, cooldown: {}s",
         underlying_mint,
-        DRIFT_V2_ID
+        DRIFT_V2_ID,
+        state.unstake_cooldown_seconds
     );
     Ok(())
 }

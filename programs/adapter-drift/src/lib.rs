@@ -23,7 +23,7 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("4FyuKY2HeXemKoDYoPo1J2xPoeY29YJj7tF7PJLjhS91");
+declare_id!("2zMNZcFzAx9bFNchTWDqiJGt5H3bCDgo8PW1TTskwcLJ");
 
 pub const DRIFT_PROGRAM_ID: &str = "dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH";
 
@@ -56,11 +56,32 @@ pub mod adapter_drift {
         instructions::withdraw::handler(ctx, amount, min_underlying_out)
     }
 
+    /// Settle a pending unstake request after the cooldown has elapsed.
+    ///
+    /// Executes the Drift CPI withdrawal and transfers underlying to the user.
+    /// The `WithdrawalTicket` account is closed and rent returned to the user.
+    pub fn settle_withdrawal<'a>(
+        ctx: Context<'a, SettleWithdrawal<'a>>,
+    ) -> Result<()> {
+        instructions::settle_withdrawal::handler(ctx)
+    }
+
     pub fn current_value(ctx: Context<CurrentValue>) -> Result<()> {
         instructions::current_value::handler(ctx)
     }
 
     pub fn toggle_status(ctx: Context<ToggleStatus>) -> Result<()> {
         instructions::toggle_status::handler(ctx)
+    }
+
+    /// Set the unstaking cooldown duration (authority only). Used for testing or
+    /// adapting to protocol parameter changes.
+    pub fn set_unstake_cooldown(ctx: Context<SetCooldown>, cooldown_seconds: i64) -> Result<()> {
+        instructions::set_cooldown::handler(ctx, cooldown_seconds)
+    }
+
+    /// Cancel a pending unstake request and return locked shares to the position.
+    pub fn cancel_unstake(ctx: Context<CancelUnstake>) -> Result<()> {
+        instructions::cancel_unstake::handler(ctx)
     }
 }
