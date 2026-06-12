@@ -41,7 +41,7 @@ Configured in `Anchor.toml` `[programs.devnet]`:
   <Step title="Initialize registry">
     ```typescript
     await registryProgram.methods.initialize().accounts({
-      governance: wallet.publicKey,
+      authority: wallet.publicKey,
       registryState: registryStatePda,
       systemProgram: SystemProgram.programId,
     }).rpc();

@@ -155,7 +155,7 @@ See [SUBMISSION.md](SUBMISSION.md) and [docs/REFERENCE_IMPLEMENTATION.md](docs/R
 | **MarginFi USDC** | [MarginFi](https://marginfi.com) | USDC | Share-based reference vault | 🔶 Reference |
 | **Jupiter LP** | [Jupiter](https://jup.ag) | USDC | Share-based reference vault | 🔶 Reference |
 | **Maple Syrup** | [Maple Finance](https://maple.finance) | syrupUSDC | Share vault on syrupUSDC (yield-bearing SPL) | 🔶 Reference |
-| **Drift Insurance** | [Drift Protocol](https://drift.trade) | USDC | IF staking (13d cooldown) | 🔶 Reference |
+| **Drift Insurance** | [Drift Protocol](https://drift.trade) | USDC | Two-phase withdrawal (13d cooldown) | 🔶 Reference |
 
 > **Note**: Maple and Drift adapters are reference implementations demonstrating correct interface compliance. Maple has no native Solana program — the adapter holds real syrupUSDC (a yield-bearing SPL token). Drift's protocol status may affect live CPI availability.
 
@@ -211,28 +211,24 @@ Tests cover:
 
 ### Mainnet-Fork Tests
 
-Requires `solana-test-validator` with cloned mainnet program accounts and pre-funded fixture token ATAs:
+Uses [Surfpool](https://surfpool.run) for JIT account fetching — no manual `--clone` flags or fixture ATAs needed:
 
 ```bash
-# Start validator with cloned programs + fixture ATAs
-solana-test-validator \
-  --reset --ledger test-ledger --url mainnet-beta --quiet \
-  --clone KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD \
-  --clone MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA \
-  --clone PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu \
-  --clone dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH \
-  --clone EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v \
-  --clone AvZZF1YaZDziPY2RCK4oJrRVrbN3mTD9NL24hPeaZeUj \
-  --clone ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL \
-  --account 7pyXgHEbAxkPNTZaaAEc21UGyoLKME5a3mMvxpseHeHz tests/fixtures/fork-usdc-ata.json \
-  --account GLnPMjfFemGFhhMnKwpDEt9F56pvBgmTqyug3xQPQTHE tests/fixtures/fork-syrup-usdc-ata.json
+# Prerequisites
+curl -sL https://run.surfpool.run/ | bash
+export MAINNET_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY
 
-# Deploy programs and run tests
-MAINNET_FORK=1 ANCHOR_PROVIDER_URL=http://127.0.0.1:8899 ANCHOR_WALLET=~/.config/solana/id.json \
-  npx ts-mocha -p ./tsconfig.json -t 1000000 'tests/**/*.test.ts'
+# Run
+bash scripts/run-fork-surfpool.sh
 ```
 
-Runs all 31 integration tests including real CPI round-trips against all five protocols (Kamino, MarginFi, Jupiter, Drift, Maple) via `invoke_signed`.
+The script builds programs, starts a Surfpool validator (auto-fetches mainnet accounts on demand), deploys all programs, and runs:
+
+```bash
+MAINNET_FORK=1 anchor test --skip-local-validator --skip-build
+```
+
+Runs all 31 integration tests including real CPI round-trips against all five protocols (Kamino, MarginFi, Jupiter, Drift, Maple) via `invoke_signed`. All 31 pass on fork (the 6 slippage-test failures are localnet-only — on fork the JIT-fetched USDC ATAs resolve the mint mismatch).
 
 ---
 

@@ -96,11 +96,16 @@ The guardian can approve and revoke adapters but cannot set a new guardian or tr
 ## Example: register an adapter
 
 ```typescript
-// Propose with the vault state seed the adapter uses for its vault state PDA
+// Propose with the PDA seeds the adapter uses for its vault state and vault authority
 await registryProgram.methods
-  .proposeAdapter("My Adapter", "https://example.com/adapter.json", "my_vault_state")
+  .proposeAdapter(
+    "My Adapter",
+    "https://example.com/adapter.json",
+    "my_vault_state",
+    "my_vault_authority",
+  )
   .accounts({
-    governance: wallet.publicKey,
+    proposer: wallet.publicKey,
     registryState,
     adapterEntry: adapterEntryPda(adapterProgramId),
     adapterProgram: adapterProgramId,
@@ -109,10 +114,10 @@ await registryProgram.methods
   })
   .rpc();
 
-// Governance approves
+// Authority or guardian approves
 await registryProgram.methods
   .approveAdapter()
-  .accounts({ governance, registryState, adapterEntry })
+  .accounts({ authority: wallet.publicKey, registryState, adapterEntry })
   .rpc();
 ```
 

@@ -42,29 +42,27 @@ Reusable wiring lives in `tests/helpers/`:
 
 Copy these patterns when adding a sixth adapter.
 
-## Mainnet-fork tests
+## Mainnet-fork tests (Surfpool)
+
+Uses [Surfpool](https://surfpool.run) for JIT account fetching — no manual `--clone` flags or fixture ATAs needed:
 
 ```bash
-./scripts/run-fork-solana-test-validator.sh
+# Prerequisites
+curl -sL https://run.surfpool.run/ | bash
+export MAINNET_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY
+
+# Run
+bash scripts/run-fork-surfpool.sh
 ```
 
-The script (`scripts/run-fork-solana-test-validator.sh`):
+The script (`scripts/run-fork-surfpool.sh`):
 
 1. Builds all programs and IDLs
-2. Starts `solana-test-validator` with `--clone` for mainnet programs and `--account` for fixture ATAs
-3. Deploys your programs to the fork
-4. Runs `MAINNET_FORK=1 anchor test` against cloned state
+2. Starts a Surfpool validator (auto-fetches mainnet accounts on demand)
+3. Deploys all programs to the fork
+4. Runs `MAINNET_FORK=1 anchor test --skip-local-validator --skip-build`
 
-### Cloned programs
-
-| Program | Mainnet ID | Purpose |
-|---|---|---|
-| Kamino K-Lend | `KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD` | Lending protocol bytecode |
-| MarginFi v2 | `MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA` | Lending protocol bytecode |
-| Drift v2 | `dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH` | Perp / insurance bytecode |
-| Jupiter Perps | `PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu` | Perp pool bytecode |
-| Maple | `SyrupNWBqaeiDnMmnFBTqCj5pd3LNzRNT8XjqgLiJd7` | syrupUSDC yield-bearing token |
-| SPL Token | `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA` | Token operations |
+All 31 tests pass on fork (the 6 slippage failures seen on localnet are resolved on fork because JIT-fetched USDC ATAs provide the correct underlying mint).
 
 <Warning>
 Fork tests prove **deployment plumbing and USDC flows** against cloned bytecode. They do **not** prove live mainnet position parity inside those protocols. See [Reference vs Production](/guides/reference-implementation).
