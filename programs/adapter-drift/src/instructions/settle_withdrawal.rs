@@ -5,9 +5,11 @@ use yield_adapter_trait::{
     user_position_underlying_value, WithdrawEvent, YieldAdapterError, ADAPTER_POSITION_SEED,
 };
 
-use crate::protocol;
-use crate::state::{DriftVaultState, DriftWithdrawalTicket, TICKET_SEED, VAULT_AUTHORITY_SEED, VAULT_STATE_SEED};
 use crate::instructions::withdraw::DriftAdapterError;
+use crate::protocol;
+use crate::state::{
+    DriftVaultState, DriftWithdrawalTicket, TICKET_SEED, VAULT_AUTHORITY_SEED, VAULT_STATE_SEED,
+};
 
 #[derive(Accounts)]
 pub struct SettleWithdrawal<'info> {
@@ -60,9 +62,7 @@ pub struct SettleWithdrawal<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler<'a>(
-    ctx: Context<'a, SettleWithdrawal<'a>>,
-) -> Result<()> {
+pub fn handler<'a>(ctx: Context<'a, SettleWithdrawal<'a>>) -> Result<()> {
     let vault = &mut ctx.accounts.vault_state;
     let position = &mut ctx.accounts.user_position;
     let ticket = &ctx.accounts.ticket;
@@ -73,11 +73,8 @@ pub fn handler<'a>(
         DriftAdapterError::CooldownNotElapsed
     );
 
-    let underlying_amount = user_position_underlying_value(
-        ticket.shares,
-        vault.total_underlying,
-        vault.total_shares,
-    )?;
+    let underlying_amount =
+        user_position_underlying_value(ticket.shares, vault.total_underlying, vault.total_shares)?;
 
     require!(
         underlying_amount >= ticket.min_amount_out,

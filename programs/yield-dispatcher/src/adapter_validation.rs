@@ -32,8 +32,7 @@ pub fn is_adapter_user_position(account: &AccountInfo, adapter: &Pubkey, user: &
 }
 
 pub fn user_position_pda(adapter: &Pubkey, user: &Pubkey) -> Pubkey {
-    let (pda, _) =
-        Pubkey::find_program_address(&[ADAPTER_POSITION_SEED, user.as_ref()], adapter);
+    let (pda, _) = Pubkey::find_program_address(&[ADAPTER_POSITION_SEED, user.as_ref()], adapter);
     pda
 }
 

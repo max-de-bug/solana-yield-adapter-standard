@@ -44,7 +44,13 @@ pub mod adapter_registry {
         vault_state_seed: String,
         vault_authority_seed: String,
     ) -> Result<()> {
-        instructions::propose_adapter::handler(ctx, name, metadata_uri, vault_state_seed, vault_authority_seed)
+        instructions::propose_adapter::handler(
+            ctx,
+            name,
+            metadata_uri,
+            vault_state_seed,
+            vault_authority_seed,
+        )
     }
 
     /// Approve a proposed adapter. Governance-gated.
@@ -76,9 +82,7 @@ pub mod adapter_registry {
 
     /// Dev/test only: force-transfer governance to a new authority.
     /// Requires a hardcoded admin key signer.
-    pub fn force_transfer_governance(
-        ctx: Context<ForceTransferGovernance>,
-    ) -> Result<()> {
+    pub fn force_transfer_governance(ctx: Context<ForceTransferGovernance>) -> Result<()> {
         instructions::force_transfer_governance::handler(ctx)
     }
 }

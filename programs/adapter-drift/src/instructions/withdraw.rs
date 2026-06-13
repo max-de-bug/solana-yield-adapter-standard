@@ -74,18 +74,16 @@ pub fn handler<'a>(
     );
 
     // Estimate underlying at request time for slippage protection.
-    let estimated_underlying = user_position_underlying_value(
-        shares_to_burn,
-        vault.total_underlying,
-        vault.total_shares,
-    )?;
+    let estimated_underlying =
+        user_position_underlying_value(shares_to_burn, vault.total_underlying, vault.total_shares)?;
     require!(
         estimated_underlying >= min_underlying_out,
         YieldAdapterError::SlippageExceeded
     );
 
     let unlock_ts = if vault.unstake_cooldown_seconds > 0 {
-        clock.unix_timestamp
+        clock
+            .unix_timestamp
             .checked_add(vault.unstake_cooldown_seconds)
             .ok_or(YieldAdapterError::ArithmeticOverflow)?
     } else {

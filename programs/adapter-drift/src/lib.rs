@@ -60,9 +60,7 @@ pub mod adapter_drift {
     ///
     /// Executes the Drift CPI withdrawal and transfers underlying to the user.
     /// The `WithdrawalTicket` account is closed and rent returned to the user.
-    pub fn settle_withdrawal<'a>(
-        ctx: Context<'a, SettleWithdrawal<'a>>,
-    ) -> Result<()> {
+    pub fn settle_withdrawal<'a>(ctx: Context<'a, SettleWithdrawal<'a>>) -> Result<()> {
         instructions::settle_withdrawal::handler(ctx)
     }
 

@@ -31,7 +31,10 @@ pub fn handler(ctx: Context<SetGuardian>, new_guardian: Pubkey) -> Result<()> {
 
     msg!(
         "Guardian set to: {}",
-        state.guardian.map(|k| k.to_string()).unwrap_or_else(|| "None".to_string())
+        state
+            .guardian
+            .map(|k| k.to_string())
+            .unwrap_or_else(|| "None".to_string())
     );
 
     Ok(())

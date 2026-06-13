@@ -20,9 +20,6 @@ pub fn handler(ctx: Context<SetCooldown>, cooldown_seconds: i64) -> Result<()> {
     let vault = &mut ctx.accounts.vault_state;
     vault.unstake_cooldown_seconds = cooldown_seconds;
 
-    msg!(
-        "Drift unstake cooldown set to {}s",
-        cooldown_seconds
-    );
+    msg!("Drift unstake cooldown set to {}s", cooldown_seconds);
     Ok(())
 }

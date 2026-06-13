@@ -292,10 +292,10 @@ pub fn mul_div_u64(a: u64, b: u128, divisor: u64) -> Option<u128> {
     let mask = u64::MAX as u128;
     let lo = (a as u128) * (b & mask); // a * b_lo   (≤ u64::MAX * u64::MAX ≈ 3.4e38)
     let hi = (a as u128) * (b >> 64); // a * b_hi   (≥ 0)
-    // Distribute across three 64-bit limbs [p2, p1, p0] = a * b:
-    //   p0 = low 64 bits of lo
-    //   p1 = high 64 bits of lo + low 64 bits of hi
-    //   p2 = high 64 bits of hi + carry from p1
+                                      // Distribute across three 64-bit limbs [p2, p1, p0] = a * b:
+                                      //   p0 = low 64 bits of lo
+                                      //   p1 = high 64 bits of lo + low 64 bits of hi
+                                      //   p2 = high 64 bits of hi + carry from p1
     let p0 = (lo & mask) as u64;
     let mid = (lo >> 64) + (hi & mask);
     let p1 = (mid & mask) as u64;
