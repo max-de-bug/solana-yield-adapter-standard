@@ -6,6 +6,7 @@ dist/
 # Node
 node_modules/
 yarn-error.log
+package-lock.json
 
 # Solana
 test-ledger/
