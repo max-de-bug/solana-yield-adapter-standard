@@ -81,10 +81,10 @@ The Yield Adapter Standard solves this by providing a **single interface** that 
 │                       │                                                  │
 │  ┌────────────────────▼────────────────────────────────────────────────┐│
 │  │                     Reference Adapters                               ││
-│  │  ┌─────────┐ ┌──────────┐ ┌──────────┐ ┌───────┐ ┌──────────────┐ ││
-│  │  │ Kamino  │ │ MarginFi │ │ Jupiter  │ │ Maple │ │    Drift     │ ││
-│  │  │  USDC   │ │   USDC   │ │   LP     │ │ Syrup │ │ Insurance    │ ││
-│  │  └─────────┘ └──────────┘ └──────────┘ └───────┘ └──────────────┘ ││
+ │  │  ┌─────────┐ ┌──────────┐ ┌──────────┐ ┌───────┐ ┌──────────────┐ ┌──────────┐ ││
+ │  │  │ Kamino  │ │ MarginFi │ │ Jupiter  │ │ Maple │ │    Drift     │ │Template │ ││
+ │  │  │  USDC   │ │   USDC   │ │   LP     │ │ Syrup │ │ Insurance    │ │Scaffold │ ││
+ │  │  └─────────┘ └──────────┘ └──────────┘ └───────┘ └──────────────┘ └──────────┘ ││
 │  └─────────────────────────────────────────────────────────────────────┘│
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -96,7 +96,7 @@ The Yield Adapter Standard solves this by providing a **single interface** that 
 | **Yield Adapter Trait** | Shared crate defining the standard interface, types, events, math, and account macros |
 | **Yield Dispatcher** | Router that validates adapters and tracks user positions |
 | **Adapter Registry** | Governance-gated on-chain registry with guardian role for adapter approval/revocation |
-| **Reference Adapters** | Five production-grade adapter implementations |
+| **Reference Adapters** | Five reference adapters + template scaffold |
 
 ---
 
@@ -120,7 +120,7 @@ cd solana-yield-adapter-standard
 ./scripts/install-toolchain.sh
 
 # Install dependencies
-yarn install
+npm install
 
 # Build all programs (.so in target/deploy/)
 # Requires Agave 3.1.x platform-tools for SBF: agave-install init 3.1.10
@@ -130,14 +130,12 @@ npm run build
 ### Test
 
 ```bash
-# Run unit tests (local validator, legacy mode)
+# Run localnet integration tests
 npm test
 
-# Run mainnet-fork integration tests
-npm run test:fork
+# Run mainnet-fork integration tests via Surfpool
+bash scripts/run-fork-surfpool.sh
 ```
-
-See [SUBMISSION.md](SUBMISSION.md) and [docs/REFERENCE_IMPLEMENTATION.md](docs/REFERENCE_IMPLEMENTATION.md) for bounty submission notes (reference adapters, program IDs).
 
 ### Deploy to Devnet
 
@@ -242,11 +240,11 @@ Runs all **81 integration tests** including real CPI round-trips against all fiv
 ```
 
 The script will:
-1. Generate program keypairs (if needed)
-2. Build all programs
-3. Deploy registry and dispatcher to devnet
-4. Verify deployment
-5. Output the program IDs to update in `Anchor.toml`
+1. Build all programs via `scripts/build-sbf.sh` + `scripts/build-idls.sh`
+2. Deploy all 7 programs (registry, dispatcher, and all 5 adapters) to devnet
+3. Output the deployed program IDs
+
+> **Note:** Keypair files must exist in `target/deploy/` (committed to the repo for localnet, separate keypairs for devnet). The script uses existing keypairs and does not generate new ones.
 
 ### Mainnet
 

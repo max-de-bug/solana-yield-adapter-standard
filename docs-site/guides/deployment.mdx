@@ -11,10 +11,9 @@ npm run deploy:devnet
 
 The script (`scripts/deploy-devnet.sh`):
 
-1. Generates program keypairs in `deploy-keypairs/` (if missing)
-2. Builds all seven programs via `scripts/build-sbf.sh`
-3. Deploys registry, then dispatcher, then adapters
-4. Prints program IDs for `Anchor.toml`
+1. Builds all seven programs via `scripts/build-sbf.sh` + `scripts/build-idls.sh`
+2. Deploys registry, then dispatcher, then all 5 adapters to devnet
+3. Prints program IDs for `Anchor.toml`
 
 <Info>
 Ensure your Solana CLI points to devnet and your wallet has ~2.6 SOL for a full deploy:
@@ -34,6 +33,7 @@ Configured in `Anchor.toml` `[programs.devnet]`:
 | Jupiter Adapter | `AwpaZYbeNe3vD17JuGMjsv73b3JuqM3eEoqEVnQk9NMo` |
 | Maple Adapter | `GohmCi1aDJAfSg4Sp4rELDwku8ptUs8qafF5aju6p5gz` |
 | Drift Adapter | `4FyuKY2HeXemKoDYoPo1J2xPoeY29YJj7tF7PJLjhS91` |
+| Adapter Template | `jbLUHXvc9P26MpQdGXht4aKnbn68i2GijxsFX6RXahV` |
 
 ## Post-deploy initialization
 

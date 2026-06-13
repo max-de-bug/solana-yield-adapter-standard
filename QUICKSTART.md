@@ -20,7 +20,7 @@ npm test
 
 Runs `anchor test` with a local validator. Spins up all 7 programs, runs the full TypeScript suite.
 
-Expected: **17 tests pass** (5 adapter deposit→withdraw flows, 5 dispatcher/registry tests, etc.).
+Expected: **32 tests pass** (26 pass, 6 pre-existing slippage failures on localnet).
 
 ## 2. Mainnet-fork tests via Surfpool (8 min)
 
@@ -46,11 +46,11 @@ The Surfpool approach replaces the legacy `solana-test-validator` + manual `--cl
 ## 3. Verify devnet deployment
 
 ```bash
-solana program show CeyDkRgegNUz2TeFfFjRdL89G9EGGDymiqHoJkeFGcZ4 --url devnet
-solana program show 7oUKys5XKMzD2NmFCZyLDyTF2Hm1VH3qX8jVfZEY4f3r --url devnet
+solana program show 3DQGCPAjHcoT7uf9MJDM5ZTL7GEvTKU3MXFzzrHvqSWt --url devnet
+solana program show HUGWpAwFyeWrnH7f9pfWX93puZdC2ud4MYZQT8FtEBvH --url devnet
 ```
 
-Registry and dispatcher are live. 3 adapters (Jupiter, Maple, Drift) pending deployment (need ~8 SOL to deploy all).
+All 7 programs (registry, dispatcher, 5 adapters, template) are deployed to devnet. See [README.md](README.md#devnet-deployments) for current program IDs.
 
 ## Architecture at a glance
 

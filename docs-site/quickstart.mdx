@@ -24,7 +24,6 @@ Get from zero to a passing test suite with the commands below. For toolchain det
     ```bash
     cargo install --git https://github.com/coral-xyz/anchor avm --force
     avm install 1.0.1 && avm use 1.0.1
-  agave-install init 2.2.20
     ```
   </Accordion>
   <Accordion title="Node.js 18+">
@@ -63,16 +62,12 @@ npm run build
   </Tab>
   <Tab title="Mainnet fork">
     ```bash
-    ./scripts/run-fork-solana-test-validator.sh
-    ```
-
-    ```bash
     bash scripts/run-fork-surfpool.sh
     ```
 
     Runs **81 integration tests** via [Surfpool](https://surfpool.run) (JIT account fetching — no `--clone` flags or fixture ATAs needed):
 
-    - All 5 adapters (Kamino, MarginFi, Jupiter, Maple, Drift) + template
+    - All 5 reference adapters (Kamino, MarginFi, Jupiter, Maple, Drift) + template scaffold
     - Full registry governance lifecycle (propose → approve → revoke → re-approve, guardian, governance transfer)
     - Dispatcher routing, pause, `current_value` CPI
     - Drift two-phase withdrawal + cooldown enforcement + stale ticket cleanup
@@ -90,7 +85,7 @@ npm run deploy:devnet
 # or: ./scripts/deploy-devnet.sh
 ```
 
-The script generates keypairs, builds programs, deploys to devnet, and prints program IDs to paste into `Anchor.toml`.
+The script builds all programs via `scripts/build-sbf.sh` + `scripts/build-idls.sh`, deploys all 7 programs (registry, dispatcher, 5 adapters) to devnet, and prints the deployed program IDs.
 
 <Info>
 **Already deployed (devnet):** All 7 programs are live — [Registry](https://explorer.solana.com/address/3DQGCPAjHcoT7uf9MJDM5ZTL7GEvTKU3MXFzzrHvqSWt?cluster=devnet), [Dispatcher](https://explorer.solana.com/address/HUGWpAwFyeWrnH7f9pfWX93puZdC2ud4MYZQT8FtEBvH?cluster=devnet), and all 5 reference adapters. Use `./scripts/deploy-devnet.sh` if you need your own cluster.
