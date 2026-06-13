@@ -63,6 +63,8 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm install
+      - name: Sync keys (handle stale cache)
+        run: anchor keys sync
       - name: Build programs
         run: anchor build
       - name: Run unit tests

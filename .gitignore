@@ -1,5 +1,8 @@
 # Build artifacts
 target/
+!target/deploy/
+target/deploy/*
+!target/deploy/*-keypair.json
 dist/
 .anchor/
 
@@ -31,6 +34,7 @@ deploy-keypairs/
 !docs-site/docs.json
 !tests/fixtures/fork-usdc-ata.json
 !tests/fixtures/fork-wallet.json
+!target/deploy/*-keypair.json
 
 # Environment
 .env
