@@ -38,10 +38,26 @@ jobs:
           sh -c "$(curl -sSfL https://release.anza.xyz/v${{ env.SOLANA_CLI_VERSION }}/install)"
           echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
       - uses: Swatinem/rust-cache@v2
+      - name: Cache Anchor CLI binary
+        id: cache-anchor
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/anchor
+          key: anchor-cli-${{ env.ANCHOR_CLI_VERSION }}
       - name: Install Anchor CLI
+        if: steps.cache-anchor.outputs.cache-hit != 'true'
         run: |
-          cargo install --git https://github.com/solana-foundation/anchor --tag "v${{ env.ANCHOR_CLI_VERSION }}" anchor-cli --locked
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          curl -sSfL "https://github.com/solana-foundation/anchor/releases/download/v${{ env.ANCHOR_CLI_VERSION }}/anchor-${{ env.ANCHOR_CLI_VERSION }}-x86_64-unknown-linux-gnu" -o anchor \
+            && chmod +x anchor \
+            && sudo mv anchor /usr/local/bin/anchor \
+            && anchor --version \
+          || {
+            echo "Pre-built binary failed (GLIBC mismatch). Falling back to cargo install..."
+            cargo install --git https://github.com/solana-foundation/anchor --tag "v${{ env.ANCHOR_CLI_VERSION }}" anchor-cli --locked
+            sudo cp "$HOME/.cargo/bin/anchor" /usr/local/bin/anchor
+          }
+      - name: Verify Anchor
+        run: anchor --version
       - uses: actions/setup-node@v4
         with:
           node-version: 20
