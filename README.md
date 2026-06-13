@@ -298,17 +298,34 @@ anchor init my-adapter && cd my-adapter
 
 ---
 
+## Devnet Deployments
+
+### Programs
+
+| Program | Devnet Program ID |
+|---------|------------------|
+| Adapter Registry | [`3DQGCPAjHcoT7uf9MJDM5ZTL7GEvTKU3MXFzzrHvqSWt`](https://explorer.solana.com/address/3DQGCPAjHcoT7uf9MJDM5ZTL7GEvTKU3MXFzzrHvqSWt?cluster=devnet) |
+| Yield Dispatcher | [`HUGWpAwFyeWrnH7f9pfWX93puZdC2ud4MYZQT8FtEBvH`](https://explorer.solana.com/address/HUGWpAwFyeWrnH7f9pfWX93puZdC2ud4MYZQT8FtEBvH?cluster=devnet) |
+| Adapter Kamino | [`AjvTbsYhcEehGTSx7yvF4qSiQLWyfeqe3PRhHVyZB3Xe`](https://explorer.solana.com/address/AjvTbsYhcEehGTSx7yvF4qSiQLWyfeqe3PRhHVyZB3Xe?cluster=devnet) |
+| Adapter MarginFi | [`5yQiba9TNit1FJx3KqXY5nJM3zuQTreqBFWfeGohBqat`](https://explorer.solana.com/address/5yQiba9TNit1FJx3KqXY5nJM3zuQTreqBFWfeGohBqat?cluster=devnet) |
+| Adapter Jupiter | [`AwpaZYbeNe3vD17JuGMjsv73b3JuqM3eEoqEVnQk9NMo`](https://explorer.solana.com/address/AwpaZYbeNe3vD17JuGMjsv73b3JuqM3eEoqEVnQk9NMo?cluster=devnet) |
+| Adapter Maple | [`GohmCi1aDJAfSg4Sp4rELDwku8ptUs8qafF5aju6p5gz`](https://explorer.solana.com/address/GohmCi1aDJAfSg4Sp4rELDwku8ptUs8qafF5aju6p5gz?cluster=devnet) |
+| Adapter Drift | [`4FyuKY2HeXemKoDYoPo1J2xPoeY29YJj7tF7PJLjhS91`](https://explorer.solana.com/address/4FyuKY2HeXemKoDYoPo1J2xPoeY29YJj7tF7PJLjhS91?cluster=devnet) |
+| Adapter Template | [`jbLUHXvc9P26MpQdGXht4aKnbn68i2GijxsFX6RXahV`](https://explorer.solana.com/address/jbLUHXvc9P26MpQdGXht4aKnbn68i2GijxsFX6RXahV?cluster=devnet) |
+
+---
+
 ## Security Model
 
 | Layer | Protection |
-|---|---|---|
-| **Adapter Registry** | Governance-gated approval with optional guardian role prevents malicious adapters |
-| **Dispatcher Validation** | All CPI routes are validated against the registry |
-| **PDA Authority** | Vault funds are controlled by program-derived addresses |
-| **Checked Arithmetic** | All math uses `checked_*` and u256 operations to prevent overflows |
-| **Event Auditability** | All operations emit standardized events for monitoring |
-| **Emergency Pause** | Dispatcher can be paused by governance in emergencies |
-| **Admin Escape Hatch** | Registry includes a dev-only `force_transfer_governance` instruction gated by a hardcoded admin key for resetting stale Surfpool state |
+|-------|------------|
+| **Adapter Registry** | Governance-gated approval with optional guardian role prevents malicious adapters from being routed through the dispatcher. Only `Approved` entries pass the CPI gate. |
+| **Dispatcher Validation** | Every CPI call validates that the target adapter has `status == Approved` in the registry and verifies vault PDA seeds match registered values. |
+| **PDA Authority** | All vault funds are controlled by program-derived addresses. No human key has direct custody over deposited tokens. |
+| **Checked Arithmetic** | Share calculations use `checked_*` operations and fall back to u256 arithmetic to prevent overflow, underflow, or precision loss. |
+| **Event Auditability** | Every deposit, withdraw, and value query emits standardized events (`DepositEvent`, `WithdrawEvent`, `CurrentValueEvent`) for off-chain monitoring and indexing. |
+| **Emergency Pause** | Governance can pause the dispatcher at any time, blocking all deposits and withdrawals until unpaused. |
+| **Admin Escape Hatch** | Registry includes a dev-only `force_transfer_governance` instruction gated by a hardcoded admin key for resetting stale governor on persistent forks (Surfpool). Defaults to `Pubkey::default()` in production builds. |
 
 ---
 
