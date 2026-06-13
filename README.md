@@ -174,7 +174,8 @@ solana-yield-adapter-standard/
 │   ├── adapter-marginfi/        # MarginFi USDC adapter
 │   ├── adapter-jupiter/         # Jupiter LP adapter
 │   ├── adapter-maple/           # Maple Syrup adapter
-│   └── adapter-drift/           # Drift Insurance Fund adapter
+│   ├── adapter-drift/           # Drift Insurance Fund adapter
+│   └── adapter-template/        # Scaffold for new adapters
 ├── tests/
 │   ├── helpers/                 # Shared test utilities
 │   ├── registry.test.ts         # Registry governance tests
@@ -202,7 +203,7 @@ solana-yield-adapter-standard/
 |-------|---------|-------|
 | Unit | `cargo test` | 28 |
 | Localnet integration | `anchor test` | 32 (26 passing, 6 pre-existing slippage failures on localnet-only) |
-| Mainnet-fork integration | see below | 31 |
+| Mainnet-fork integration (Surfpool) | `bash scripts/run-fork-surfpool.sh` | **81** — all adapters + dispatcher + registry + template |
 
 Tests cover:
 - **Registry**: Initialize → Propose → Approve → Revoke → Set guardian → Transfer governance
@@ -228,7 +229,7 @@ The script builds programs, starts a Surfpool validator (auto-fetches mainnet ac
 MAINNET_FORK=1 anchor test --skip-local-validator --skip-build
 ```
 
-Runs all 31 integration tests including real CPI round-trips against all five protocols (Kamino, MarginFi, Jupiter, Drift, Maple) via `invoke_signed`. All 31 pass on fork (the 6 slippage-test failures are localnet-only — on fork the JIT-fetched USDC ATAs resolve the mint mismatch).
+Runs all **81 integration tests** including real CPI round-trips against all five protocols (Kamino, MarginFi, Jupiter, Drift, Maple) via `invoke_signed`, plus dispatcher routing, registry governance (with `force_transfer_governance` admin escape hatch for Surfpool persistence), and adapter template tests. All 81 pass on fork (the 6 slippage-test failures are localnet-only — on fork the JIT-fetched USDC ATAs resolve the mint mismatch).
 
 ---
 
@@ -307,6 +308,7 @@ anchor init my-adapter && cd my-adapter
 | **Checked Arithmetic** | All math uses `checked_*` and u256 operations to prevent overflows |
 | **Event Auditability** | All operations emit standardized events for monitoring |
 | **Emergency Pause** | Dispatcher can be paused by governance in emergencies |
+| **Admin Escape Hatch** | Registry includes a dev-only `force_transfer_governance` instruction gated by a hardcoded admin key for resetting stale Surfpool state |
 
 ---
 

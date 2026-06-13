@@ -33,6 +33,10 @@ graph TB
 Reference adapters in this repo route USDC through **local SPL vaults**. Dashed protocol CPI in diagrams represents the **production path**, not current behavior. See [Reference vs Production](/guides/reference-implementation).
 </Note>
 
+<Note>
+In this session the folder structure was consolidated: `adapters/` symlinks removed, all source moved to `programs/`, `Cargo.toml` workspace members updated to `programs/` paths, and an **adapter-template** scaffold was added.
+</Note>
+
 ## Components
 
 ### Yield Adapter Trait (`crates/yield-adapter-trait`)
@@ -80,7 +84,7 @@ Anyone may **propose**; the **governance authority** or optional **guardian** ma
 
 ### Reference adapters
 
-Five Anchor programs named after major Solana yield protocols. Each implements the same three-instruction surface with protocol-specific PDA seeds and optional constraints (e.g. Drift two-phase withdrawal).
+Six Anchor programs named after major Solana yield protocols, plus a template scaffold. Each implements the same three-instruction surface with protocol-specific PDA seeds and optional constraints (e.g. Drift two-phase withdrawal).
 
 | Adapter | Devnet program ID | Notable trait |
 |---|---|---|
@@ -89,6 +93,7 @@ Five Anchor programs named after major Solana yield protocols. Each implements t
 | Jupiter | `AwpaZYbeNe3vD17JuGMjsv73b3JuqM3eEoqEVnQk9NMo` | JLP-themed naming |
 | Maple | `GohmCi1aDJAfSg4Sp4rELDwku8ptUs8qafF5aju6p5gz` | Real syrupUSDC (yield-bearing SPL) |
 | Drift | `4FyuKY2HeXemKoDYoPo1J2xPoeY29YJj7tF7PJLjhS91` | Two-phase withdrawal (13d cooldown) |
+| Template | (local) | No-op scaffold for building new adapters |
 
 ## Deposit flow
 

@@ -10,7 +10,7 @@ The test suite validates registry governance, dispatcher routing, and all five a
 | Command | Tests | Environment | Duration |
 |---|---|---|---|---|
 | `npm test` | 32 (26 passing, 6 pre-existing slippage failures on localnet) | Local validator | ~2 min |
-| `MAINNET_FORK=1` (see below) | 31 | Cloned mainnet programs | ~5–15 min (first run) |
+| `bash scripts/run-fork-surfpool.sh` | 81 | Surfpool (JIT account fetching) | ~5–15 min |
 
 <Tip>
 `npm test` uses `anchor test --validator legacy --skip-build`. Run `npm run build` first if programs changed.
@@ -27,10 +27,11 @@ npm test
 
 | Suite | File | What it verifies |
 |---|---|---|---|
-| Registry | `tests/registry.test.ts` | propose → approve → revoke → set guardian → governance transfer |
-| Dispatcher | `tests/dispatcher.test.ts` | Routing, pause, registry rejection |
+| Registry | `tests/registry.test.ts` | propose → approve → revoke → re-approve → set guardian → governance transfer; `force_transfer_governance` admin escape hatch |
+| Dispatcher | `tests/dispatcher.test.ts` | Routing, pause, registry rejection, `current_value` CPI |
 | Adapters | `tests/adapters/*.test.ts` | deposit → `current_value` → withdraw per adapter |
-| Drift | `tests/adapters/drift.test.ts` | Two-phase withdraw, cooldown enforcement, slippage at request time |
+| Drift | `tests/adapters/drift.test.ts` | Two-phase withdraw, cooldown enforcement, slippage at request time, stale ticket cleanup |
+| Template | `tests/adapters/template.test.ts` | Scaffold adapter correctly deploys and processes deposits |
 | Errors | Across suites | Zero amounts, insufficient balance, revoked adapters |
 
 ### Test helpers
@@ -40,7 +41,7 @@ Reusable wiring lives in `tests/helpers/`:
 - `adapter.ts` — adapter deposit/withdraw/value account builders
 - Shared token mints, PDAs, and program clients
 
-Copy these patterns when adding a sixth adapter.
+Copy these patterns when adding a new adapter.
 
 ## Mainnet-fork tests (Surfpool)
 
@@ -62,11 +63,21 @@ The script (`scripts/run-fork-surfpool.sh`):
 3. Deploys all programs to the fork
 4. Runs `MAINNET_FORK=1 anchor test --skip-local-validator --skip-build`
 
-All 31 tests pass on fork (the 6 slippage failures seen on localnet are resolved on fork because JIT-fetched USDC ATAs provide the correct underlying mint).
+All **81 tests pass** on fork (the 6 slippage failures seen on localnet are resolved on fork because JIT-fetched USDC ATAs provide the correct underlying mint). The full suite covers all adapters (Kamino, MarginFi, Jupiter, Maple, Drift, template), dispatcher routing with CPI-based `current_value`, complete registry lifecycle (including re-approval from `Revoked`), and Drift two-phase withdrawal with stale-ticket cleanup.
+
+### Surfpool-specific features
+
+- **State persistence:** Surfpool preserves accounts across restarts. The registry's `force_transfer_governance` instruction (admin-gated escape hatch) resets stale governance from prior runs.
+- **Latency:** Surfpool's 400ms slot time requires `sleep()` delays between rapid RPC calls. The test suite uses 3000ms delays where blockhash reuse might occur.
+- **Drift stale tickets:** `clearPendingTicket` cancels stale withdrawal tickets from prior Surfpool sessions before creating new ones.
 
 <Warning>
 Fork tests prove **deployment plumbing and USDC flows** against cloned bytecode. They do **not** prove live mainnet position parity inside those protocols. See [Reference vs Production](/guides/reference-implementation).
 </Warning>
+
+### Folder consolidation
+
+Program sources live directly in `programs/` (no symlinks). The `adapters/` directory was removed — workspace members in `Cargo.toml` reference `programs/` paths. The `adapter-template` at `programs/adapter-template/` provides a ready-to-copy scaffold.
 
 ## Writing new tests
 

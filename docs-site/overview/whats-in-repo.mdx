@@ -1,7 +1,7 @@
 ---
 title: What's in this repo
 sidebarTitle: What's in this repo
-description: Dispatcher, registry, trait crate, and five reference adapters
+description: Dispatcher, registry, trait crate, and six reference adapters (+ template)
 ---
 
 <CardGroup cols={2}>
@@ -11,8 +11,8 @@ description: Dispatcher, registry, trait crate, and five reference adapters
   <Card title="Adapter Registry" icon="shield-check" href="/registry">
     Governance-gated propose → approve → revoke lifecycle for adapters.
   </Card>
-  <Card title="Five Reference Adapters" icon="puzzle-piece" href="/adapters/kamino">
-    Kamino, MarginFi, Jupiter, Maple, and Drift — share-based SPL vault patterns.
+  <Card title="Five Reference Adapters + Template" icon="puzzle-piece" href="/adapters/kamino">
+    Kamino, MarginFi, Jupiter, Maple, Drift, and a scaffold template — share-based SPL vault patterns.
   </Card>
   <Card title="Trait Crate" icon="code" href="/adapter-standard">
     Shared events, errors, math helpers, and `define_adapter_position!` macro.
@@ -25,7 +25,7 @@ description: Dispatcher, registry, trait crate, and five reference adapters
 |---|---|
 | `programs/yield-dispatcher/` | Router program |
 | `programs/adapter-registry/` | Governance registry |
-| `programs/adapter-*/` | Five reference adapters |
+| `programs/adapter-*/` | Five reference adapters + template scaffold |
 | `crates/yield-adapter-trait/` | Shared types and math |
 | `tests/` | Local and fork integration tests |
 | `docs-site/` | This documentation site |

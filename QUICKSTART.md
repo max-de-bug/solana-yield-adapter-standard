@@ -22,41 +22,26 @@ Runs `anchor test` with a local validator. Spins up all 7 programs, runs the ful
 
 Expected: **17 tests pass** (5 adapter deposit→withdraw flows, 5 dispatcher/registry tests, etc.).
 
-## 2. Mainnet-fork tests (8 min)
+## 2. Mainnet-fork tests via Surfpool (8 min)
 
-Requires `solana-test-validator` with cloned mainnet protocol accounts and fixture token ATAs:
-
-```bash
-# Start validator (one-time setup)
-solana-test-validator \
-  --reset --ledger test-ledger --url mainnet-beta --quiet \
-  --clone KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD \
-  --clone MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA \
-  --clone PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu \
-  --clone dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH \
-  --clone EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v \
-  --clone AvZZF1YaZDziPY2RCK4oJrRVrbN3mTD9NL24hPeaZeUj \
-  --clone ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL \
-  --account 7pyXgHEbAxkPNTZaaAEc21UGyoLKME5a3mMvxpseHeHz tests/fixtures/fork-usdc-ata.json \
-  --account GLnPMjfFemGFhhMnKwpDEt9F56pvBgmTqyug3xQPQTHE tests/fixtures/fork-syrup-usdc-ata.json
-
-# Deploy all programs
-for kp in target/deploy/*-keypair.json; do
-  solana -u http://127.0.0.1:8899 program deploy \
-    --program-id $kp \
-    --upgrade-authority ~/.config/solana/id.json \
-    target/deploy/$(basename $kp -keypair.json).so
-done
-```
-
-Then run:
+Uses [Surfpool](https://surfpool.run) for JIT account fetching — no manual `--clone` flags or fixture ATAs needed:
 
 ```bash
-MAINNET_FORK=1 ANCHOR_PROVIDER_URL=http://127.0.0.1:8899 ANCHOR_WALLET=~/.config/solana/id.json \
-  npx ts-mocha -p ./tsconfig.json -t 1000000 'tests/**/*.test.ts'
+# Prerequisites (one-time)
+curl -sL https://run.surfpool.run/ | bash
+export MAINNET_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY
+
+# Run
+bash scripts/run-fork-surfpool.sh
 ```
 
-Expected: **31 tests pass**, including real CPI round-trips against cloned Kamino K-Lend, MarginFi v2, Jupiter Perps JLP, Drift IF v2, and Maple syrupUSDC.
+Expected: **81 tests pass**, including real CPI round-trips against cloned Kamino K-Lend, MarginFi v2, Jupiter Perps JLP, Drift IF v2, and Maple syrupUSDC, plus dispatcher routing and full registry governance lifecycle.
+
+The Surfpool approach replaces the legacy `solana-test-validator` + manual `--clone` method. Key improvements:
+
+- **No fixture ATAs** — accounts are JIT-fetched on demand
+- **State persistence** — Surfpool preserves accounts across restarts; the registry's `force_transfer_governance` instruction handles stale governance
+- **All 81 tests pass** (previously 31) — includes adapter-template, dispatcher `current_value` CPI, and registry re-approval lifecycle
 
 ## 3. Verify devnet deployment
 
@@ -110,6 +95,7 @@ Registry and dispatcher are live. 3 adapters (Jupiter, Maple, Drift) pending dep
 | `docs/BUILD_YOUR_OWN_ADAPTER.md` | Build guide |
 | `docs-site/` | Mintlify documentation site |
 | `programs/adapter-*/src/protocol.rs` | Per-adapter real CPI (conditional) |
+| `programs/adapter-template/` | Scaffold for building new adapters |
 | `programs/yield-dispatcher/src/adapter_cpi.rs` | Dispatcher CPI into adapters |
 | `tests/adapters/` | Integration test per adapter |
 | `packages/sdk/` | TypeScript SDK |

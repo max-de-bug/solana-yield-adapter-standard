@@ -16,6 +16,7 @@ stateDiagram-v2
     [*] --> Proposed: propose_adapter()
     Proposed --> Approved: approve_adapter()
     Approved --> Revoked: revoke_adapter()
+    Revoked --> Approved: approve_adapter()
     Revoked --> [*]
 ```
 
@@ -23,7 +24,7 @@ stateDiagram-v2
 |---|---|---|---|
 | `Proposed` | Blocked | Anyone via `propose_adapter` |
 | `Approved` | Allowed | Authority or guardian via `approve_adapter` |
-| `Revoked` | Blocked | Authority or guardian via `revoke_adapter` |
+| `Revoked` | Blocked | Authority or guardian via `revoke_adapter` (`approve_adapter` also accepted — re-approve from `Revoked`) |
 
 ## Instructions
 
@@ -47,7 +48,7 @@ Also requires: `adapter_program_id`, `underlying_mint`.
 
 ### `approve_adapter`
 
-**Authority or guardian.** Transitions `Proposed` → `Approved`. Sets `approved_at` timestamp.
+**Authority or guardian.** Transitions `Proposed` → `Approved` or `Revoked` → `Approved` (re-approval after revoke). Sets `approved_at` timestamp.
 
 ### `revoke_adapter`
 
@@ -66,6 +67,10 @@ The guardian can approve and revoke adapters but cannot set a new guardian or tr
 ### `accept_governance`
 
 **Pending authority only.** Finalizes the transfer: upgrades `pending_authority` to `authority` and clears the nomination. This two-step pattern prevents accidental loss of control — if a nomination is sent to the wrong address, the current authority can overwrite it before acceptance.
+
+### `force_transfer_governance` (dev/test only)
+
+**Hardcoded admin key only.** Immediately transfers governance to a new authority without the two-step nomination process. Exists solely as an escape hatch for Surfpool persistent state where governance was transferred to a throwaway keypair in a prior run. The admin key is `Pubkey::default()` in production builds.
 
 ## `RegistryState` account
 

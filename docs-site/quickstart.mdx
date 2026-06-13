@@ -66,10 +66,19 @@ npm run build
     ./scripts/run-fork-solana-test-validator.sh
     ```
 
-    Runs **31 integration tests** on a validator with cloned mainnet programs (Kamino, MarginFi, Drift, Jupiter Perps, Maple, SPL Token) and injected fixture ATAs.
+    ```bash
+    bash scripts/run-fork-surfpool.sh
+    ```
+
+    Runs **81 integration tests** via [Surfpool](https://surfpool.run) (JIT account fetching — no `--clone` flags or fixture ATAs needed):
+
+    - All 5 adapters (Kamino, MarginFi, Jupiter, Maple, Drift) + template
+    - Full registry governance lifecycle (propose → approve → revoke → re-approve, guardian, governance transfer)
+    - Dispatcher routing, pause, `current_value` CPI
+    - Drift two-phase withdrawal + cooldown enforcement + stale ticket cleanup
 
     <Warning>
-    Requires network access to clone program state. First run may take several minutes.
+    Requires `MAINNET_RPC_URL` for JIT fetching. See `scripts/run-fork-surfpool.sh`.
     </Warning>
   </Tab>
 </Tabs>
