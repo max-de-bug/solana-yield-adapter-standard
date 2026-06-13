@@ -7,6 +7,11 @@ import {
   initializeAdapterVault,
   createVaultTokenAccount,
   runAdapterDepositWithdrawFlow,
+  addSlippageTests,
+  runAdapterZeroWithdrawRejection,
+  runAdapterMultipleUsers,
+  runAdapterEmptyStateTests,
+  runAdapterVaultStatusLifecycle,
 } from "../helpers/adapter";
 import { createTestMint, createTestTokenAccount, findPda, adapterUserPositionPda } from "../helpers";
 import { isMainnetFork, MAINNET_USDC_MINT, SYRUP_USDC_MINT } from "../helpers/constants";
@@ -48,8 +53,23 @@ describe("adapter-maple", () => {
       vaultAuthoritySeed,
       underlyingMint: flowMint,
     });
-    // Save the mint used by the flow for subsequent tests
-    testedMint = flowMint ?? MAINNET_USDC_MINT;
+    // Save the actual underlying mint from the vault state for subsequent tests
+    const vaultState = await program.account.mapleVaultState.fetch(vaultStatePda);
+    testedMint = vaultState.underlyingMint;
+  });
+
+  addSlippageTests({
+    program,
+    vaultStateSeed,
+    vaultAuthoritySeed,
+  });
+
+  it("rejects zero amount withdraw", async () => {
+    await runAdapterZeroWithdrawRejection(provider, authority, payer, {
+      program,
+      vaultStateSeed,
+      vaultAuthoritySeed,
+    });
   });
 
   it("rejects zero amount deposit", async () => {
@@ -82,4 +102,33 @@ describe("adapter-maple", () => {
       expect(String(err)).to.contain("Deposit amount must be greater than zero");
     }
   });
+
+  if (isMainnetFork()) {
+    it("multiple users maintain independent positions", async () => {
+      await runAdapterMultipleUsers(provider, authority, payer, {
+        program,
+        vaultStateSeed,
+        vaultAuthoritySeed,
+        vaultStateAccountName: "mapleVaultState",
+      });
+    });
+
+    it("empty state: current_value no-op, withdraw from empty rejected, reuse after full withdraw", async () => {
+      await runAdapterEmptyStateTests(provider, authority, payer, {
+        program,
+        vaultStateSeed,
+        vaultAuthoritySeed,
+        vaultStateAccountName: "mapleVaultState",
+      });
+    });
+
+    it("vault status lifecycle: toggle DepositsPaused → Paused → Active", async () => {
+      await runAdapterVaultStatusLifecycle(provider, authority, payer, {
+        program,
+        vaultStateSeed,
+        vaultAuthoritySeed,
+        vaultStateAccountName: "mapleVaultState",
+      });
+    });
+  }
 });

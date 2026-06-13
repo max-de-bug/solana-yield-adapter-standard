@@ -177,7 +177,7 @@ pub fn cpi_current_value<'info>(accounts: AdapterCurrentValueAccounts<'info>) ->
 
     let account_metas = [
         AccountMeta::new_readonly(accounts.user.key(), true),
-        AccountMeta::new_readonly(accounts.vault_state.key(), false),
+        AccountMeta::new(accounts.vault_state.key(), false),
         AccountMeta::new_readonly(accounts.user_position.key(), false),
     ];
 

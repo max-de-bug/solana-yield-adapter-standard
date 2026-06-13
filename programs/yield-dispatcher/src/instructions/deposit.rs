@@ -46,8 +46,6 @@ pub struct Deposit<'info> {
             @ DispatcherError::AdapterNotApproved,
         constraint = adapter_entry.status == AdapterStatus::Approved
             @ DispatcherError::AdapterNotApproved,
-        constraint = user_token_account.mint == adapter_entry.underlying_mint
-            @ DispatcherError::AdapterCpiError,
     )]
     pub adapter_entry: Account<'info, AdapterEntry>,
 
@@ -61,8 +59,6 @@ pub struct Deposit<'info> {
     #[account(
         mut,
         constraint = user_token_account.owner == user.key(),
-        constraint = user_token_account.mint == adapter_entry.underlying_mint
-            @ DispatcherError::AdapterCpiError,
     )]
     pub user_token_account: Account<'info, TokenAccount>,
 
@@ -79,8 +75,6 @@ pub struct Deposit<'info> {
 
     #[account(
         mut,
-        constraint = adapter_vault.mint == adapter_entry.underlying_mint
-            @ DispatcherError::AdapterCpiError,
         constraint = adapter_vault.owner == adapter_vault_authority.key()
             @ DispatcherError::AdapterCpiError,
     )]

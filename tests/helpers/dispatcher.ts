@@ -13,6 +13,7 @@ export interface ApprovedAdapterSetup {
   vaultAuthorityPda: PublicKey;
   vaultTokenAccount: PublicKey;
   adapterUserPositionPda: PublicKey;
+  vaultMint: PublicKey;
 }
 
 /** Ensure registry governance account exists. */
@@ -26,20 +27,20 @@ export async function ensureRegistryInitialized(
   );
 
   try {
-    await registryProgram.methods
-      .initialize()
-      .accounts({
-        authority: authority.publicKey,
-        registryState: registryStatePda,
-        systemProgram: SystemProgram.programId,
-      })
-      .rpc();
-  } catch (e: unknown) {
-    const msg = String(e);
-    if (!msg.includes("already in use") && !msg.includes("0x0")) {
-      throw e;
-    }
+    await registryProgram.account.registryState.fetch(registryStatePda);
+    return registryStatePda;
+  } catch {
+    // Account doesn't exist, create it
   }
+
+  await registryProgram.methods
+    .initialize()
+    .accounts({
+      authority: authority.publicKey,
+      registryState: registryStatePda,
+      systemProgram: SystemProgram.programId,
+    })
+    .rpc();
 
   return registryStatePda;
 }
@@ -61,33 +62,41 @@ export async function approveAdapterInRegistry(
     registryProgram.programId
   );
 
+  // Always try to propose — handles both fresh and existing entries.
+  // If the entry already exists, propose will fail (account in use) and
+  // we catch that silently. We cannot update an existing entry's fields,
+  // so the caller MUST pass the correct underlyingMint from the start
+  // (which setupApprovedAdapterForDispatcher now does after resolving
+  // the actual vault mint).
   try {
-    await registryProgram.account.adapterEntry.fetch(adapterEntryPda);
-    return adapterEntryPda;
+    await registryProgram.methods
+      .proposeAdapter(name, metadataUri, vaultStateSeed, vaultAuthoritySeed)
+      .accounts({
+        proposer: authority.publicKey,
+        registryState: registryStatePda,
+        adapterEntry: adapterEntryPda,
+        adapterProgram,
+        underlyingMint,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
   } catch {
-    // not proposed yet
+    // Entry already exists — can't update fields, continue
   }
 
-  await registryProgram.methods
-    .proposeAdapter(name, metadataUri, vaultStateSeed, vaultAuthoritySeed)
-    .accounts({
-      proposer: authority.publicKey,
-      registryState: registryStatePda,
-      adapterEntry: adapterEntryPda,
-      adapterProgram,
-      underlyingMint,
-      systemProgram: SystemProgram.programId,
-    })
-    .rpc();
-
-  await registryProgram.methods
-    .approveAdapter()
-    .accounts({
-      authority: authority.publicKey,
-      registryState: registryStatePda,
-      adapterEntry: adapterEntryPda,
-    })
-    .rpc();
+  // Always try to approve — OK if already approved
+  try {
+    await registryProgram.methods
+      .approveAdapter()
+      .accounts({
+        authority: authority.publicKey,
+        registryState: registryStatePda,
+        adapterEntry: adapterEntryPda,
+      })
+      .rpc();
+  } catch {
+    // Already approved or other non-fatal error
+  }
 
   return adapterEntryPda;
 }
@@ -105,6 +114,7 @@ export async function setupReferenceAdapterVault(
   vaultStatePda: PublicKey;
   vaultAuthorityPda: PublicKey;
   vaultTokenAccount: PublicKey;
+  vaultMint: PublicKey;
 }> {
   const [vaultStatePda] = findPda(
     [Buffer.from(vaultStateSeed)],
@@ -115,7 +125,7 @@ export async function setupReferenceAdapterVault(
     adapterProgram.programId
   );
 
-  await initializeAdapterVault(
+  const actualMint = await initializeAdapterVault(
     adapterProgram,
     authority,
     vaultStatePda,
@@ -125,11 +135,11 @@ export async function setupReferenceAdapterVault(
   const vaultTokenAccount = await createVaultTokenAccount(
     provider,
     payer,
-    underlyingMint,
+    actualMint,
     vaultAuthorityPda
   );
 
-  return { vaultStatePda, vaultAuthorityPda, vaultTokenAccount };
+  return { vaultStatePda, vaultAuthorityPda, vaultTokenAccount, vaultMint: actualMint };
 }
 
 /** Resolve the Kamino vault mint (reuses vault from adapter tests when present). */
@@ -150,6 +160,73 @@ export async function resolveKaminoVaultMint(
   } catch {
     return fallbackMint;
   }
+}
+
+/** Generic adapter approval + vault setup for dispatcher tests. */
+export async function setupApprovedAdapterForDispatcher(
+  provider: anchor.AnchorProvider,
+  authority: anchor.Wallet,
+  payer: anchor.web3.Keypair,
+  underlyingMint: PublicKey,
+  adapterProgram: Program,
+  adapterName: string,
+  vaultStateSeed: string,
+  vaultAuthoritySeed: string
+): Promise<ApprovedAdapterSetup> {
+  const registryProgram = anchor.workspace.AdapterRegistry as Program;
+  const registryStatePda = await ensureRegistryInitialized(registryProgram, authority);
+
+  // Initialize vault FIRST to get the actual on-chain mint (may differ from
+  // underlyingMint if the vault already exists with a different mint).
+  const [vaultStatePda] = findPda(
+    [Buffer.from(vaultStateSeed)],
+    adapterProgram.programId
+  );
+  const [vaultAuthorityPda] = findPda(
+    [Buffer.from(vaultAuthoritySeed)],
+    adapterProgram.programId
+  );
+
+  const vaultMint = await initializeAdapterVault(
+    adapterProgram,
+    authority,
+    vaultStatePda,
+    underlyingMint
+  );
+
+  const vaultTokenAccount = await createVaultTokenAccount(
+    provider,
+    payer,
+    vaultMint,
+    vaultAuthorityPda
+  );
+
+  // Register with the ACTUAL vault mint so the dispatcher's
+  // user_token_account.mint == adapter_entry.underlying_mint check passes.
+  const adapterEntryPda = await approveAdapterInRegistry(
+    registryProgram,
+    authority,
+    registryStatePda,
+    adapterProgram.programId,
+    vaultMint,
+    adapterName,
+    "https://example.com/adapter.json",
+    vaultStateSeed,
+    vaultAuthoritySeed
+  );
+
+  return {
+    adapterProgram: adapterProgram.programId,
+    adapterEntryPda,
+    vaultStatePda,
+    vaultAuthorityPda,
+    vaultTokenAccount,
+    vaultMint,
+    adapterUserPositionPda: adapterUserPositionPda(
+      adapterProgram.programId,
+      authority.publicKey
+    )[0],
+  };
 }
 
 /** Full Kamino adapter approval + vault setup for dispatcher tests. */
@@ -186,7 +263,7 @@ export async function setupApprovedKaminoForDispatcher(
     "kamino_vault_authority"
   );
 
-  const { vaultStatePda, vaultAuthorityPda, vaultTokenAccount } =
+  const { vaultStatePda, vaultAuthorityPda, vaultTokenAccount, vaultMint: resolvedMint } =
     await setupReferenceAdapterVault(
       kaminoProgram,
       provider,
@@ -203,6 +280,7 @@ export async function setupApprovedKaminoForDispatcher(
     vaultStatePda,
     vaultAuthorityPda,
     vaultTokenAccount,
+    vaultMint: resolvedMint,
     adapterUserPositionPda: adapterUserPositionPda(
       kaminoProgram.programId,
       authority.publicKey

@@ -73,4 +73,12 @@ pub mod adapter_registry {
     pub fn set_guardian(ctx: Context<SetGuardian>, new_guardian: Pubkey) -> Result<()> {
         instructions::set_guardian::handler(ctx, new_guardian)
     }
+
+    /// Dev/test only: force-transfer governance to a new authority.
+    /// Requires a hardcoded admin key signer.
+    pub fn force_transfer_governance(
+        ctx: Context<ForceTransferGovernance>,
+    ) -> Result<()> {
+        instructions::force_transfer_governance::handler(ctx)
+    }
 }

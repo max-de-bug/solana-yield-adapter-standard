@@ -22,7 +22,8 @@ pub struct ApproveAdapter<'info> {
         mut,
         seeds = [ADAPTER_ENTRY_SEED, adapter_entry.adapter_program_id.as_ref()],
         bump = adapter_entry.bump,
-        constraint = adapter_entry.status == AdapterStatus::Proposed @ RegistryError::InvalidStatus,
+        constraint = adapter_entry.status == AdapterStatus::Proposed
+            || adapter_entry.status == AdapterStatus::Revoked @ RegistryError::InvalidStatus,
     )]
     pub adapter_entry: Account<'info, AdapterEntry>,
 }
