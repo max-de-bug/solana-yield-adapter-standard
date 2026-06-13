@@ -32,10 +32,15 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-      - uses: .github/actions/setup-anchor
-        with:
-          solana-version: ${{ env.SOLANA_CLI_VERSION }}
-          anchor-version: ${{ env.ANCHOR_CLI_VERSION }}
+      - name: Install Solana CLI
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v${{ env.SOLANA_CLI_VERSION }}/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+      - uses: Swatinem/rust-cache@v2
+      - name: Install Anchor CLI
+        run: |
+          cargo install --git https://github.com/solana-foundation/anchor --tag "v${{ env.ANCHOR_CLI_VERSION }}" anchor-cli --locked
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
       - uses: actions/setup-node@v4
         with:
           node-version: 20
