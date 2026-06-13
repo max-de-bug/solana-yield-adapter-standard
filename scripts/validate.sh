@@ -54,7 +54,7 @@ fi
 # ============================================================
 header "UNIT TESTS"
 
-OUTPUT=$(cargo test 2>&1 || true)
+OUTPUT=$(cargo test --workspace 2>&1 || true)
 PASSED_TESTS=$(echo "$OUTPUT" | grep "^test result" | awk -F' ' '{s+=$4}END{print s}' || echo "0")
 if [ "$PASSED_TESTS" -gt 0 ] 2>/dev/null; then
   pass "All $PASSED_TESTS unit tests pass"
