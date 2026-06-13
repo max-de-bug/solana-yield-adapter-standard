@@ -63,11 +63,11 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm install
+      - name: Run unit tests (host target, before BPF build)
+        run: cargo test --workspace
       - name: Sync keys (handle stale cache)
         run: anchor keys sync
-      - name: Build programs
+      - name: Build programs (BPF target)
         run: anchor build
-      - name: Run unit tests
-        run: cargo test
-      - name: Validate
+      - name: Validate (rust build + clippy + docs)
         run: bash scripts/validate.sh
