@@ -24,6 +24,18 @@ export const JUPITER_PERPS_PROGRAM_ID = new PublicKey(
   "PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu"
 );
 
+export const ORCA_PROGRAM_ID = new PublicKey(
+  "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+);
+
+export const SYRUP_USDC_WHIRLPOOL = new PublicKey(
+  "6fteKNvMdv7tYmBoJHhj1jx6rHcEwC6RdSEmVpyS613J"
+);
+
+export const SYRUP_CHAINLINK_FEED = new PublicKey(
+  "CpNyiFt84q66665Kx64bobxZuMgZ2EecrhAJs1HikS2T"
+);
+
 export const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey(
   "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
 );
@@ -63,6 +75,10 @@ export const ADAPTER_VAULT_AUTHORITY_SEEDS: Record<string, Buffer> = {
   template: Buffer.from("template_vault_authority"),
 } as const;
 
+export const ADAPTER_VAULT_SYRUP_SEEDS: Record<string, Buffer> = {
+  maple: Buffer.from("maple_vault_syrup"),
+} as const;
+
 export const ADAPTER_NAMES = [
   "kamino",
   "marginfi",
@@ -83,8 +99,9 @@ export function protocolProgramForAdapter(adapterName: AdapterName): PublicKey {
     kamino: KAMINO_PROGRAM_ID,
     marginfi: MARGINFI_PROGRAM_ID,
     jupiter: JUPITER_PERPS_PROGRAM_ID,
-    maple: SYRUP_USDC_MINT,
+    maple: ORCA_PROGRAM_ID,
     drift: DRIFT_PROGRAM_ID,
+    template: PublicKey.default,
   };
   return map[adapterName];
 }

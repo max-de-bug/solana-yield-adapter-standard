@@ -10,7 +10,10 @@ import {
   runAdapterCurrentValueAccuracy,
   runAdapterMultipleUsers,
   runAdapterEmptyStateTests,
+  expectRejected,
   runAdapterVaultStatusLifecycle,
+  closeAccount,
+  fundUserAta,
 } from "../helpers/adapter";
 import {
   adapterUserPositionPda,
@@ -19,6 +22,9 @@ import {
   findPda,
   getTokenBalance,
   mintTestTokens,
+  sendAndConfirm,
+  sendInstruction,
+  sleep,
 } from "../helpers/index";
 import {
   DRIFT_PROGRAM_ID,
@@ -50,15 +56,23 @@ describe("adapter-drift", () => {
     // Clear any stale withdrawal ticket from a previous Surfpool run
     await clearPendingTicket(authority.publicKey);
 
-    underlyingMint = await createTestMint(provider, payer, 6);
+    underlyingMint = isMainnetFork() ? MAINNET_USDC_MINT : await createTestMint(provider, payer, 6);
 
     underlyingMint = await initializeAdapterVault(program, authority, vaultStatePda, underlyingMint);
 
     // Set cooldown to 0 so withdrawals can be settled instantly in tests
-    await program.methods
+    const cdIx = await program.methods
       .setUnstakeCooldown(new anchor.BN(0))
       .accounts({ authority: authority.publicKey, vaultState: vaultStatePda })
-      .rpc();
+      .instruction();
+    const cdTx = new anchor.web3.Transaction().add(cdIx);
+    cdTx.feePayer = authority.publicKey;
+    const cdBh = await provider.connection.getLatestBlockhash();
+    cdTx.recentBlockhash = cdBh.blockhash;
+    cdTx.lastValidBlockHeight = cdBh.lastValidBlockHeight + 400;
+    await provider.wallet.signTransaction(cdTx);
+    const cdSig = await provider.connection.sendRawTransaction(cdTx.serialize(), { skipPreflight: true });
+    await provider.connection.confirmTransaction(cdSig);
 
     vaultTokenAccount = await createVaultTokenAccount(
       provider, payer, underlyingMint, vaultAuthorityPda
@@ -93,6 +107,10 @@ describe("adapter-drift", () => {
     });
 
     it("multiple users maintain independent positions", async () => {
+      // Clear stale position PDA and ticket before the test
+      const [posPda] = await adapterUserPositionPda(program.programId, authority.publicKey);
+      await closeAccount(posPda);
+      await clearPendingTicket(authority.publicKey);
       await runAdapterMultipleUsers(provider, authority, payer, {
         program,
         vaultStateSeed: "drift_vault_state",
@@ -102,6 +120,7 @@ describe("adapter-drift", () => {
     });
 
     it("empty state: current_value no-op, withdraw from empty rejected, reuse after full withdraw", async () => {
+      await clearPendingTicket(authority.publicKey);
       await runAdapterEmptyStateTests(provider, authority, payer, {
         program,
         vaultStateSeed: "drift_vault_state",
@@ -111,6 +130,7 @@ describe("adapter-drift", () => {
     });
 
     it("vault status lifecycle: toggle DepositsPaused → Paused → Active", async () => {
+      await clearPendingTicket(authority.publicKey);
       await runAdapterVaultStatusLifecycle(provider, authority, payer, {
         program,
         vaultStateSeed: "drift_vault_state",
@@ -129,76 +149,55 @@ describe("adapter-drift", () => {
   });
 
   it("deposit → current_value → withdraw (request) → settle_withdrawal (two-phase cooldown)", async () => {
-    // Clear any stale ticket from previous Surfpool runs
     await clearPendingTicket(authority.publicKey);
 
     const depositAmount = 1_000_000;
     const withdrawShares = 500_000;
 
-    const userTokenAccount = await fundUserAta(depositAmount);
+    const userTokenAccount = await fundUserAta(provider, payer, authority.publicKey, underlyingMint, depositAmount);
+    const [userPositionPda] = await adapterUserPositionPda(program.programId, authority.publicKey);
 
-    const [userPositionPda] = await adapterUserPositionPda(
-      program.programId,
-      authority.publicKey
-    );
+    await sleep(1000);
 
     // Phase 0: Deposit
-    const depositBuilder = program.methods
-      .deposit(new anchor.BN(depositAmount), new anchor.BN(0))
+    const dIx = await program.methods.deposit(new anchor.BN(depositAmount), new anchor.BN(0))
       .accounts({
-        user: authority.publicKey,
-        vaultState: vaultStatePda,
-        userPosition: userPositionPda,
-        userTokenAccount,
-        vaultAuthority: vaultAuthorityPda,
-        vaultTokenAccount,
-        tokenProgram: TOKEN_PROGRAM,
-        systemProgram: SystemProgram.programId,
-      });
-
-    if (isMainnetFork()) {
-      depositBuilder.remainingAccounts([
-        { pubkey: DRIFT_PROGRAM_ID, isSigner: false, isWritable: false },
-      ]);
-    }
-
-    await depositBuilder.rpc();
+        user: authority.publicKey, vaultState: vaultStatePda, userPosition: userPositionPda,
+        userTokenAccount, vaultAuthority: vaultAuthorityPda, vaultTokenAccount,
+        tokenProgram: TOKEN_PROGRAM, systemProgram: SystemProgram.programId,
+      })
+      .remainingAccounts(isMainnetFork() ? [{ pubkey: DRIFT_PROGRAM_ID, isSigner: false, isWritable: false }] : [])
+      .instruction();
+    await sendInstruction(provider, dIx);
 
     const vaultBalanceAfterDeposit = await getTokenBalance(provider, vaultTokenAccount);
     expect(vaultBalanceAfterDeposit).to.be.at.least(depositAmount);
 
+    await sleep(1000);
+
     // current_value
-    const currentValueBuilder = program.methods.currentValue().accounts({
-      user: authority.publicKey,
-      vaultState: vaultStatePda,
-      userPosition: userPositionPda,
-    });
+    const cvIx = await program.methods.currentValue()
+      .accounts({ user: authority.publicKey, vaultState: vaultStatePda, userPosition: userPositionPda })
+      .remainingAccounts(isMainnetFork() ? [{ pubkey: DRIFT_PROGRAM_ID, isSigner: false, isWritable: false }] : [])
+      .instruction();
+    await sendInstruction(provider, cvIx);
 
-    if (isMainnetFork()) {
-      currentValueBuilder.remainingAccounts([
-        { pubkey: DRIFT_PROGRAM_ID, isSigner: false, isWritable: false },
-      ]);
-    }
-
-    await currentValueBuilder.rpc();
+    await sleep(1000);
 
     // Phase 1: Request withdrawal (creates ticket, locks shares)
     const [ticketPda] = await findPda(
-      [Buffer.from("drift_ticket"), userPositionPda.toBuffer()],
-      program.programId
+      [Buffer.from("drift_ticket"), userPositionPda.toBuffer()], program.programId
     );
 
-    await program.methods
-      .withdraw(new anchor.BN(withdrawShares), new anchor.BN(0))
+    const wIx = await program.methods.withdraw(new anchor.BN(withdrawShares), new anchor.BN(0))
       .accounts({
-        user: authority.publicKey,
-        vaultState: vaultStatePda,
-        userPosition: userPositionPda,
-        ticket: ticketPda,
-        tokenProgram: TOKEN_PROGRAM,
-        systemProgram: SystemProgram.programId,
+        user: authority.publicKey, vaultState: vaultStatePda, userPosition: userPositionPda,
+        ticket: ticketPda, tokenProgram: TOKEN_PROGRAM, systemProgram: SystemProgram.programId,
       })
-      .rpc();
+      .instruction();
+    await sendInstruction(provider, wIx);
+
+    await sleep(1000);
 
     // Verify ticket exists
     const ticketAccount = await program.account.driftWithdrawalTicket.fetch(ticketPda);
@@ -206,26 +205,15 @@ describe("adapter-drift", () => {
     expect(ticketAccount.isSettled).to.be.false;
 
     // Phase 2: Settle withdrawal (cooldown is 0, so instant)
-    const settleBuilder = program.methods
-      .settleWithdrawal()
+    const sIx = await program.methods.settleWithdrawal()
       .accounts({
-        user: authority.publicKey,
-        vaultState: vaultStatePda,
-        userPosition: userPositionPda,
-        ticket: ticketPda,
-        userTokenAccount,
-        vaultTokenAccount,
-        vaultAuthority: vaultAuthorityPda,
+        user: authority.publicKey, vaultState: vaultStatePda, userPosition: userPositionPda,
+        ticket: ticketPda, userTokenAccount, vaultTokenAccount, vaultAuthority: vaultAuthorityPda,
         tokenProgram: TOKEN_PROGRAM,
-      });
-
-    if (isMainnetFork()) {
-      settleBuilder.remainingAccounts([
-        { pubkey: DRIFT_PROGRAM_ID, isSigner: false, isWritable: false },
-      ]);
-    }
-
-    await settleBuilder.rpc();
+      })
+      .remainingAccounts(isMainnetFork() ? [{ pubkey: DRIFT_PROGRAM_ID, isSigner: false, isWritable: false }] : [])
+      .instruction();
+    await sendInstruction(provider, sIx);
 
     // Ticket should be closed (rent returned)
     const ticketInfo = await provider.connection.getAccountInfo(ticketPda);
@@ -240,230 +228,206 @@ describe("adapter-drift", () => {
   });
 
   it("rejects withdraw request with excessive min_underlying_out (slippage)", async () => {
-    // Clear any stale ticket from previous tests/Surfpool runs
     await clearPendingTicket(authority.publicKey);
-    await program.methods
-      .setUnstakeCooldown(new anchor.BN(0))
+    const cdIx = await program.methods.setUnstakeCooldown(new anchor.BN(0))
       .accounts({ authority: authority.publicKey, vaultState: vaultStatePda })
-      .rpc();
+      .instruction();
+    await sendInstruction(provider, cdIx);
 
-    const userTokenAccount = await fundUserAta(1_000_000);
-    const [userPositionPda] = await adapterUserPositionPda(
-      program.programId, authority.publicKey
-    );
+    const userTokenAccount = await fundUserAta(provider, payer, authority.publicKey, underlyingMint, 1_000_000);
+    const [userPositionPda] = await adapterUserPositionPda(program.programId, authority.publicKey);
 
-    await program.methods
-      .deposit(new anchor.BN(1_000_000), new anchor.BN(0))
+    await sleep(1000);
+
+    const dIx = await program.methods.deposit(new anchor.BN(1_000_000), new anchor.BN(0))
       .accounts({
-        user: authority.publicKey,
-        vaultState: vaultStatePda,
-        userPosition: userPositionPda,
-        userTokenAccount,
-        vaultAuthority: vaultAuthorityPda,
-        vaultTokenAccount,
-        tokenProgram: TOKEN_PROGRAM,
-        systemProgram: SystemProgram.programId,
+        user: authority.publicKey, vaultState: vaultStatePda, userPosition: userPositionPda,
+        userTokenAccount, vaultAuthority: vaultAuthorityPda, vaultTokenAccount,
+        tokenProgram: TOKEN_PROGRAM, systemProgram: SystemProgram.programId,
       })
-      .rpc();
+      .remainingAccounts(isMainnetFork() ? [{ pubkey: DRIFT_PROGRAM_ID, isSigner: false, isWritable: false }] : [])
+      .instruction();
+    await sendInstruction(provider, dIx);
+
+    await sleep(1000);
 
     const [ticketPda] = await findPda(
-      [Buffer.from("drift_ticket"), userPositionPda.toBuffer()],
-      program.programId
+      [Buffer.from("drift_ticket"), userPositionPda.toBuffer()], program.programId
     );
 
-    try {
-      await program.methods
-        .withdraw(new anchor.BN(500_000), new anchor.BN(1_000_000))
-        .accounts({
-          user: authority.publicKey,
-          vaultState: vaultStatePda,
-          userPosition: userPositionPda,
-          ticket: ticketPda,
-          tokenProgram: TOKEN_PROGRAM,
-          systemProgram: SystemProgram.programId,
-        })
-        .rpc();
+    const wIx = await program.methods.withdraw(new anchor.BN(500_000), new anchor.BN(1_000_000))
+      .accounts({
+        user: authority.publicKey, vaultState: vaultStatePda, userPosition: userPositionPda,
+        ticket: ticketPda, tokenProgram: TOKEN_PROGRAM, systemProgram: SystemProgram.programId,
+      })
+      .instruction();
+    const wTx = new anchor.web3.Transaction().add(wIx);
+    wTx.feePayer = authority.publicKey;
+    const wBh = await provider.connection.getLatestBlockhash();
+    wTx.recentBlockhash = wBh.blockhash;
+    wTx.lastValidBlockHeight = wBh.lastValidBlockHeight + 400;
+    await provider.wallet.signTransaction(wTx);
+    const wSig = await provider.connection.sendRawTransaction(wTx.serialize(), { skipPreflight: true });
+    const wCr = await provider.connection.confirmTransaction(wSig);
+    if (!wCr.value.err) {
       expect.fail("Should have rejected withdraw with excessive min_underlying_out");
-    } catch (err: unknown) {
-      expect(String(err)).to.contain("SlippageExceeded");
     }
+    const logs = (await provider.connection.getTransaction(wSig, { commitment: "confirmed" }))
+      ?.meta?.logMessages?.join("\n") ?? "";
+    expect(logs).to.satisfy((s: string) =>
+      s.includes("SlippageExceeded") || s.includes("min_underlying")
+    );
   });
 
   it("rejects settlement before cooldown elapses", async () => {
-    // Clear any stale ticket from previous tests/Surfpool runs
     await clearPendingTicket(authority.publicKey);
 
     // Set cooldown to large value
-    await program.methods
-      .setUnstakeCooldown(new anchor.BN(999_999_999))
+    const cdIx = await program.methods.setUnstakeCooldown(new anchor.BN(999_999_999))
       .accounts({ authority: authority.publicKey, vaultState: vaultStatePda })
-      .rpc();
+      .instruction();
+    await sendInstruction(provider, cdIx);
 
-    const userTokenAccount = await fundUserAta(1_000_000);
-    const [userPositionPda] = await adapterUserPositionPda(
-      program.programId, authority.publicKey
-    );
+    const userTokenAccount = await fundUserAta(provider, payer, authority.publicKey, underlyingMint, 1_000_000);
+    const [userPositionPda] = await adapterUserPositionPda(program.programId, authority.publicKey);
 
-    await program.methods
-      .deposit(new anchor.BN(1_000_000), new anchor.BN(0))
+    await sleep(1000);
+
+    const dIx = await program.methods.deposit(new anchor.BN(1_000_000), new anchor.BN(0))
       .accounts({
-        user: authority.publicKey,
-        vaultState: vaultStatePda,
-        userPosition: userPositionPda,
-        userTokenAccount,
-        vaultAuthority: vaultAuthorityPda,
-        vaultTokenAccount,
-        tokenProgram: TOKEN_PROGRAM,
-        systemProgram: SystemProgram.programId,
+        user: authority.publicKey, vaultState: vaultStatePda, userPosition: userPositionPda,
+        userTokenAccount, vaultAuthority: vaultAuthorityPda, vaultTokenAccount,
+        tokenProgram: TOKEN_PROGRAM, systemProgram: SystemProgram.programId,
       })
-      .rpc();
+      .remainingAccounts(isMainnetFork() ? [{ pubkey: DRIFT_PROGRAM_ID, isSigner: false, isWritable: false }] : [])
+      .instruction();
+    await sendInstruction(provider, dIx);
+
+    await sleep(1000);
 
     const [ticketPda] = await findPda(
-      [Buffer.from("drift_ticket"), userPositionPda.toBuffer()],
-      program.programId
+      [Buffer.from("drift_ticket"), userPositionPda.toBuffer()], program.programId
     );
 
-    await program.methods
-      .withdraw(new anchor.BN(500_000), new anchor.BN(0))
+    const wIx = await program.methods.withdraw(new anchor.BN(500_000), new anchor.BN(0))
       .accounts({
-        user: authority.publicKey,
-        vaultState: vaultStatePda,
-        userPosition: userPositionPda,
-        ticket: ticketPda,
-        tokenProgram: TOKEN_PROGRAM,
-        systemProgram: SystemProgram.programId,
+        user: authority.publicKey, vaultState: vaultStatePda, userPosition: userPositionPda,
+        ticket: ticketPda, tokenProgram: TOKEN_PROGRAM, systemProgram: SystemProgram.programId,
       })
-      .rpc();
+      .instruction();
+    await sendInstruction(provider, wIx);
 
-    try {
-      await program.methods
-        .settleWithdrawal()
+    await sleep(1000);
+
+    await expectRejected(provider, authority,
+      () => program.methods.settleWithdrawal()
         .accounts({
-          user: authority.publicKey,
-          vaultState: vaultStatePda,
-          userPosition: userPositionPda,
-          ticket: ticketPda,
-          userTokenAccount,
-          vaultTokenAccount,
-          vaultAuthority: vaultAuthorityPda,
+          user: authority.publicKey, vaultState: vaultStatePda, userPosition: userPositionPda,
+          ticket: ticketPda, userTokenAccount, vaultTokenAccount, vaultAuthority: vaultAuthorityPda,
           tokenProgram: TOKEN_PROGRAM,
         })
-        .rpc();
-      expect.fail("Should have rejected settlement before cooldown elapses");
-    } catch (err: unknown) {
-      expect(String(err)).to.contain("CooldownNotElapsed");
-    }
+        .instruction(),
+      ["CooldownNotElapsed", "cooldown"]
+    );
   });
 
   it("rejects zero amount withdraw request", async () => {
     const depositAmount = 1_000_000;
 
-    // Clear any stale ticket and reset cooldown from previous tests
     await clearPendingTicket(authority.publicKey);
-    await program.methods
-      .setUnstakeCooldown(new anchor.BN(0))
+    const cdIx = await program.methods.setUnstakeCooldown(new anchor.BN(0))
       .accounts({ authority: authority.publicKey, vaultState: vaultStatePda })
-      .rpc();
+      .instruction();
+    await sendInstruction(provider, cdIx);
 
-    const userTokenAccount = await fundUserAta(depositAmount);
-    const [userPositionPda] = await adapterUserPositionPda(
-      program.programId, authority.publicKey
-    );
+    const userTokenAccount = await fundUserAta(provider, payer, authority.publicKey, underlyingMint, depositAmount);
+    const [userPositionPda] = await adapterUserPositionPda(program.programId, authority.publicKey);
 
-    await program.methods
-      .deposit(new anchor.BN(depositAmount), new anchor.BN(0))
+    await sleep(1000);
+
+    const dIx = await program.methods.deposit(new anchor.BN(depositAmount), new anchor.BN(0))
       .accounts({
-        user: authority.publicKey,
-        vaultState: vaultStatePda,
-        userPosition: userPositionPda,
-        userTokenAccount,
-        vaultAuthority: vaultAuthorityPda,
-        vaultTokenAccount,
-        tokenProgram: TOKEN_PROGRAM,
-        systemProgram: SystemProgram.programId,
+        user: authority.publicKey, vaultState: vaultStatePda, userPosition: userPositionPda,
+        userTokenAccount, vaultAuthority: vaultAuthorityPda, vaultTokenAccount,
+        tokenProgram: TOKEN_PROGRAM, systemProgram: SystemProgram.programId,
       })
-      .rpc();
+      .remainingAccounts(isMainnetFork() ? [{ pubkey: DRIFT_PROGRAM_ID, isSigner: false, isWritable: false }] : [])
+      .instruction();
+    await sendInstruction(provider, dIx);
+
+    await sleep(1000);
 
     const [ticketPda] = await findPda(
-      [Buffer.from("drift_ticket"), userPositionPda.toBuffer()],
-      program.programId
+      [Buffer.from("drift_ticket"), userPositionPda.toBuffer()], program.programId
     );
 
-    try {
-      await program.methods
-        .withdraw(new anchor.BN(0), new anchor.BN(0))
-        .accounts({
-          user: authority.publicKey,
-          vaultState: vaultStatePda,
-          userPosition: userPositionPda,
-          ticket: ticketPda,
-          tokenProgram: TOKEN_PROGRAM,
-          systemProgram: SystemProgram.programId,
-        })
-        .rpc();
+    const wIx = await program.methods.withdraw(new anchor.BN(0), new anchor.BN(0))
+      .accounts({
+        user: authority.publicKey, vaultState: vaultStatePda, userPosition: userPositionPda,
+        ticket: ticketPda, tokenProgram: TOKEN_PROGRAM, systemProgram: SystemProgram.programId,
+      })
+      .instruction();
+    const wTx = new anchor.web3.Transaction().add(wIx);
+    wTx.feePayer = authority.publicKey;
+    const wBh = await provider.connection.getLatestBlockhash();
+    wTx.recentBlockhash = wBh.blockhash;
+    wTx.lastValidBlockHeight = wBh.lastValidBlockHeight + 400;
+    await provider.wallet.signTransaction(wTx);
+    const wSig = await provider.connection.sendRawTransaction(wTx.serialize(), { skipPreflight: true });
+    const wCr = await provider.connection.confirmTransaction(wSig);
+    if (!wCr.value.err) {
       expect.fail("Should have rejected zero withdraw");
-    } catch (err: unknown) {
-      expect(String(err)).to.contain("Withdrawal amount must be greater than zero");
     }
+    const logs = (await provider.connection.getTransaction(wSig, { commitment: "confirmed" }))
+      ?.meta?.logMessages?.join("\n") ?? "";
+    expect(logs).to.satisfy((s: string) =>
+      s.includes("greater than zero") || s.includes("Withdrawal amount")
+    );
   });
 
   it("cancel unstake returns shares to position", async () => {
-    // Clear stale ticket from previous tests and reset cooldown
     await clearPendingTicket(authority.publicKey);
-    await program.methods
-      .setUnstakeCooldown(new anchor.BN(0))
+    const cdIx = await program.methods.setUnstakeCooldown(new anchor.BN(0))
       .accounts({ authority: authority.publicKey, vaultState: vaultStatePda })
-      .rpc();
-    // Wait for new slot to avoid blockhash reuse
-    await new Promise(r => setTimeout(r, 500));
+      .instruction();
+    await sendInstruction(provider, cdIx);
+
+    await sleep(1000);
     const depositAmount = 1_000_000;
     const withdrawShares = 500_000;
 
-    const userTokenAccount = await fundUserAta(depositAmount);
-    await new Promise(r => setTimeout(r, 500));
-    const [userPositionPda] = await adapterUserPositionPda(
-      program.programId, authority.publicKey
-    );
+    const userTokenAccount = await fundUserAta(provider, payer, authority.publicKey, underlyingMint, depositAmount);
+    const [userPositionPda] = await adapterUserPositionPda(program.programId, authority.publicKey);
+
+    await sleep(1000);
 
     // Deposit
-    const depositBuilder = program.methods
-      .deposit(new anchor.BN(depositAmount), new anchor.BN(0))
+    const dIx = await program.methods.deposit(new anchor.BN(depositAmount), new anchor.BN(0))
       .accounts({
-        user: authority.publicKey,
-        vaultState: vaultStatePda,
-        userPosition: userPositionPda,
-        userTokenAccount,
-        vaultAuthority: vaultAuthorityPda,
-        vaultTokenAccount,
-        tokenProgram: TOKEN_PROGRAM,
-        systemProgram: SystemProgram.programId,
-      });
+        user: authority.publicKey, vaultState: vaultStatePda, userPosition: userPositionPda,
+        userTokenAccount, vaultAuthority: vaultAuthorityPda, vaultTokenAccount,
+        tokenProgram: TOKEN_PROGRAM, systemProgram: SystemProgram.programId,
+      })
+      .remainingAccounts(isMainnetFork() ? [{ pubkey: DRIFT_PROGRAM_ID, isSigner: false, isWritable: false }] : [])
+      .instruction();
+    await sendInstruction(provider, dIx);
 
-    if (isMainnetFork()) {
-      depositBuilder.remainingAccounts([
-        { pubkey: DRIFT_PROGRAM_ID, isSigner: false, isWritable: false },
-      ]);
-    }
-
-    await depositBuilder.rpc();
+    await sleep(1000);
 
     // Request withdrawal (creates ticket)
     const [ticketPda] = await findPda(
-      [Buffer.from("drift_ticket"), userPositionPda.toBuffer()],
-      program.programId
+      [Buffer.from("drift_ticket"), userPositionPda.toBuffer()], program.programId
     );
 
-    await program.methods
-      .withdraw(new anchor.BN(withdrawShares), new anchor.BN(0))
+    const wIx = await program.methods.withdraw(new anchor.BN(withdrawShares), new anchor.BN(0))
       .accounts({
-        user: authority.publicKey,
-        vaultState: vaultStatePda,
-        userPosition: userPositionPda,
-        ticket: ticketPda,
-        tokenProgram: TOKEN_PROGRAM,
-        systemProgram: SystemProgram.programId,
+        user: authority.publicKey, vaultState: vaultStatePda, userPosition: userPositionPda,
+        ticket: ticketPda, tokenProgram: TOKEN_PROGRAM, systemProgram: SystemProgram.programId,
       })
-      .rpc();
+      .instruction();
+    await sendInstruction(provider, wIx);
+
+    await sleep(1000);
 
     // Verify ticket exists and shares are locked
     let ticketAccount = await program.account.driftWithdrawalTicket.fetch(ticketPda);
@@ -471,46 +435,32 @@ describe("adapter-drift", () => {
     expect(ticketAccount.isSettled).to.be.false;
 
     // Cancel the unstake
-    await program.methods
-      .cancelUnstake()
-      .accounts({
-        user: authority.publicKey,
-        userPosition: userPositionPda,
-        ticket: ticketPda,
-      })
-      .rpc();
+    const cIx = await program.methods.cancelUnstake()
+      .accounts({ user: authority.publicKey, userPosition: userPositionPda, ticket: ticketPda })
+      .instruction();
+    await sendInstruction(provider, cIx);
+
+    await sleep(1000);
 
     // Ticket should be closed
     const ticketInfo = await provider.connection.getAccountInfo(ticketPda);
     expect(ticketInfo).to.be.null;
 
-    // Shares should be returned to position (at minimum the deposit amount,
-    // may be more due to leftover shares from previous tests)
+    // Shares should be returned to position
     const position = await program.account.adapterPosition.fetch(userPositionPda);
     expect(position.receiptTokenBalance.toNumber()).to.be.at.least(depositAmount);
 
-    // Should be able to withdraw normally now
-    await program.methods
-      .withdraw(new anchor.BN(depositAmount), new anchor.BN(0))
-      .accounts({
-        user: authority.publicKey,
-        vaultState: vaultStatePda,
-        userPosition: userPositionPda,
-        ticket: ticketPda,
-        tokenProgram: TOKEN_PROGRAM,
-        systemProgram: SystemProgram.programId,
-      })
-      .rpc();
-  });
+    await sleep(1000);
 
-  /** Fund a user token account with the shared underlying mint. */
-  async function fundUserAta(amount: number): Promise<PublicKey> {
-    const ata = await getOrCreateAssociatedTokenAccount(
-      provider.connection, payer, underlyingMint, authority.publicKey, false, undefined, undefined, TOKEN_PROGRAM
-    );
-    await mintTestTokens(provider, underlyingMint, ata.address, payer, amount);
-    return ata.address;
-  }
+    // Should be able to withdraw normally now (re-creates ticket at same PDA)
+    const w2Ix = await program.methods.withdraw(new anchor.BN(position.receiptTokenBalance.toNumber()), new anchor.BN(0))
+      .accounts({
+        user: authority.publicKey, vaultState: vaultStatePda, userPosition: userPositionPda,
+        ticket: ticketPda, tokenProgram: TOKEN_PROGRAM, systemProgram: SystemProgram.programId,
+      })
+      .instruction();
+    await sendInstruction(provider, w2Ix);
+  });
 
   /** Cancel any pending withdrawal ticket for the given user.
    *  Required to clean up stale tickets from previous tests that failed
@@ -524,15 +474,18 @@ describe("adapter-drift", () => {
     );
     try {
       await program.account.driftWithdrawalTicket.fetch(ticketPda);
-      // Ticket exists — cancel it
-      await program.methods
-        .cancelUnstake()
-        .accounts({
-          user: authority.publicKey,
-          userPosition: positionPda,
-          ticket: ticketPda,
-        })
-        .rpc();
+      // Ticket exists — cancel it with raw tx
+      const cIx = await program.methods.cancelUnstake()
+        .accounts({ user: authority.publicKey, userPosition: positionPda, ticket: ticketPda })
+        .instruction();
+      const cTx = new anchor.web3.Transaction().add(cIx);
+      cTx.feePayer = authority.publicKey;
+      const cBh = await provider.connection.getLatestBlockhash();
+      cTx.recentBlockhash = cBh.blockhash;
+      cTx.lastValidBlockHeight = cBh.lastValidBlockHeight + 400;
+      await provider.wallet.signTransaction(cTx);
+      const cSig = await provider.connection.sendRawTransaction(cTx.serialize(), { skipPreflight: true });
+      await provider.connection.confirmTransaction(cSig);
     } catch {
       // No ticket to clean up
     }

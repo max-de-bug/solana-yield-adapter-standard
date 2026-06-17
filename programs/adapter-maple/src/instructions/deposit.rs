@@ -37,8 +37,8 @@ pub struct Deposit<'info> {
     )]
     pub user_token_account: Account<'info, TokenAccount>,
 
-    /// CHECK: Vault authority PDA.
-    #[account(seeds = [VAULT_AUTHORITY_SEED], bump)]
+    /// CHECK: Vault authority PDA; marked mut for Orca swap CPI.
+    #[account(mut, seeds = [VAULT_AUTHORITY_SEED], bump)]
     pub vault_authority: UncheckedAccount<'info>,
 
     #[account(
@@ -52,7 +52,7 @@ pub struct Deposit<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<Deposit>, amount: u64, min_shares_out: u64) -> Result<()> {
+pub fn handler<'a>(ctx: Context<'a, Deposit<'a>>, amount: u64, min_shares_out: u64) -> Result<()> {
     require!(amount > 0, YieldAdapterError::ZeroDepositAmount);
 
     let vault = &mut ctx.accounts.vault_state;
@@ -86,7 +86,15 @@ pub fn handler(ctx: Context<Deposit>, amount: u64, min_shares_out: u64) -> Resul
         .checked_add(shares)
         .ok_or(YieldAdapterError::ArithmeticOverflow)?;
 
-    protocol::on_deposit(vault, amount, ctx.remaining_accounts)?;
+    protocol::on_deposit(
+        vault,
+        &ctx.accounts.token_program.to_account_info(),
+        &ctx.accounts.vault_authority.to_account_info(),
+        &ctx.accounts.vault_token_account.to_account_info(),
+        amount,
+        ctx.remaining_accounts,
+        ctx.bumps.vault_authority,
+    )?;
 
     let position = &mut ctx.accounts.user_position;
     if position.owner == Pubkey::default() {

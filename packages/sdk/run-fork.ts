@@ -8,6 +8,15 @@ import {
   cleanupValidator,
 } from "./src/fork";
 
+/**
+ * Legacy fork test runner using solana-test-validator directly.
+ *
+ * This is the "non-Surfpool" path, for environments where surfpool is
+ * not installed or for CI runners that only have solana-test-validator.
+ *
+ * For the Surfpool path, use scripts/run-fork-surfpool.sh instead,
+ * which orchestrates surfpool start → deploy → ts-mocha → cleanup.
+ */
 async function main(): Promise<void> {
   const totalSteps = 5;
   let cleanupDone = false;
@@ -31,7 +40,7 @@ async function main(): Promise<void> {
   try {
     console.log("============================================");
     console.log("  Solana Yield Adapter Standard");
-    console.log("  Mainnet-Fork Integration Tests");
+    console.log("  Mainnet-Fork Integration Tests (Legacy)");
     console.log("============================================");
 
     let stepIndex = 0;
@@ -41,6 +50,7 @@ async function main(): Promise<void> {
     console.log(`\n[${++stepIndex}/${totalSteps}] Building programs...`);
     await buildPrograms();
 
+    console.log(`\n[${++stepIndex}/${totalSteps}] Starting test validator...`);
     await startValidator();
 
     console.log(`\n[${++stepIndex}/${totalSteps}] Deploying programs...`);

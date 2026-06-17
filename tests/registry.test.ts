@@ -12,6 +12,8 @@ import {
   findPda,
   sleep,
 } from "./helpers";
+import { surfnetSetAccount } from "./helpers/adapter";
+import { isMainnetFork } from "./helpers/constants";
 
 describe("adapter-registry", () => {
   const provider = anchor.AnchorProvider.env();
@@ -24,11 +26,25 @@ describe("adapter-registry", () => {
   /** The effective authority — may differ from `authority` on a fork with leftover state. */
   let effectiveAuthority: PublicKey;
 
+  async function patchRegistryAdmin(conn: anchor.web3.Connection, registryPda: PublicKey, desiredAdmin: PublicKey): Promise<void> {
+    if (!isMainnetFork()) return;
+    const info = await conn.getAccountInfo(registryPda);
+    if (!info) return;
+    const data = Buffer.from(info.data);
+    if (data.length < 40) return;
+    const currentAdmin = new PublicKey(data.slice(8, 40));
+    if (currentAdmin.equals(desiredAdmin)) return;
+    desiredAdmin.toBuffer().copy(data, 8);
+    await surfnetSetAccount(registryPda.toString(), data.toString("hex"), info.lamports, info.owner.toString(), info.executable, info.rentEpoch);
+  }
+
   before(async () => {
     [registryStatePda, registryBump] = findPda(
       [Buffer.from("registry_state")],
       program.programId
     );
+    // Patch registry admin to match test wallet (handles persistent state from prior runs)
+    await patchRegistryAdmin(provider.connection, registryStatePda, authority.publicKey);
     // Resolve the actual authority (may already be initialized from a prior run)
     try {
       const state = await program.account.registryState.fetch(registryStatePda);

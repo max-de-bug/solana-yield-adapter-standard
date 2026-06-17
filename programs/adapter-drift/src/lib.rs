@@ -1,16 +1,32 @@
 //! # Drift Insurance Fund Adapter
 //!
-//! Reference adapter for the Drift Protocol Insurance Fund staking.
+//! Reference adapter for the Drift Protocol with two-phase unstaking.
 //!
 //! ## Protocol Details
 //! - **Program**: `dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH`
-//! - **Model**: Insurance fund staking with 13-day unstaking cooldown
+//! - **Model**: Spot market deposit/withdraw with 13-day unstaking cooldown
 //! - **Underlying**: USDC
 //!
-//! ## Important Note
-//! Drift Protocol experienced a security incident in April 2026.
-//! This adapter implements the correct interface against the protocol-v2
-//! program specification. The cooldown period is tracked in adapter state.
+//! ## Important Note — Honest Position on Insurance Fund Staking
+//!
+//! Drift's Insurance Fund staking instructions (`*_insurance_fund_stake`) are the
+//! intended yield source for this adapter. However, these instructions are **commented
+//! out of Drift's deployed `#[program]`** as of June 2025
+//! (programs/drift/src/lib.rs ~lines 796-880 in drift-labs/protocol-v2).
+//!
+//! This adapter therefore uses Drift's **spot market deposit/withdraw** instructions
+//! as the protocol CPI leg — a real, working CPI round-trip on mainnet fork, but one
+//! that does not generate yield (spot market deposits are not a yield source).
+//!
+//! What we prove:
+//!   1. Full CPI round-trip (deposit → current_value → withdraw) on real Drift mainnet state ✅
+//!   2. Two-phase lifecycle (request → cooldown → settle) with configurable cooldown ✅
+//!   3. Spec-correct IF-staking code is bundled and unit-tested (executes when Drift
+//!      re-enables the exports)
+//!   4. Probe script at `scripts/probe-drift-if.sh` confirms IF discriminators are
+//!      rejected by the live program
+//!
+//! See `bash scripts/probe-drift-if.sh` and `docs/adapters/drift.md` for details.
 
 #![allow(clippy::diverging_sub_expression)]
 #![allow(unexpected_cfgs)]

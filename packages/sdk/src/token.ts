@@ -21,7 +21,12 @@ export async function airdrop(
 ): Promise<void> {
   const sig = await connection.requestAirdrop(to, amount);
   const latestBlockhash = await connection.getLatestBlockhash();
-  await connection.confirmTransaction({ signature: sig, ...latestBlockhash });
+  const lastValidBlockHeight = latestBlockhash.lastValidBlockHeight + 2000;
+  await connection.confirmTransaction({
+    signature: sig,
+    blockhash: latestBlockhash.blockhash,
+    lastValidBlockHeight,
+  });
 }
 
 export async function createTestMint(

@@ -147,15 +147,17 @@ bash scripts/run-fork-surfpool.sh
 
 ## Reference Adapters
 
-| Adapter | Protocol | Underlying | Model | Status |
-|---|---|---|---|---|
-| **Kamino USDC** | [Kamino Finance](https://kamino.finance) | USDC | Share-based reference vault | 🔶 Reference |
-| **MarginFi USDC** | [MarginFi](https://marginfi.com) | USDC | Share-based reference vault | 🔶 Reference |
-| **Jupiter LP** | [Jupiter](https://jup.ag) | USDC | Share-based reference vault | 🔶 Reference |
-| **Maple Syrup** | [Maple Finance](https://maple.finance) | syrupUSDC | Share vault on syrupUSDC (yield-bearing SPL) | 🔶 Reference |
-| **Drift Insurance** | [Drift Protocol](https://drift.trade) | USDC | Two-phase withdrawal (13d cooldown) | 🔶 Reference |
+| Adapter | Protocol | Underlying | Model | CPI Round-trip | Status |
+|---|---|---|---|---|---|---|
+| **Kamino USDC** | [Kamino Finance](https://kamino.finance) | USDC | Share-based lending vault | ✅ Real CPI | 🔶 Reference |
+| **MarginFi USDC** | [MarginFi](https://marginfi.com) | USDC | Share-based lending vault | ✅ Real CPI | 🔶 Reference |
+| **Jupiter LP** | [Jupiter](https://jup.ag) | USDC | Share-based LP vault | ✅ Real CPI | 🔶 Reference |
+| **Maple Syrup** | [Maple Finance](https://maple.finance) | syrupUSDC | Swap-and-hold via Orca Whirlpool + Chainlink | ✅ Real Orca CPI | 🔶 Reference |
+| **Drift Insurance** | [Drift Protocol](https://drift.trade) | USDC | Two-phase spot market deposit (IF staking blocked upstream) | ✅ Real Drift CPI | 🔶 Reference |
 
-> **Note**: Maple and Drift adapters are reference implementations demonstrating correct interface compliance. Maple has no native Solana program — the adapter holds real syrupUSDC (a yield-bearing SPL token). Drift's protocol status may affect live CPI availability.
+> **Maple**: Uses Orca Whirlpool to swap USDC ↔ syrupUSDC at deposit/withdraw time, and Chainlink oracle for `current_value`. This is a genuine mainnet-fork CPI round-trip — syrupUSDC has no native Solana program, so the adapter acquires it via a DEX swap.
+>
+> **Drift**: Performs a real CPI round-trip into Drift's spot market (deposit/withdraw). The ideal yield source (Insurance Fund staking) is blocked upstream — those instructions are commented out of Drift's deployed `#[program]`. We document this transparently and provide a probe script at `scripts/probe-drift-if.sh`. The two-phase (cooldown) withdrawal lifecycle is fully tested.
 
 ---
 
@@ -201,7 +203,7 @@ solana-yield-adapter-standard/
 |-------|---------|-------|
 | Unit | `cargo test` | 28 |
 | Localnet integration | `anchor test` | 32 (26 passing, 6 pre-existing slippage failures on localnet-only) |
-| Mainnet-fork integration (Surfpool) | `bash scripts/run-fork-surfpool.sh` | **81** — all adapters + dispatcher + registry + template |
+| Mainnet-fork integration (Surfpool) | `bash scripts/run-fork-surfpool.sh` | **96** — 6 adapters (×12) + dispatcher (11) + registry (13) |
 
 Tests cover:
 - **Registry**: Initialize → Propose → Approve → Revoke → Set guardian → Transfer governance
@@ -227,7 +229,7 @@ The script builds programs, starts a Surfpool validator (auto-fetches mainnet ac
 MAINNET_FORK=1 anchor test --skip-local-validator --skip-build
 ```
 
-Runs all **81 integration tests** including real CPI round-trips against all five protocols (Kamino, MarginFi, Jupiter, Drift, Maple) via `invoke_signed`, plus dispatcher routing, registry governance (with `force_transfer_governance` admin escape hatch for Surfpool persistence), and adapter template tests. All 81 pass on fork (the 6 slippage-test failures are localnet-only — on fork the JIT-fetched USDC ATAs resolve the mint mismatch).
+Runs all **96 integration tests** (6 adapters × 12 + dispatcher + registry) including real CPI round-trips against all five protocols (Kamino, MarginFi, Jupiter, Drift, Maple) via `invoke_signed`, plus dispatcher routing, registry governance (with `force_transfer_governance` admin escape hatch for Surfpool persistence), and adapter template tests. All 96 pass on fork (the 6 slippage-test failures are localnet-only — on fork the JIT-fetched USDC ATAs resolve the mint mismatch).
 
 ---
 

@@ -2,6 +2,10 @@
 # =============================================================================
 # run-fork-surfpool.sh — Run mainnet-fork tests via Surfpool
 #
+# Surfpool starts a mainnet-forked validator with JIT account fetching. This
+# script orchestrates: prepare fixtures → build programs → surfpool start →
+# deploy → run anchor test (skip-validator, since surfpool IS the validator).
+#
 # Prerequisites:
 #   1. Install Surfpool: curl -sL https://run.surfpool.run/ | bash
 #   2. Set MAINNET_RPC_URL to a mainnet RPC endpoint (Helius, Triton, etc.)
@@ -13,6 +17,8 @@
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+FIXTURE_DIR="${PROJECT_DIR}/tests/fixtures"
+VALIDATOR_URL="http://127.0.0.1:8899"
 
 if [ -z "${MAINNET_RPC_URL:-}" ]; then
   echo "ERROR: MAINNET_RPC_URL is not set."
@@ -30,36 +36,95 @@ echo "  Solana Yield Adapter Standard"
 echo "  Mainnet-Fork Tests via Surfpool"
 echo "============================================"
 
-# 1. Build programs
+# ── Step 0: Clean up any prior surfpool or stale test-ledger ──
+surfpool stop 2>/dev/null || true
+sleep 1
+rm -rf "${PROJECT_DIR}/test-ledger" 2>/dev/null || true
+
+# ── Step 1: Generate fork fixture ATA accounts ──
 echo ""
-echo "[1/4] Building programs..."
+echo "[1/6] Preparing fork fixtures..."
+bash "$SCRIPT_DIR/setup-fork-usdc-fixture.sh"
+bash "$SCRIPT_DIR/setup-fork-syrup-usdc-fixture.sh"
+
+# ── Step 2: Build programs ──
+echo ""
+echo "[2/6] Building programs..."
 bash "$SCRIPT_DIR/build-sbf.sh"
 bash "$SCRIPT_DIR/build-idls.sh"
 
-# 2. Start Surfpool (mainnet fork with JIT account fetching)
+# ── Step 3: Start Surfpool validator ──
 echo ""
-echo "[2/4] Starting Surfpool validator..."
-surfpool start \
-  --rpc-url "$MAINNET_RPC_URL" \
-  --no-tui \
-  --no-deploy \
-  --legacy-anchor-compatibility \
-  --ci \
-  --daemon 2>&1 | tail -5
+echo "[3/6] Starting Surfpool validator..."
+SURFPOOL_ARGS=(
+  --rpc-url "$MAINNET_RPC_URL"
+  --no-tui
+  --no-deploy
+  --legacy-anchor-compatibility
+  --ci
+  --daemon
+)
 
-echo "  Waiting for validator..."
-for i in $(seq 1 30); do
-  if solana cluster-version -u http://127.0.0.1:8899 &>/dev/null; then
+SNAPSHOT_FILE="${FIXTURE_DIR}/surfpool-snapshot.json"
+if [ -f "$SNAPSHOT_FILE" ]; then
+  SURFPOOL_ARGS+=(--snapshot "$SNAPSHOT_FILE")
+  echo "  Using snapshot: $SNAPSHOT_FILE"
+fi
+
+surfpool start "${SURFPOOL_ARGS[@]}" 2>&1 | tail -5
+
+echo "  Waiting for validator (up to 180s)..."
+for i in $(seq 1 90); do
+  if solana cluster-version -u "$VALIDATOR_URL" &>/dev/null; then
     echo "  Validator ready."
     break
   fi
   sleep 2
 done
+if ! solana cluster-version -u "$VALIDATOR_URL" &>/dev/null; then
+  echo "ERROR: Validator failed to start within 180s"
+  surfpool stop 2>/dev/null || true
+  exit 1
+fi
 
-# 3. Deploy programs (Surfpool auto-deploys from Anchor.toml, but deploy explicitly to use
-#    our keypairs and ensure the same program IDs as localnet/devnet)
+# ── Step 4: Pre-warm JIT cache ──
+# Force fetch critical protocol programs/accounts so tests don't time out
+# waiting for Surfpool's first-touch JIT fetching.
 echo ""
-echo "[3/4] Deploying programs..."
+echo "[4/6] Pre-warming JIT cache..."
+PROTOCOL_ACCOUNTS=(
+  "KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD"   # Kamino K-Lend
+  "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA"    # MarginFi v2
+  "PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu"    # Jupiter Perps
+  "dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH"    # Drift v2
+  "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"   # Orca Whirlpool
+  "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"   # USDC Mint
+  "AvZZF1YaZDziPY2RCK4oJrRVrbN3mTD9NL24hPeaZeUj"   # syrupUSDC Mint
+  "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"   # ATA Program
+  "7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF"   # Kamino Lending Market
+  "d4A2prbA2whesmvHaL88BH6Ewn5N4bTSU2Ze8P6Bc4Q"    # Kamino USDC Reserve
+  "G18jKKXQwBbrHeiK3C9MRXhkHsLHf7XgCSisykV46EZa"   # Jupiter USDC Custody
+  "6fteKNvMdv7tYmBoJHhj1jx6rHcEwC6RdSEmVpyS613J"   # SYRUP-USDC Whirlpool
+  "CpNyiFt84q66665Kx64bobxZuMgZ2EecrhAJs1HikS2T"   # syrupUSDC Chainlink Feed
+  "HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"   # Chainlink Owner / Store
+)
+for addr in "${PROTOCOL_ACCOUNTS[@]}"; do
+  echo "    Warming: $addr"
+  curl -s -X POST "$VALIDATOR_URL" \
+    -H "Content-Type: application/json" \
+    -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"getAccountInfo\",\"params\":[\"$addr\",{\"encoding\":\"base64\"}]}" \
+    -o /dev/null &
+  # Limit concurrency to avoid overwhelming the Surfpool JIT engine
+  if ((${#PROTOCOL_ACCOUNTS[@]} > 0)); then
+    sleep 0.2
+  fi
+done
+wait
+echo "    Pre-warm complete."
+
+# ── Step 5: Deploy programs ──
+echo ""
+echo "[5/6] Deploying programs..."
 for so in "$PROJECT_DIR/target/deploy"/*.so; do
   base=$(basename "$so" .so)
   keypair="$PROJECT_DIR/target/deploy/${base}-keypair.json"
@@ -67,25 +132,38 @@ for so in "$PROJECT_DIR/target/deploy"/*.so; do
     echo "  Deploying $base..."
     solana program deploy "$so" \
       --program-id "$keypair" \
-      -u http://127.0.0.1:8899
+      -u "$VALIDATOR_URL" \
+      --commitment confirmed
   else
     echo "  SKIP $base: missing keypair"
   fi
 done
 
-# 4. Run fork tests
+# ── Step 6: Run fork tests via anchor test ──
+# Using `anchor test` because tests depend on anchor.workspace.Adapter* resolution,
+# which requires Anchor's workspace to load IDLs from the deploy directory.
+# --skip-local-validator reuses the Surfpool validator instead of launching a new one.
 echo ""
-echo "[4/4] Running fork tests..."
-MAINNET_FORK=1 anchor test \
+echo "[6/6] Running fork tests..."
+export MAINNET_FORK=1
+export ANCHOR_PROVIDER_URL="$VALIDATOR_URL"
+anchor test \
   --skip-local-validator \
   --skip-build \
   --validator legacy \
   --provider.cluster localnet
+EXIT_CODE="$?"
 
 echo ""
-echo "============================================"
-echo "  All mainnet-fork tests passed!"
-echo "============================================"
+if [ "$EXIT_CODE" -eq 0 ]; then
+  echo "============================================"
+  echo "  All mainnet-fork tests passed!"
+  echo "============================================"
+else
+  echo "============================================"
+  echo "  Fork tests FAILED (exit code $EXIT_CODE)"
+  echo "============================================"
+fi
 
-# Cleanup is automatic with --daemon mode; force-stop if still running
 surfpool stop 2>/dev/null || true
+exit "$EXIT_CODE"

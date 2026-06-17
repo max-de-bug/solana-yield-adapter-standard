@@ -4,7 +4,7 @@
 
 [surfnet]
 # Override at CLI: surfpool start -u $MAINNET_RPC_URL
-remote_rpc_url = "set-via-cli"
+remote_rpc_url = "https://api.mainnet-beta.solana.com"
 
 [rpc]
 bind_host = "127.0.0.1"

@@ -1,13 +1,3 @@
-//! # Maple Syrup Adapter
-//!
-//! Adapter for Maple Finance (syrupUSDC) — vault holds real syrupUSDC (yield-bearing SPL token),
-//! capturing Maple's institutional lending yield through natural token appreciation.
-//!
-//! ## Protocol Details
-//! - **Model**: Share-based vault holding syrupUSDC tokens
-//! - **Underlying**: syrupUSDC (yield-bearing SPL token)
-//! - **Status**: Production-ready vault; no CPI to EVM-primary Maple contracts needed
-
 #![allow(clippy::diverging_sub_expression)]
 #![allow(unexpected_cfgs)]
 
@@ -19,7 +9,7 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("Ft2Yvaiqwsjvo1yyYEWvt12YCsDB4kjGBd7vrF8RwwjU");
+declare_id!("GRyFctNGZFhHnpHFyyB8xtYdVtC58ZuwyC63PrEy3Vrk");
 
 #[program]
 pub mod adapter_maple {
@@ -29,11 +19,11 @@ pub mod adapter_maple {
         instructions::initialize::handler(ctx, underlying_mint)
     }
 
-    pub fn deposit(ctx: Context<Deposit>, amount: u64, min_shares_out: u64) -> Result<()> {
+    pub fn deposit<'a>(ctx: Context<'a, Deposit<'a>>, amount: u64, min_shares_out: u64) -> Result<()> {
         instructions::deposit::handler(ctx, amount, min_shares_out)
     }
 
-    pub fn withdraw(ctx: Context<Withdraw>, amount: u64, min_underlying_out: u64) -> Result<()> {
+    pub fn withdraw<'a>(ctx: Context<'a, Withdraw<'a>>, amount: u64, min_underlying_out: u64) -> Result<()> {
         instructions::withdraw::handler(ctx, amount, min_underlying_out)
     }
 
