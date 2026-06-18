@@ -1,7 +1,7 @@
+use crate::state::{MapleVaultState, VAULT_AUTHORITY_SEED};
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::instruction::{AccountMeta, Instruction};
 use anchor_lang::solana_program::program::invoke_signed;
-use crate::state::{MapleVaultState, VAULT_AUTHORITY_SEED};
 
 pub const ORCA_ID: Pubkey = pubkey!("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc");
 pub const WHIRLPOOL: Pubkey = pubkey!("6fteKNvMdv7tYmBoJHhj1jx6rHcEwC6RdSEmVpyS613J");
@@ -45,29 +45,41 @@ pub fn on_deposit<'info>(
     use yield_adapter_trait::YieldAdapterError;
     // On localnet (no Orca available), skip the swap — just record the routed amount
     if remaining.len() < ORCA_SWAP_ACCOUNTS {
-        vault.protocol_routed_underlying = vault.protocol_routed_underlying
+        vault.protocol_routed_underlying = vault
+            .protocol_routed_underlying
             .checked_add(amount)
             .ok_or(YieldAdapterError::ArithmeticOverflow)?;
-        msg!("Maple deposit (localnet, no swap): {} USDC (no syrupUSDC)", amount);
+        msg!(
+            "Maple deposit (localnet, no swap): {} USDC (no syrupUSDC)",
+            amount
+        );
         return Ok(amount);
     }
 
     // Verify the whirlpool is the expected one before attempting swap
     if remaining[M_WHIRLPOOL].key() != WHIRLPOOL {
-        vault.protocol_routed_underlying = vault.protocol_routed_underlying
+        vault.protocol_routed_underlying = vault
+            .protocol_routed_underlying
             .checked_add(amount)
             .ok_or(YieldAdapterError::ArithmeticOverflow)?;
-        msg!("Maple deposit (fallback, whirlpool mismatch): {} USDC (no swap)", amount);
+        msg!(
+            "Maple deposit (fallback, whirlpool mismatch): {} USDC (no swap)",
+            amount
+        );
         return Ok(amount);
     }
 
     let before = match token_amount(&remaining[M_VAULT_SYRUP]) {
         Ok(v) => v,
         Err(_) => {
-            vault.protocol_routed_underlying = vault.protocol_routed_underlying
+            vault.protocol_routed_underlying = vault
+                .protocol_routed_underlying
                 .checked_add(amount)
                 .ok_or(YieldAdapterError::ArithmeticOverflow)?;
-            msg!("Maple deposit (fallback, syrup token account error): {} USDC (no swap)", amount);
+            msg!(
+                "Maple deposit (fallback, syrup token account error): {} USDC (no swap)",
+                amount
+            );
             return Ok(amount);
         }
     };
@@ -85,27 +97,34 @@ pub fn on_deposit<'info>(
         vault_authority_bump,
     ) {
         msg!("Orca swap failed (graceful fallback): {:?}", e);
-        vault.protocol_routed_underlying = vault.protocol_routed_underlying
+        vault.protocol_routed_underlying = vault
+            .protocol_routed_underlying
             .checked_add(amount)
             .ok_or(YieldAdapterError::ArithmeticOverflow)?;
-        msg!("Maple deposit (fallback after swap failure): {} USDC (no swap)", amount);
+        msg!(
+            "Maple deposit (fallback after swap failure): {} USDC (no swap)",
+            amount
+        );
         return Ok(amount);
     }
 
-    let received = match token_amount(&remaining[M_VAULT_SYRUP])?
-        .checked_sub(before)
-    {
+    let received = match token_amount(&remaining[M_VAULT_SYRUP])?.checked_sub(before) {
         Some(v) => v,
         None => {
-            vault.protocol_routed_underlying = vault.protocol_routed_underlying
+            vault.protocol_routed_underlying = vault
+                .protocol_routed_underlying
                 .checked_add(amount)
                 .ok_or(YieldAdapterError::ArithmeticOverflow)?;
-            msg!("Maple deposit (fallback, arithmetic error): {} USDC (no swap)", amount);
+            msg!(
+                "Maple deposit (fallback, arithmetic error): {} USDC (no swap)",
+                amount
+            );
             return Ok(amount);
         }
     };
 
-    vault.protocol_routed_underlying = vault.protocol_routed_underlying
+    vault.protocol_routed_underlying = vault
+        .protocol_routed_underlying
         .checked_add(amount)
         .ok_or(YieldAdapterError::ArithmeticOverflow)?;
 
@@ -125,29 +144,41 @@ pub fn on_withdraw<'info>(
     use yield_adapter_trait::YieldAdapterError;
     // On localnet (no Orca available), skip the swap — just record the routed amount
     if remaining.len() < ORCA_SWAP_ACCOUNTS {
-        vault.protocol_routed_underlying = vault.protocol_routed_underlying
+        vault.protocol_routed_underlying = vault
+            .protocol_routed_underlying
             .checked_add(shares)
             .ok_or(YieldAdapterError::ArithmeticOverflow)?;
-        msg!("Maple withdraw (localnet, no swap): {} shares (no swap)", shares);
+        msg!(
+            "Maple withdraw (localnet, no swap): {} shares (no swap)",
+            shares
+        );
         return Ok(shares);
     }
 
     // Verify the whirlpool is the expected one before attempting swap
     if remaining[M_WHIRLPOOL].key() != WHIRLPOOL {
-        vault.protocol_routed_underlying = vault.protocol_routed_underlying
+        vault.protocol_routed_underlying = vault
+            .protocol_routed_underlying
             .checked_add(shares)
             .ok_or(YieldAdapterError::ArithmeticOverflow)?;
-        msg!("Maple withdraw (fallback, whirlpool mismatch): {} shares (no swap)", shares);
+        msg!(
+            "Maple withdraw (fallback, whirlpool mismatch): {} shares (no swap)",
+            shares
+        );
         return Ok(shares);
     }
 
     let before = match token_amount(vault_token_account) {
         Ok(v) => v,
         Err(_) => {
-            vault.protocol_routed_underlying = vault.protocol_routed_underlying
+            vault.protocol_routed_underlying = vault
+                .protocol_routed_underlying
                 .checked_add(shares)
                 .ok_or(YieldAdapterError::ArithmeticOverflow)?;
-            msg!("Maple withdraw (fallback, vault token account error): {} shares (no swap)", shares);
+            msg!(
+                "Maple withdraw (fallback, vault token account error): {} shares (no swap)",
+                shares
+            );
             return Ok(shares);
         }
     };
@@ -165,27 +196,34 @@ pub fn on_withdraw<'info>(
         vault_authority_bump,
     ) {
         msg!("Orca swap failed (graceful fallback): {:?}", e);
-        vault.protocol_routed_underlying = vault.protocol_routed_underlying
+        vault.protocol_routed_underlying = vault
+            .protocol_routed_underlying
             .checked_add(shares)
             .ok_or(YieldAdapterError::ArithmeticOverflow)?;
-        msg!("Maple withdraw (fallback after swap failure): {} shares (no swap)", shares);
+        msg!(
+            "Maple withdraw (fallback after swap failure): {} shares (no swap)",
+            shares
+        );
         return Ok(shares);
     }
 
-    let received = match token_amount(vault_token_account)?
-        .checked_sub(before)
-    {
+    let received = match token_amount(vault_token_account)?.checked_sub(before) {
         Some(v) => v,
         None => {
-            vault.protocol_routed_underlying = vault.protocol_routed_underlying
+            vault.protocol_routed_underlying = vault
+                .protocol_routed_underlying
                 .checked_add(shares)
                 .ok_or(YieldAdapterError::ArithmeticOverflow)?;
-            msg!("Maple withdraw (fallback, arithmetic error): {} shares (no swap)", shares);
+            msg!(
+                "Maple withdraw (fallback, arithmetic error): {} shares (no swap)",
+                shares
+            );
             return Ok(shares);
         }
     };
 
-    vault.protocol_routed_underlying = vault.protocol_routed_underlying
+    vault.protocol_routed_underlying = vault
+        .protocol_routed_underlying
         .checked_add(received)
         .ok_or(YieldAdapterError::ArithmeticOverflow)?;
 
@@ -195,22 +233,38 @@ pub fn on_withdraw<'info>(
 
 pub fn chainlink_value(syrup_amount: u64, feed: &AccountInfo) -> Result<u64> {
     use yield_adapter_trait::YieldAdapterError;
-    require_keys_eq!(*feed.key, CHAINLINK_FEED, YieldAdapterError::InvalidMetadata);
-    require_keys_eq!(*feed.owner, CHAINLINK_OWNER, YieldAdapterError::InvalidMetadata);
+    require_keys_eq!(
+        *feed.key,
+        CHAINLINK_FEED,
+        YieldAdapterError::InvalidMetadata
+    );
+    require_keys_eq!(
+        *feed.owner,
+        CHAINLINK_OWNER,
+        YieldAdapterError::InvalidMetadata
+    );
     let data = feed.try_borrow_data()?;
     require!(data.len() >= 232, YieldAdapterError::ProtocolCpiError);
     let decimals = data[138];
     require!(decimals <= 18, YieldAdapterError::ProtocolCpiError);
     let ts = u32::from_le_bytes(data[208..212].try_into().unwrap()) as i64;
     let now = Clock::get()?.unix_timestamp;
-    require!(ts > 0 && now >= ts && now - ts <= MAX_STALE, YieldAdapterError::ProtocolCpiError);
+    require!(
+        ts > 0 && now >= ts && now - ts <= MAX_STALE,
+        YieldAdapterError::ProtocolCpiError
+    );
     let answer = i128::from_le_bytes(data[216..232].try_into().unwrap());
     require!(answer > 0, YieldAdapterError::ProtocolCpiError);
 
-    let scale = 10u64.checked_pow(decimals as u32).ok_or(YieldAdapterError::ArithmeticOverflow)?;
+    let scale = 10u64
+        .checked_pow(decimals as u32)
+        .ok_or(YieldAdapterError::ArithmeticOverflow)?;
     let value = yield_adapter_trait::mul_div_u64(syrup_amount, answer as u128, scale)
         .ok_or(YieldAdapterError::ArithmeticOverflow)?;
-    require!(value <= u64::MAX as u128, YieldAdapterError::ArithmeticOverflow);
+    require!(
+        value <= u64::MAX as u128,
+        YieldAdapterError::ArithmeticOverflow
+    );
     Ok(value as u64)
 }
 
@@ -257,7 +311,13 @@ fn orca_swap<'info>(
             AccountMeta::new(*ra[M_TICK2].key, false),
             AccountMeta::new_readonly(*ra[M_ORACLE].key, false),
         ],
-        data: orca_swap_data(amount, other_threshold, sqrt_price_limit, amount_is_input, a_to_b),
+        data: orca_swap_data(
+            amount,
+            other_threshold,
+            sqrt_price_limit,
+            amount_is_input,
+            a_to_b,
+        ),
     };
 
     let account_infos = [
@@ -274,11 +334,10 @@ fn orca_swap<'info>(
         ra[M_ORACLE].clone(),
     ];
 
-    invoke_signed(&instruction, &account_infos, signer_seeds)
-        .map_err(|e| {
-            msg!("Orca swap failed: {:?}", e);
-            yield_adapter_trait::YieldAdapterError::ProtocolCpiError
-        })?;
+    invoke_signed(&instruction, &account_infos, signer_seeds).map_err(|e| {
+        msg!("Orca swap failed: {:?}", e);
+        yield_adapter_trait::YieldAdapterError::ProtocolCpiError
+    })?;
 
     Ok(())
 }
@@ -302,6 +361,9 @@ fn orca_swap_data(
 
 fn token_amount(ai: &AccountInfo) -> Result<u64> {
     let data = ai.try_borrow_data()?;
-    require!(data.len() >= 72, yield_adapter_trait::YieldAdapterError::InvalidMetadata);
+    require!(
+        data.len() >= 72,
+        yield_adapter_trait::YieldAdapterError::InvalidMetadata
+    );
     Ok(u64::from_le_bytes(data[64..72].try_into().unwrap()))
 }

@@ -25,10 +25,8 @@ pub fn handler(ctx: Context<CurrentValue>) -> Result<()> {
         YieldAdapterError::ProtocolCpiError,
     );
 
-    let value = protocol::chainlink_value(
-        position.receipt_token_balance,
-        &ctx.remaining_accounts[0],
-    )?;
+    let value =
+        protocol::chainlink_value(position.receipt_token_balance, &ctx.remaining_accounts[0])?;
 
     emit!(CurrentValueEvent {
         user: ctx.accounts.user.key(),
@@ -37,6 +35,10 @@ pub fn handler(ctx: Context<CurrentValue>) -> Result<()> {
         timestamp: clock.unix_timestamp,
     });
 
-    msg!("Maple position value: {} USDC ({} shares)", value, position.receipt_token_balance);
+    msg!(
+        "Maple position value: {} USDC ({} shares)",
+        value,
+        position.receipt_token_balance
+    );
     Ok(())
 }

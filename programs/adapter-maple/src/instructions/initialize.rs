@@ -1,6 +1,6 @@
+use crate::state::{MapleVaultState, VAULT_AUTHORITY_SEED, VAULT_STATE_SEED, VAULT_SYRUP_SEED};
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
-use crate::state::{MapleVaultState, VAULT_STATE_SEED, VAULT_AUTHORITY_SEED, VAULT_SYRUP_SEED};
 use yield_adapter_trait::VaultStatus;
 
 #[derive(Accounts)]
@@ -48,7 +48,11 @@ pub fn handler(ctx: Context<Initialize>, underlying_mint: Pubkey) -> Result<()> 
         state.status = VaultStatus::Active;
         state.bump = ctx.bumps.vault_state;
         state.vault_syrup_bump = ctx.bumps.vault_syrup;
-        msg!("Maple Syrup adapter initialized. USDC mint: {}, syrupUSDC mint: {}", underlying_mint, ctx.accounts.syrup_mint.key());
+        msg!(
+            "Maple Syrup adapter initialized. USDC mint: {}, syrupUSDC mint: {}",
+            underlying_mint,
+            ctx.accounts.syrup_mint.key()
+        );
     }
     Ok(())
 }

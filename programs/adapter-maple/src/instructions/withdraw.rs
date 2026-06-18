@@ -40,7 +40,11 @@ pub struct Withdraw<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler<'a>(ctx: Context<'a, Withdraw<'a>>, shares_to_burn: u64, min_underlying_out: u64) -> Result<()> {
+pub fn handler<'a>(
+    ctx: Context<'a, Withdraw<'a>>,
+    shares_to_burn: u64,
+    min_underlying_out: u64,
+) -> Result<()> {
     require!(shares_to_burn > 0, YieldAdapterError::ZeroWithdrawAmount);
     let vault = &mut ctx.accounts.vault_state;
     let position = &mut ctx.accounts.user_position;
@@ -67,7 +71,10 @@ pub fn handler<'a>(ctx: Context<'a, Withdraw<'a>>, shares_to_burn: u64, min_unde
         ctx.bumps.vault_authority,
     )?;
 
-    require!(usdc_received >= min_underlying_out, YieldAdapterError::SlippageExceeded);
+    require!(
+        usdc_received >= min_underlying_out,
+        YieldAdapterError::SlippageExceeded
+    );
 
     let bump = ctx.bumps.vault_authority;
     let signer_seeds: &[&[&[u8]]] = &[&[VAULT_AUTHORITY_SEED, &[bump]]];
@@ -85,17 +92,21 @@ pub fn handler<'a>(ctx: Context<'a, Withdraw<'a>>, shares_to_burn: u64, min_unde
         usdc_received,
     )?;
 
-    vault.total_underlying = vault.total_underlying
+    vault.total_underlying = vault
+        .total_underlying
         .checked_sub(underlying_amount)
         .ok_or(YieldAdapterError::ArithmeticOverflow)?;
-    vault.total_shares = vault.total_shares
+    vault.total_shares = vault
+        .total_shares
         .checked_sub(shares_to_burn)
         .ok_or(YieldAdapterError::ArithmeticOverflow)?;
 
-    position.receipt_token_balance = position.receipt_token_balance
+    position.receipt_token_balance = position
+        .receipt_token_balance
         .checked_sub(shares_to_burn)
         .ok_or(YieldAdapterError::ArithmeticOverflow)?;
-    position.withdrawn_amount = position.withdrawn_amount
+    position.withdrawn_amount = position
+        .withdrawn_amount
         .checked_add(usdc_received)
         .ok_or(YieldAdapterError::ArithmeticOverflow)?;
     position.last_updated = clock.unix_timestamp;
@@ -110,7 +121,9 @@ pub fn handler<'a>(ctx: Context<'a, Withdraw<'a>>, shares_to_burn: u64, min_unde
 
     msg!(
         "Maple withdraw: {} shares -> {} USDC (expected: {})",
-        shares_to_burn, usdc_received, underlying_amount,
+        shares_to_burn,
+        usdc_received,
+        underlying_amount,
     );
     Ok(())
 }
