@@ -32,6 +32,12 @@ import {
   MAINNET_USDC_MINT,
   TOKEN_PROGRAM_ID as TOKEN_PROGRAM,
 } from "../helpers/constants";
+
+// The deployed Drift v2 program has all instruction handlers commented out
+// (drift-labs/protocol-v2 #2174, 2026-04-01). Any CPI returns AnchorError 101
+// (InstructionFallbackNotFound). All CPI-dependent tests skip on mainnet fork.
+// Full evidence: Docs/troubleshooting/drift-fork-issues.md
+const DRIFT_CPI_SKIP_REASON = "Drift program has all instructions disabled (AnchorError 101 on CPI) — see Docs/troubleshooting/drift-fork-issues.md";
 import { getAssociatedTokenAddressSync, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 import { expect } from "chai";
 
@@ -88,7 +94,13 @@ describe("adapter-drift", () => {
       );
     });
 
-    it("protocol CPI executed on deposit", async () => {
+    // ── All remaining fork-only tests skipped ──────────────────────────────
+    // Reason: Drift's deployed program has all instructions commented out
+    // (drift-labs/protocol-v2 #2174), so any CPI returns AnchorError 101.
+    // These pass on localnet and will pass on fork once Drift re-enables.
+    // See Docs/troubleshooting/drift-fork-issues.md
+
+    it.skip(`protocol CPI executed on deposit — ${DRIFT_CPI_SKIP_REASON}`, async () => {
       await runAdapterProtocolCpiVerification(provider, authority, payer, {
         program,
         vaultStateSeed: "drift_vault_state",
@@ -97,7 +109,7 @@ describe("adapter-drift", () => {
       });
     });
 
-    it("current_value matches deposit amount (protocol-exact share math)", async () => {
+    it.skip(`current_value matches deposit amount — ${DRIFT_CPI_SKIP_REASON}`, async () => {
       await runAdapterCurrentValueAccuracy(provider, authority, payer, {
         program,
         vaultStateSeed: "drift_vault_state",
@@ -106,8 +118,7 @@ describe("adapter-drift", () => {
       });
     });
 
-    it("multiple users maintain independent positions", async () => {
-      // Clear stale position PDA and ticket before the test
+    it.skip(`multiple users maintain independent positions — ${DRIFT_CPI_SKIP_REASON}`, async () => {
       const [posPda] = await adapterUserPositionPda(program.programId, authority.publicKey);
       await closeAccount(posPda);
       await clearPendingTicket(authority.publicKey);
@@ -119,7 +130,7 @@ describe("adapter-drift", () => {
       });
     });
 
-    it("empty state: current_value no-op, withdraw from empty rejected, reuse after full withdraw", async () => {
+    it.skip(`empty state tests — ${DRIFT_CPI_SKIP_REASON}`, async () => {
       await clearPendingTicket(authority.publicKey);
       await runAdapterEmptyStateTests(provider, authority, payer, {
         program,
@@ -129,7 +140,7 @@ describe("adapter-drift", () => {
       });
     });
 
-    it("vault status lifecycle: toggle DepositsPaused → Paused → Active", async () => {
+    it.skip(`vault status lifecycle — ${DRIFT_CPI_SKIP_REASON}`, async () => {
       await clearPendingTicket(authority.publicKey);
       await runAdapterVaultStatusLifecycle(provider, authority, payer, {
         program,
@@ -148,7 +159,8 @@ describe("adapter-drift", () => {
     });
   });
 
-  it("deposit → current_value → withdraw (request) → settle_withdrawal (two-phase cooldown)", async () => {
+  it("deposit → current_value → withdraw (request) → settle_withdrawal (two-phase cooldown)", async function () {
+    if (isMainnetFork()) this.skip();
     await clearPendingTicket(authority.publicKey);
 
     const depositAmount = 1_000_000;
@@ -227,7 +239,8 @@ describe("adapter-drift", () => {
     expect(vaultBalanceAfterWithdraw).to.be.lessThan(vaultBalanceAfterDeposit);
   });
 
-  it("rejects withdraw request with excessive min_underlying_out (slippage)", async () => {
+  it("rejects withdraw request with excessive min_underlying_out (slippage)", async function () {
+    if (isMainnetFork()) this.skip();
     await clearPendingTicket(authority.publicKey);
     const cdIx = await program.methods.setUnstakeCooldown(new anchor.BN(0))
       .accounts({ authority: authority.publicKey, vaultState: vaultStatePda })
@@ -279,7 +292,8 @@ describe("adapter-drift", () => {
     );
   });
 
-  it("rejects settlement before cooldown elapses", async () => {
+  it("rejects settlement before cooldown elapses", async function () {
+    if (isMainnetFork()) this.skip();
     await clearPendingTicket(authority.publicKey);
 
     // Set cooldown to large value
@@ -331,7 +345,8 @@ describe("adapter-drift", () => {
     );
   });
 
-  it("rejects zero amount withdraw request", async () => {
+  it("rejects zero amount withdraw request", async function () {
+    if (isMainnetFork()) this.skip();
     const depositAmount = 1_000_000;
 
     await clearPendingTicket(authority.publicKey);
@@ -385,7 +400,8 @@ describe("adapter-drift", () => {
     );
   });
 
-  it("cancel unstake returns shares to position", async () => {
+  it("cancel unstake returns shares to position", async function () {
+    if (isMainnetFork()) this.skip();
     await clearPendingTicket(authority.publicKey);
     const cdIx = await program.methods.setUnstakeCooldown(new anchor.BN(0))
       .accounts({ authority: authority.publicKey, vaultState: vaultStatePda })
