@@ -1,4 +1,4 @@
-import { execSync } from "child_process";
+import { execSync, spawn } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -38,6 +38,7 @@ function run(
   });
 }
 
+/** Polls the Solana validator RPC until it responds to `solana cluster-version`. */
 function waitForValidator(
   url: string,
   maxRetries = 60,
@@ -65,6 +66,10 @@ function waitForValidator(
   });
 }
 
+/** Starts `solana-test-validator` with cloned mainnet accounts (Kamino, Marginfi, Jupiter, Drift, USDC, syrupUSDC, ATA).
+ *
+ * Injects fixture accounts for USDC and syrupUSDC if fixture files exist.
+ * Returns the validator URL (http://127.0.0.1:8899). */
 export async function startValidator(): Promise<string> {
   const url = "http://127.0.0.1:8899";
 
@@ -97,7 +102,6 @@ export async function startValidator(): Promise<string> {
     console.log(`  Injected syrupUSDC fixture ATA: ${fixture.pubkey}`);
   }
 
-  const { spawn } = await import("child_process");
   const proc = spawn("solana-test-validator", args, {
     cwd: PROJECT_DIR,
     stdio: ["ignore", "pipe", "pipe"],
@@ -126,6 +130,9 @@ export async function startValidator(): Promise<string> {
   return url;
 }
 
+/** Deploys all compiled `.so` programs from `target/deploy/` to the local validator.
+ *
+ * Skips programs that are missing a keypair file. */
 export function deployPrograms(): void {
   const sos = fs
     .readdirSync(DEPLOY_DIR)
@@ -150,6 +157,10 @@ export function deployPrograms(): void {
   }
 }
 
+/** Runs `anchor test` against the already-running local validator.
+ *
+ * Skips the validator start and program build steps (assumes they ran
+ * already). Times out after 300s. */
 export function runTests(): void {
   execSync(
     "anchor test --skip-local-validator --skip-build --validator legacy --provider.cluster localnet",
@@ -162,6 +173,7 @@ export function runTests(): void {
   );
 }
 
+/** Kills any running `solana-test-validator` process and cleans up the PID file. */
 export function cleanupValidator(): void {
   console.log("\nCleaning up test validator...");
 
@@ -182,11 +194,13 @@ export function cleanupValidator(): void {
   } catch {}
 }
 
+/** Generates fixture account JSON files for fork testing (USDC and syrupUSDC ATAs). */
 export async function prepareFixtures(): Promise<void> {
   run("bash scripts/setup-fork-usdc-fixture.sh");
   run("bash scripts/setup-fork-syrup-usdc-fixture.sh");
 }
 
+/** Builds all program `.so` files and IDL JSON. */
 export async function buildPrograms(): Promise<void> {
   fs.chmodSync(path.join(PROJECT_DIR, "scripts", "build-sbf.sh"), 0o755);
   fs.chmodSync(path.join(PROJECT_DIR, "scripts", "build-idls.sh"), 0o755);

@@ -10,7 +10,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   SOLANA_CLI_VERSION: 2.2.20
-  ANCHOR_CLI_VERSION: 1.0.1
+  ANCHOR_CLI_VERSION: 1.0.2
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
@@ -25,6 +25,21 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace -- -D warnings
         continue-on-error: true
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm install
+      - name: TypeScript type check (SDK + tests)
+        run: npx tsc --noEmit
+      - name: Build SDK
+        run: npm run build
+        working-directory: packages/sdk
 
   build-and-test:
     runs-on: ubuntu-latest

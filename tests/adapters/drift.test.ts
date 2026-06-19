@@ -39,6 +39,7 @@ import {
 // Full evidence: Docs/troubleshooting/drift-fork-issues.md
 const DRIFT_CPI_SKIP_REASON = "Drift program has all instructions disabled (AnchorError 101 on CPI) — see Docs/troubleshooting/drift-fork-issues.md";
 import { getAssociatedTokenAddressSync, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
+import { runConformance } from "../helpers/conformance";
 import { expect } from "chai";
 
 describe("adapter-drift", () => {
@@ -150,6 +151,45 @@ describe("adapter-drift", () => {
       });
     });
   }
+
+  describe("conformance", () => {
+    let vaultStatePda: PublicKey;
+    let vaultAuthorityPda: PublicKey;
+    let vaultTokenAccount: PublicKey;
+    let underlyingMint: PublicKey;
+
+    before(async function () {
+      this.timeout(120000);
+      vaultStatePda = findPda([Buffer.from("drift_vault_state")], program.programId)[0];
+      vaultAuthorityPda = findPda([Buffer.from("drift_vault_authority")], program.programId)[0];
+      underlyingMint = isMainnetFork() ? MAINNET_USDC_MINT : await createTestMint(provider, payer, 6);
+      try {
+        await program.methods.initialize(underlyingMint)
+          .accounts({ authority: authority.publicKey, vaultState: vaultStatePda, systemProgram: SystemProgram.programId })
+          .rpc();
+      } catch { /* already initialized */ }
+      vaultTokenAccount = (await getOrCreateAssociatedTokenAccount(
+        provider.connection, payer, underlyingMint, vaultAuthorityPda, true, undefined, undefined, TOKEN_PROGRAM
+      )).address;
+    });
+
+    runConformance(() => ({
+      label: "drift",
+      program,
+      provider,
+      authority,
+      payer,
+      vaultStatePda,
+      vaultAuthorityPda,
+      vaultTokenAccount,
+      underlyingMint,
+      vaultStateAccountName: "driftVaultState",
+      vaultStateSeed: "drift_vault_state",
+      vaultAuthoritySeed: "drift_vault_authority",
+      isInstant: false,
+      skipProtocolTests: isMainnetFork(),
+    }));
+  });
 
   it("rejects zero amount deposit", async () => {
     await runAdapterZeroDepositRejection(provider, authority, payer, {

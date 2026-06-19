@@ -1,6 +1,6 @@
 import * as anchor from "@anchor-lang/core";
 import { Program } from "@anchor-lang/core";
-import { Keypair } from "@solana/web3.js";
+import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 
 import {
   assertProtocolProgramLoaded,
@@ -15,7 +15,10 @@ import {
   runAdapterEmptyStateTests,
   runAdapterVaultStatusLifecycle,
 } from "../helpers/adapter";
-import { isMainnetFork, KAMINO_PROGRAM_ID } from "../helpers/constants";
+import { isMainnetFork, KAMINO_PROGRAM_ID, MAINNET_USDC_MINT, ADAPTER_VAULT_SEEDS, ADAPTER_VAULT_AUTHORITY_SEEDS, TOKEN_PROGRAM_ID } from "../helpers/constants";
+import { findPda, createTestMint } from "../helpers/index";
+import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
+import { runConformance } from "../helpers/conformance";
 
 describe("adapter-kamino", () => {
   const provider = anchor.AnchorProvider.env();
@@ -116,5 +119,50 @@ describe("adapter-kamino", () => {
       vaultStateSeed: "kamino_vault_state",
       vaultAuthoritySeed: "kamino_vault_authority",
     });
+  });
+
+  // ── Conformance suite (standardised checks shared by all adapters) ─────
+  describe("conformance", () => {
+    let vaultStatePda: PublicKey;
+    let vaultAuthorityPda: PublicKey;
+    let vaultTokenAccount: PublicKey;
+    let underlyingMint: PublicKey;
+
+    before(async function () {
+      this.timeout(120000);
+      vaultStatePda = findPda([ADAPTER_VAULT_SEEDS.kamino], program.programId)[0];
+      vaultAuthorityPda = findPda([ADAPTER_VAULT_AUTHORITY_SEEDS.kamino], program.programId)[0];
+      underlyingMint = isMainnetFork() ? MAINNET_USDC_MINT : await createTestMint(provider, payer, 6);
+      try {
+        await program.methods.initialize(underlyingMint)
+          .accounts({ authority: authority.publicKey, vaultState: vaultStatePda, systemProgram: SystemProgram.programId })
+          .rpc();
+      } catch { /* already initialized */ }
+      vaultTokenAccount = (await getOrCreateAssociatedTokenAccount(
+        provider.connection, payer, underlyingMint, vaultAuthorityPda, true
+      )).address;
+    });
+
+    runConformance(() => ({
+      label: "kamino",
+      program,
+      provider,
+      authority,
+      payer,
+      vaultStatePda,
+      vaultAuthorityPda,
+      vaultTokenAccount,
+      underlyingMint,
+      vaultStateAccountName: "kaminoVaultState",
+      vaultStateSeed: "kamino_vault_state",
+      vaultAuthoritySeed: "kamino_vault_authority",
+      isInstant: true,
+      depositRemainingAccounts: isMainnetFork()
+        ? [{ pubkey: KAMINO_PROGRAM_ID, isSigner: false, isWritable: false }]
+        : undefined,
+      valueRemainingAccounts: isMainnetFork()
+        ? [{ pubkey: KAMINO_PROGRAM_ID, isSigner: false, isWritable: false }]
+        : undefined,
+    }));
   });
 });

@@ -14,7 +14,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@anchor-lang/core": "1.0.2",
+    "@anchor-lang/core": "1.0.1",
     "@solana/web3.js": "^1.95.8",
     "@solana/spl-token": "^0.4.13",
     "bn.js": "^5.2.1"

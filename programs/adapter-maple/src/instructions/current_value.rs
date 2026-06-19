@@ -21,7 +21,7 @@ pub fn handler(ctx: Context<CurrentValue>) -> Result<()> {
     let position = &ctx.accounts.user_position;
     let clock = Clock::get()?;
     require!(
-        ctx.remaining_accounts.len() >= 1,
+        !ctx.remaining_accounts.is_empty(),
         YieldAdapterError::ProtocolCpiError,
     );
 

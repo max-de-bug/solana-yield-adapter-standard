@@ -13,8 +13,8 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
-anchor-lang = "=1.0.2"
-anchor-spl = "=1.0.2"
+anchor-lang = "=1.0.1"
+anchor-spl = "=1.0.1"
 
 
 [profile.release]

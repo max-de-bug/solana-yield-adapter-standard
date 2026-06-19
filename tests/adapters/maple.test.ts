@@ -27,6 +27,8 @@ import {
   buildMapleSwapAccounts,
   buildMapleCurrentValueAccounts,
 } from "../helpers/maple";
+import { initializeAdapterVault } from "../helpers/adapter";
+import { runConformance } from "../helpers/conformance";
 
 // Helper: toggle vault status until Active; handles Surfpool persistent state
 async function ensureMapleVaultActive(
@@ -1185,4 +1187,58 @@ describe("adapter-maple", () => {
       expect(userBalance).to.be.greaterThan(0);
     });
   }
+
+  describe("conformance", () => {
+    let vaultStatePda: PublicKey;
+    let vaultAuthorityPda: PublicKey;
+    let vaultTokenAccount: PublicKey;
+    let underlyingMint: PublicKey;
+    let depositRemainingAccounts: { pubkey: PublicKey; isSigner: boolean; isWritable: boolean }[];
+
+    before(async function () {
+      this.timeout(120000);
+      vaultStatePda = findPda([Buffer.from("maple_vault_state")], program.programId)[0];
+      vaultAuthorityPda = findPda([Buffer.from("maple_vault_authority")], program.programId)[0];
+      const vaultSyrupPda = findPda([Buffer.from("maple_vault_syrup")], program.programId)[0];
+      underlyingMint = isMainnetFork() ? MAINNET_USDC_MINT : await createTestMint(provider, payer, 6);
+      try {
+        await program.methods.initialize(underlyingMint)
+          .accounts({
+            authority: authority.publicKey, vaultState: vaultStatePda,
+            vaultAuthority: vaultAuthorityPda, underlyingMint,
+            syrupMint: SYRUP_USDC_MINT, vaultSyrup: vaultSyrupPda,
+            tokenProgram: TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId,
+          })
+          .rpc();
+      } catch { /* already initialized */ }
+      if (isMainnetFork()) {
+        await patchVaultAuthority(provider.connection, vaultStatePda, authority.publicKey);
+        await refreshChainlinkFeed(provider.connection);
+      }
+      vaultTokenAccount = (await getOrCreateAssociatedTokenAccount(
+        provider.connection, payer, underlyingMint, vaultAuthorityPda, true
+      )).address;
+      depositRemainingAccounts = await buildMapleSwapAccounts(provider.connection, vaultSyrupPda);
+    });
+
+    runConformance(() => ({
+      label: "maple",
+      program,
+      provider,
+      authority,
+      payer,
+      vaultStatePda,
+      vaultAuthorityPda,
+      vaultTokenAccount,
+      underlyingMint,
+      vaultStateAccountName: "mapleVaultState",
+      vaultStateSeed: "maple_vault_state",
+      vaultAuthoritySeed: "maple_vault_authority",
+      isInstant: true,
+      skipInitTest: true,
+      skipVaultLifecycle: true,
+      depositRemainingAccounts: [],
+      valueRemainingAccounts: buildMapleCurrentValueAccounts(),
+    }));
+  });
 });

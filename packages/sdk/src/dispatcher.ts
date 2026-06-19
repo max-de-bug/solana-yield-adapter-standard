@@ -9,16 +9,30 @@ import {
 } from "./pda";
 import type { AdapterName } from "./constants";
 
+/** High-level client for interacting with the yield-dispatcher program.
+ *
+ * Routes deposits, withdrawals, and current-value queries through the
+ * registered adapter via CPI, enforcing registry gating and the circuit breaker.
+ *
+ * @example
+ * ```typescript
+ * const dispatcher = new DispatcherClient(program, provider);
+ * await dispatcher.ensureInitialized(authority.publicKey, registryProgramId);
+ * await dispatcher.deposit(user, amount, minSharesOut, registryProgramId,
+ *   adapterProgramId, adapterEntryPda, accounts);
+ * ``` */
 export class DispatcherClient {
   constructor(
     readonly program: Program,
     readonly provider: any
   ) {}
 
+  /** Returns the dispatcher program ID. */
   programId(): PublicKey {
     return this.program.programId;
   }
 
+  /** Initializes the dispatcher singleton if not already deployed. Idempotent (no-op if already exists). Returns the dispatcher state PDA. */
   async ensureInitialized(
     authority: PublicKey,
     registryProgramId: PublicKey
@@ -43,6 +57,10 @@ export class DispatcherClient {
     return pda;
   }
 
+  /** Deposits an amount of underlying tokens into the given adapter through the dispatcher.
+   *
+   * The dispatcher validates the adapter is Approved in the registry, then CPI-calls
+   * the adapter's deposit instruction. */
   async deposit(
     user: PublicKey,
     amount: BN,
@@ -88,6 +106,7 @@ export class DispatcherClient {
     await builder.rpc();
   }
 
+  /** Withdraws shares from the given adapter through the dispatcher. */
   async withdraw(
     user: PublicKey,
     shares: BN,
@@ -131,6 +150,7 @@ export class DispatcherClient {
       .rpc();
   }
 
+  /** Queries the current value of a user's position through the dispatcher. */
   async currentValue(
     user: PublicKey,
     adapterProgramId: PublicKey

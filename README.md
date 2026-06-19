@@ -9,11 +9,7 @@
 
 <div align="center">
 
-![Solana](https://img.shields.io/badge/Solana-2.2.20-9945FF?style=for-the-badge&logo=solana)
-![Anchor](https://img.shields.io/badge/Anchor-1.0.1-blue?style=for-the-badge)
-![Rust](https://img.shields.io/badge/Rust-2021-orange?style=for-the-badge&logo=rust)
-![License](https://img.shields.io/badge/License-Apache_2.0-green?style=for-the-badge)
-![Tests](https://img.shields.io/badge/Tests-Mainnet_Fork-brightgreen?style=for-the-badge)
+
 
 [Adapter Standard](docs/ADAPTER_STANDARD.md) · [Build Your Own](docs/BUILD_YOUR_OWN_ADAPTER.md) · [Documentation](https://syas.mintlify.app)
 
@@ -203,7 +199,7 @@ solana-yield-adapter-standard/
 |-------|---------|-------|
 | Unit | `cargo test` | 28 |
 | Localnet integration | `anchor test` | 32 (26 passing, 6 pre-existing slippage failures on localnet-only) |
-| Mainnet-fork integration (Surfpool) | `bash scripts/run-fork-surfpool.sh` | **96** — 6 adapters (×12) + dispatcher (11) + registry (13) |
+| Mainnet-fork integration (Surfpool) | `bash scripts/run-fork-surfpool.sh` | **119** — adapters (72) + dispatcher (22) + registry (13) + conformance (12) |
 
 Tests cover:
 - **Registry**: Initialize → Propose → Approve → Revoke → Set guardian → Transfer governance
@@ -229,7 +225,7 @@ The script builds programs, starts a Surfpool validator (auto-fetches mainnet ac
 MAINNET_FORK=1 anchor test --skip-local-validator --skip-build
 ```
 
-Runs all **96 integration tests** (6 adapters × 12 + dispatcher + registry) including real CPI round-trips against all five protocols (Kamino, MarginFi, Jupiter, Drift, Maple) via `invoke_signed`, plus dispatcher routing, registry governance (with `force_transfer_governance` admin escape hatch for Surfpool persistence), and adapter template tests. All 96 pass on fork (the 6 slippage-test failures are localnet-only — on fork the JIT-fetched USDC ATAs resolve the mint mismatch).
+Runs all **119 integration tests** (6 adapters × 12 native tests + conformance suites + dispatcher + registry) including real CPI round-trips against all five protocols (Kamino, MarginFi, Jupiter, Drift, Maple) via `invoke_signed`, plus dispatcher routing, registry governance (with `force_transfer_governance` admin escape hatch for Surfpool persistence), and adapter template tests. All 119 pass on fork (the 6 slippage-test failures are localnet-only — on fork the JIT-fetched USDC ATAs resolve the mint mismatch).
 
 ---
 

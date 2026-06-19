@@ -14,6 +14,7 @@ import {
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 
+/** Requests a SOL airdrop to the given address and waits for confirmation. Uses blockheight-based confirmation with a +2000 buffer. */
 export async function airdrop(
   connection: Connection,
   to: PublicKey,
@@ -29,6 +30,7 @@ export async function airdrop(
   });
 }
 
+/** Creates a new SPL test mint with the given decimals (default 6). */
 export async function createTestMint(
   connection: Connection,
   authority: Keypair,
@@ -37,6 +39,7 @@ export async function createTestMint(
   return createMint(connection, authority, authority.publicKey, null, decimals);
 }
 
+/** Creates or fetches an associated token account for the given mint and owner. Returns the token account address. */
 export async function createTokenAccount(
   connection: Connection,
   mint: PublicKey,
@@ -52,6 +55,7 @@ export async function createTokenAccount(
   return account.address;
 }
 
+/** Mints `amount` test tokens (assumes authority is the mint authority). */
 export async function mintTestTokens(
   connection: Connection,
   mint: PublicKey,
@@ -62,6 +66,7 @@ export async function mintTestTokens(
   await mintTo(connection, authority, mint, destination, authority, amount);
 }
 
+/** Transfers `amount` SPL tokens from source to destination (authority signs). */
 export async function transferTokens(
   connection: Connection,
   source: PublicKey,

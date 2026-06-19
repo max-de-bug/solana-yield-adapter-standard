@@ -15,10 +15,11 @@
     "validate": "bash scripts/validate.sh",
     "deploy:devnet": "bash scripts/deploy-devnet.sh",
     "docs:dev": "cd docs-site && npx mintlify dev",
+    "check": "cd packages/sdk && npx tsc --noEmit && npm run build && echo 'SDK: OK'",
     "clean": "anchor clean && rm -rf node_modules"
   },
   "dependencies": {
-    "@anchor-lang/core": "1.0.2",
+    "@anchor-lang/core": "1.0.1",
     "@solana/web3.js": "^1.95.8",
     "@solana/spl-token": "^0.4.13"
   },

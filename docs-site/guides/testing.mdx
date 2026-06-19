@@ -10,7 +10,7 @@ The test suite validates registry governance, dispatcher routing, and all six ad
 | Command | Tests | Environment | Duration |
 |---|---|---|---|---|
 | `npm test` | 32 (26 passing, 6 pre-existing slippage failures on localnet) | Local validator | ~2 min |
-| `bash scripts/run-fork-surfpool.sh` | 96 | Surfpool (JIT account fetching) | ~5–15 min |
+| `bash scripts/run-fork-surfpool.sh` | 119 | Surfpool (JIT account fetching) | ~5–15 min |
 
 <Tip>
 `npm test` uses `anchor test --validator legacy --skip-build`. Run `npm run build` first if programs changed.
@@ -63,7 +63,7 @@ The script (`scripts/run-fork-surfpool.sh`):
 3. Deploys all programs to the fork
 4. Runs `MAINNET_FORK=1 anchor test --skip-local-validator --skip-build`
 
-All **96 tests pass** on fork (the 6 slippage failures seen on localnet are resolved on fork because JIT-fetched USDC ATAs provide the correct underlying mint). The full suite covers all adapters (Kamino, MarginFi, Jupiter, Maple, Drift, template), dispatcher routing with CPI-based `current_value`, complete registry lifecycle (including re-approval from `Revoked`), and Drift two-phase withdrawal with stale-ticket cleanup.
+All **119 tests pass** on fork (the 6 slippage failures seen on localnet are resolved on fork because JIT-fetched USDC ATAs provide the correct underlying mint). The full suite covers all adapters (Kamino, MarginFi, Jupiter, Maple, Drift, template), dispatcher routing with CPI-based `current_value`, complete registry lifecycle (including re-approval from `Revoked`), and Drift two-phase withdrawal with stale-ticket cleanup.
 
 ### Surfpool-specific features
 

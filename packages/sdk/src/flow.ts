@@ -39,6 +39,7 @@ import {
 import { getTokenBalance } from "./accounts";
 import type { AdapterFlowOptions } from "./adapter";
 
+/** Resolves the protocol program ID for a given adapter program by checking the Anchor workspace. */
 function protocolPdaForProgram(
   programId: PublicKey
 ): PublicKey | null {
@@ -55,6 +56,13 @@ function protocolPdaForProgram(
   return null;
 }
 
+/** Runs a full deposit → current_value → withdraw lifecycle against an adapter.
+ *
+ * Handles both localnet (test mint) and mainnet-fork (fixture wallet or surfpool)
+ * token provisioning. Verifies vault balance and user balance at each step.
+ *
+ * @throws If vault balance does not reflect the deposit amount or user balance
+ *         is not positive after a partial withdraw. */
 export async function runAdapterDepositWithdrawFlow(
   provider: any,
   authority: Wallet,
@@ -79,7 +87,6 @@ export async function runAdapterDepositWithdrawFlow(
       "..", "..", "..", "tests", "fixtures", "fork-wallet.json"
     );
     if (fs.existsSync(fixtureWalletPath)) {
-      // Legacy fixture path: use MAINNET_USDC_MINT and transfer from fixture wallet
       underlyingMint = options.underlyingMint ?? (adapterName === "maple" ? SYRUP_USDC_MINT : MAINNET_USDC_MINT);
       const fixtureSecret = Uint8Array.from(
         JSON.parse(fs.readFileSync(fixtureWalletPath, "utf8"))
@@ -120,7 +127,6 @@ export async function runAdapterDepositWithdrawFlow(
         TOKEN_PROGRAM_ID
       );
     } else {
-      // Surfpool path: create test mint and use it for vault + user
       underlyingMint = await createTestMint(connection, payer, 6);
       userTokenAccount = await createTokenAccount(connection, underlyingMint, authority.publicKey, payer);
       await mintTestTokens(connection, underlyingMint, userTokenAccount, payer, depositAmount * 2);

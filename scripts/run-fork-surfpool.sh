@@ -139,19 +139,13 @@ for so in "$PROJECT_DIR/target/deploy"/*.so; do
   fi
 done
 
-# ── Step 6: Run fork tests via anchor test ──
-# Using `anchor test` because tests depend on anchor.workspace.Adapter* resolution,
-# which requires Anchor's workspace to load IDLs from the deploy directory.
-# --skip-local-validator reuses the Surfpool validator instead of launching a new one.
+# ── Step 6: Run fork tests ──
 echo ""
 echo "[6/6] Running fork tests..."
 export MAINNET_FORK=1
 export ANCHOR_PROVIDER_URL="$VALIDATOR_URL"
-anchor test \
-  --skip-local-validator \
-  --skip-build \
-  --validator legacy \
-  --provider.cluster localnet
+export ANCHOR_WALLET="$HOME/.config/solana/id.json"
+yarn run ts-mocha -p ./tsconfig.json -t 1000000 'tests/**/*.test.ts'
 EXIT_CODE="$?"
 
 echo ""

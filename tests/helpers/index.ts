@@ -91,14 +91,20 @@ export async function sendAndConfirm(
       await sleep(500);
       continue;
     }
+    let cr;
     try {
-      await provider.connection.confirmTransaction({
+      cr = await provider.connection.confirmTransaction({
         signature: sig,
         blockhash: bh.blockhash,
         lastValidBlockHeight,
       });
     } catch (e: unknown) {
-      throw new Error(String(e));
+      const obj = e as any;
+      const msg = typeof obj === "object" ? JSON.stringify(obj) : String(obj);
+      throw new Error(msg);
+    }
+    if (cr?.value?.err) {
+      throw new Error(JSON.stringify(cr.value.err));
     }
     return sig;
   }

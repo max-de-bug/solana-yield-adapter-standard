@@ -40,6 +40,7 @@ import {
 } from "./token";
 import { getTokenBalance } from "./accounts";
 
+/** Options for configuring a deposit/withdraw flow in {@link runAdapterDepositWithdrawFlow}. */
 export interface AdapterFlowOptions {
   program: Program;
   adapterName: AdapterName;
@@ -48,6 +49,17 @@ export interface AdapterFlowOptions {
   underlyingMint?: PublicKey;
 }
 
+/** High-level client for interacting with a single yield adapter program.
+ *
+ * Derives vault PDAs from the adapter name, handles idempotent initialization,
+ * and resolves the correct underlying mint for localnet vs mainnet fork.
+ *
+ * @example
+ * ```typescript
+ * const adapter = new AdapterClient(program, provider, "kamino");
+ * await adapter.initializeVault(authority.publicKey, underlyingMint);
+ * const vaultToken = await adapter.createVaultTokenAccount(connection, payer, underlyingMint);
+ * ``` */
 export class AdapterClient {
   constructor(
     readonly program: Program,
@@ -55,22 +67,27 @@ export class AdapterClient {
     readonly adapterName: AdapterName
   ) {}
 
+  /** Returns the adapter program ID. */
   programId(): PublicKey {
     return this.program.programId;
   }
 
+  /** Returns the PDA seed for this adapter's vault state. */
   vaultStateSeed(): Buffer {
     return ADAPTER_VAULT_SEEDS[this.adapterName];
   }
 
+  /** Returns the PDA seed for this adapter's vault authority. */
   vaultAuthoritySeed(): Buffer {
     return ADAPTER_VAULT_AUTHORITY_SEEDS[this.adapterName];
   }
 
+  /** Returns the [PDA, bump] for this adapter's vault state account. */
   vaultStatePda(): [PublicKey, number] {
     return adapterVaultStatePda(this.program.programId, this.vaultStateSeed());
   }
 
+  /** Returns the [PDA, bump] for this adapter's vault authority account. */
   vaultAuthorityPda(): [PublicKey, number] {
     return adapterVaultAuthorityPda(
       this.program.programId,
@@ -78,10 +95,12 @@ export class AdapterClient {
     );
   }
 
+  /** Returns the [PDA, bump] for a user's position within this adapter. */
   userPositionPda(user: PublicKey): [PublicKey, number] {
     return adapterUserPositionPda(this.program.programId, user);
   }
 
+  /** Initializes the vault for this adapter. Idempotent — silently skips if the vault state already exists. */
   async initializeVault(
     authority: PublicKey,
     underlyingMint: PublicKey
@@ -104,6 +123,7 @@ export class AdapterClient {
     }
   }
 
+  /** Creates an associated token account for the vault (under PDA authority). Returns the token account address. */
   async createVaultTokenAccount(
     connection: Connection,
     payer: Keypair,
@@ -121,6 +141,7 @@ export class AdapterClient {
     return account.address;
   }
 
+  /** Resolves the underlying mint: returns mainnet USDC (or syrupUSDC for Maple) on fork, or creates a test mint on localnet. */
   async resolveUnderlyingMint(
     connection: Connection,
     payer: Keypair

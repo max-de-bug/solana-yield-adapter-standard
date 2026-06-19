@@ -6,6 +6,7 @@ import {
 import { Connection, PublicKey } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID } from "./constants";
 
+/** On-chain layout of an adapter vault state account. */
 export interface VaultStateAccount {
   authority: PublicKey;
   underlyingMint: PublicKey;
@@ -15,6 +16,7 @@ export interface VaultStateAccount {
   bump: number;
 }
 
+/** On-chain layout of a user's position within an adapter. */
 export interface AdapterPositionAccount {
   owner: PublicKey;
   adapterProgramId: PublicKey;
@@ -26,6 +28,7 @@ export interface AdapterPositionAccount {
   bump: number;
 }
 
+/** On-chain layout of the yield-dispatcher singleton state. */
 export interface DispatcherStateAccount {
   authority: PublicKey;
   registryProgramId: PublicKey;
@@ -33,12 +36,14 @@ export interface DispatcherStateAccount {
   isPaused: boolean;
 }
 
+/** On-chain layout of the adapter-registry singleton state. */
 export interface RegistryStateAccount {
   authority: PublicKey;
   totalProposed: bigint;
   totalApproved: bigint;
 }
 
+/** On-chain layout of a single adapter entry in the registry. */
 export interface AdapterEntryAccount {
   name: string;
   adapterProgramId: PublicKey;
@@ -49,6 +54,7 @@ export interface AdapterEntryAccount {
   revokedAt: bigint;
 }
 
+/** Fetches an adapter vault state account from on-chain. */
 export async function fetchVaultState(
   connection: Connection,
   program: { account: { vaultState: { fetch: (pda: PublicKey) => Promise<unknown> } } },
@@ -57,6 +63,7 @@ export async function fetchVaultState(
   return program.account.vaultState.fetch(vaultStatePda) as Promise<VaultStateAccount>;
 }
 
+/** Fetches an adapter user position from on-chain, returning null if it does not exist. */
 export async function fetchAdapterPosition(
   connection: Connection,
   program: { account: { adapterPosition?: { fetch: (pda: PublicKey) => Promise<unknown> } } },
@@ -71,6 +78,7 @@ export async function fetchAdapterPosition(
   }
 }
 
+/** Fetches the dispatcher state account from on-chain. */
 export async function fetchDispatcherState(
   connection: Connection,
   program: { account: { dispatcherState: { fetch: (pda: PublicKey) => Promise<unknown> } } },
@@ -79,6 +87,7 @@ export async function fetchDispatcherState(
   return program.account.dispatcherState.fetch(pda) as Promise<DispatcherStateAccount>;
 }
 
+/** Fetches the registry state account from on-chain. */
 export async function fetchRegistryState(
   connection: Connection,
   program: { account: { registryState: { fetch: (pda: PublicKey) => Promise<unknown> } } },
@@ -87,6 +96,7 @@ export async function fetchRegistryState(
   return program.account.registryState.fetch(pda) as Promise<RegistryStateAccount>;
 }
 
+/** Fetches a registry adapter entry from on-chain, returning null if it does not exist. */
 export async function fetchAdapterEntry(
   connection: Connection,
   program: { account: { adapterEntry: { fetch: (pda: PublicKey) => Promise<unknown> } } },
@@ -99,6 +109,7 @@ export async function fetchAdapterEntry(
   }
 }
 
+/** Returns the token balance (as bigint) for a given SPL token account. */
 export async function getTokenBalance(
   connection: Connection,
   tokenAccount: PublicKey
@@ -107,6 +118,7 @@ export async function getTokenBalance(
   return account.amount;
 }
 
+/** Returns the number of decimals for a given SPL mint. */
 export async function getTokenMintDecimals(
   connection: Connection,
   mint: PublicKey
@@ -115,6 +127,7 @@ export async function getTokenMintDecimals(
   return mintInfo.decimals;
 }
 
+/** Derives the associated token account address for a given mint and owner. */
 export function associatedTokenAddress(
   mint: PublicKey,
   owner: PublicKey

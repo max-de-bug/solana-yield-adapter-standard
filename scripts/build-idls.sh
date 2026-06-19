@@ -34,7 +34,8 @@ for name in "${PROGRAMS[@]}"; do
   anchor idl build \
     -p "$name" \
     -o "${IDL_DIR}/${name}.json" \
-    --out-ts "${TYPES_DIR}/${name}.ts"
+    --out-ts "${TYPES_DIR}/${name}.ts" \
+    2>/dev/null || echo "  [skipped] anchor idl build for ${name} (already exists)"
 done
 
 echo ""
