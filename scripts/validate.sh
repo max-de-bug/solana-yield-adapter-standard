@@ -220,15 +220,15 @@ check_deployed "Drift"      "CVfb8T9tf9WEeus4mKWsxTehVezeY9TGwYsSc3JmxWYz"
 # ============================================================
 if [[ "${1:-}" == "--fork" ]]; then
   header "MAINNET-FORK TESTS"
-  if [ -f "scripts/run-mainnet-fork-tests.sh" ]; then
+  if [ -f "scripts/run-fork-surfpool.sh" ]; then
     pass "Fork test script exists"
-    if bash scripts/run-mainnet-fork-tests.sh 2>&1; then
+    if bash scripts/run-fork-surfpool.sh 2>&1; then
       pass "All mainnet-fork tests pass"
     else
       fail "Some mainnet-fork tests failed"
     fi
   else
-    fail "Missing scripts/run-mainnet-fork-tests.sh"
+    fail "Missing scripts/run-fork-surfpool.sh"
   fi
 else
   header "MAINNET-FORK TESTS (skipped)"

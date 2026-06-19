@@ -9,7 +9,10 @@
 
 <div align="center">
 
-
+[![ci](https://github.com/btcthirst/Solana-Yield-Adapter-Standard/actions/workflows/ci.yml/badge.svg)](https://github.com/btcthirst/Solana-Yield-Adapter-Standard/actions/workflows/ci.yml)
+[![typecheck](https://github.com/btcthirst/Solana-Yield-Adapter-Standard/actions/workflows/ci.yml/badge.svg?job=typecheck)](https://github.com/btcthirst/Solana-Yield-Adapter-Standard/actions/workflows/ci.yml)
+[![mainnet-fork](https://img.shields.io/badge/mainnet--fork-119%2F119%20passing-brightgreen)](tests/fork/RESULTS.md)
+[![license: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 [Adapter Standard](docs/ADAPTER_STANDARD.md) · [Build Your Own](docs/BUILD_YOUR_OWN_ADAPTER.md) · [Documentation](https://syas.mintlify.app)
 
@@ -177,8 +180,7 @@ solana-yield-adapter-standard/
 │   ├── registry.test.ts         # Registry governance tests
 │   └── dispatcher.test.ts       # Dispatcher routing tests
 ├── scripts/
-│   ├── run-fork-surfpool.sh        # Surfpool-based fork tests (default)
-│   ├── run-mainnet-fork-tests.sh   # Legacy fork tests (manual --clone)
+│   ├── run-fork-surfpool.sh        # Surfpool-based fork tests
 │   └── deploy-devnet.sh
 ├── docs/
 │   ├── ADAPTER_STANDARD.md      # Formal specification
