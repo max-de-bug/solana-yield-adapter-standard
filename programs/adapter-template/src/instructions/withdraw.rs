@@ -138,6 +138,8 @@ pub fn handler<'a>(
         timestamp: clock.unix_timestamp,
     });
 
+    yield_adapter_trait::set_cpi_return_value(underlying_amount);
+
     msg!(
         "Template withdraw: {} shares -> {} underlying",
         shares_to_burn,

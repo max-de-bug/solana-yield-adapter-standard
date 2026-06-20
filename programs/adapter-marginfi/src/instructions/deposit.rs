@@ -119,6 +119,8 @@ pub fn handler<'a>(ctx: Context<'a, Deposit<'a>>, amount: u64, min_shares_out: u
         timestamp: clock.unix_timestamp,
     });
 
+    yield_adapter_trait::set_cpi_return_value(shares);
+
     msg!(
         "MarginFi deposit: {} USDC -> {} shares (routed: {})",
         amount,

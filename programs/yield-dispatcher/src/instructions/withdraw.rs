@@ -110,7 +110,7 @@ pub fn handler(ctx: Context<Withdraw>, shares: u64, min_underlying_out: u64) -> 
 
     let clock = Clock::get()?;
 
-    cpi_withdraw(
+    let underlying_out = cpi_withdraw(
         AdapterWithdrawAccounts {
             adapter_program: ctx.accounts.adapter_program.to_account_info(),
             user: ctx.accounts.user.to_account_info(),
@@ -150,8 +150,9 @@ pub fn handler(ctx: Context<Withdraw>, shares: u64, min_underlying_out: u64) -> 
     });
 
     msg!(
-        "Withdraw CPI: {} shares from {}",
+        "Withdraw CPI: {} shares -> {} underlying from {}",
         shares,
+        underlying_out,
         ctx.accounts.adapter_program.key()
     );
 

@@ -47,6 +47,8 @@ pub fn handler(ctx: Context<CurrentValue>) -> Result<()> {
         timestamp: clock.unix_timestamp,
     });
 
+    yield_adapter_trait::set_cpi_return_value(value);
+
     msg!(
         "Template position value: {} underlying ({} shares)",
         value,

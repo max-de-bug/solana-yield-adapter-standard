@@ -6,7 +6,9 @@ use anchor_lang::solana_program::{
 use sha2::{Digest, Sha256};
 
 use crate::error::DispatcherError;
-use yield_adapter_trait::{read_adapter_position_receipt, read_reference_vault_totals};
+use yield_adapter_trait::{
+    read_adapter_position_receipt, read_reference_vault_totals, try_read_cpi_return_value,
+};
 
 /// Read global vault totals from any reference adapter vault state account.
 pub fn read_vault_totals(vault_state: &AccountInfo) -> Result<(u64, u64)> {
@@ -106,6 +108,10 @@ pub fn cpi_deposit<'info>(
         &[amount, min_shares_out],
     )?;
 
+    if let Some(shares_minted) = try_read_cpi_return_value(&program_id) {
+        return Ok(shares_minted);
+    }
+
     let (_, shares_after) = read_vault_totals(&vault_state)?;
     shares_after
         .checked_sub(shares_before)
@@ -127,7 +133,7 @@ pub fn cpi_withdraw<'info>(
     accounts: AdapterWithdrawAccounts<'info>,
     shares: u64,
     min_underlying_out: u64,
-) -> Result<()> {
+) -> Result<u64> {
     let program_id = accounts.adapter_program.key();
 
     let account_infos = [
@@ -156,7 +162,9 @@ pub fn cpi_withdraw<'info>(
         &account_metas,
         "withdraw",
         &[shares, min_underlying_out],
-    )
+    )?;
+
+    Ok(try_read_cpi_return_value(&program_id).unwrap_or(0))
 }
 
 pub struct AdapterCurrentValueAccounts<'info> {
@@ -166,7 +174,7 @@ pub struct AdapterCurrentValueAccounts<'info> {
     pub user_position: AccountInfo<'info>,
 }
 
-pub fn cpi_current_value<'info>(accounts: AdapterCurrentValueAccounts<'info>) -> Result<()> {
+pub fn cpi_current_value<'info>(accounts: AdapterCurrentValueAccounts<'info>) -> Result<u64> {
     let program_id = accounts.adapter_program.key();
 
     let account_infos = [
@@ -187,5 +195,7 @@ pub fn cpi_current_value<'info>(accounts: AdapterCurrentValueAccounts<'info>) ->
         &account_metas,
         "current_value",
         &[],
-    )
+    )?;
+
+    try_read_cpi_return_value(&program_id).ok_or(DispatcherError::AdapterCpiError.into())
 }

@@ -2,9 +2,7 @@ use adapter_registry::program::AdapterRegistry;
 use adapter_registry::state::{AdapterEntry, AdapterStatus, ADAPTER_ENTRY_SEED};
 use anchor_lang::prelude::*;
 
-use crate::adapter_cpi::{
-    cpi_current_value, read_position_receipt, read_vault_totals, AdapterCurrentValueAccounts,
-};
+use crate::adapter_cpi::{cpi_current_value, AdapterCurrentValueAccounts};
 use crate::adapter_validation;
 use crate::error::DispatcherError;
 use crate::events::DispatchCurrentValueEvent;
@@ -71,27 +69,12 @@ pub struct CurrentValue<'info> {
 }
 
 pub fn handler(ctx: Context<CurrentValue>) -> Result<()> {
-    cpi_current_value(AdapterCurrentValueAccounts {
+    let value = cpi_current_value(AdapterCurrentValueAccounts {
         adapter_program: ctx.accounts.adapter_program.to_account_info(),
         user: ctx.accounts.user.to_account_info(),
         vault_state: ctx.accounts.adapter_vault_state.to_account_info(),
         user_position: ctx.accounts.adapter_user_position.to_account_info(),
     })?;
-
-    let (total_underlying, total_shares) =
-        read_vault_totals(&ctx.accounts.adapter_vault_state.to_account_info())?;
-    let adapter_receipt =
-        read_position_receipt(&ctx.accounts.adapter_user_position.to_account_info())?;
-
-    let value = if total_shares == 0 || adapter_receipt == 0 {
-        0u64
-    } else {
-        (adapter_receipt as u128)
-            .checked_mul(total_underlying as u128)
-            .ok_or(DispatcherError::AdapterCpiError)?
-            .checked_div(total_shares as u128)
-            .ok_or(DispatcherError::AdapterCpiError)? as u64
-    };
 
     let clock = Clock::get()?;
 

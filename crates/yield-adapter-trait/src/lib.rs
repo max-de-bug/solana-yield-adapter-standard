@@ -19,6 +19,7 @@
 //! - **Auditable**: Shared error codes and events make monitoring uniform across all adapters.
 
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::program::{get_return_data, set_return_data};
 
 // ---------------------------------------------------------------------------
 // Vault Status — replaces bool active with explicit states
@@ -492,6 +493,43 @@ pub fn read_adapter_position_receipt(account: &AccountInfo) -> Result<u64> {
     let position = AdapterPositionData::deserialize(&mut slice)
         .map_err(|_| YieldAdapterError::PositionNotInitialized)?;
     Ok(position.receipt_token_balance)
+}
+
+// ---------------------------------------------------------------------------
+// CPI Return Data Protocol
+// ---------------------------------------------------------------------------
+
+/// Set a u64 as CPI return data for the calling program (dispatcher) to read.
+///
+/// Each adapter MUST call this in `deposit`, `withdraw`, and `current_value`
+/// after all state mutations and CPIs are complete, so the dispatcher can
+/// verify the result without reading account state directly.
+///
+/// # Values by instruction
+/// - `deposit`: `shares_minted` (u64)
+/// - `withdraw`: `underlying_amount_out` (u64)
+/// - `current_value`: `position_value_underlying` (u64)
+pub fn set_cpi_return_value(value: u64) {
+    set_return_data(&value.to_le_bytes());
+}
+
+/// Read a u64 CPI return value set by the last CPI'd adapter program.
+///
+/// Returns `None` when:
+/// - No return data was set (backward compat with adapters before this protocol)
+/// - The data is not exactly 8 bytes
+/// - The program that set the data does not match `expected_program`
+pub fn try_read_cpi_return_value(expected_program: &Pubkey) -> Option<u64> {
+    let (program_id, data) = get_return_data()?;
+    if program_id != *expected_program {
+        return None;
+    }
+    if data.len() != 8 {
+        return None;
+    }
+    let mut bytes = [0u8; 8];
+    bytes.copy_from_slice(&data);
+    Some(u64::from_le_bytes(bytes))
 }
 
 // ---------------------------------------------------------------------------

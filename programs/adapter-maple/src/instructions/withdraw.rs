@@ -119,6 +119,8 @@ pub fn handler<'a>(
         timestamp: clock.unix_timestamp,
     });
 
+    yield_adapter_trait::set_cpi_return_value(usdc_received);
+
     msg!(
         "Maple withdraw: {} shares -> {} USDC (expected: {})",
         shares_to_burn,
