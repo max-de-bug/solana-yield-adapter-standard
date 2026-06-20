@@ -4,6 +4,10 @@ version = "1.0.0"
 description = "Core interface definitions for the Solana Yield Adapter Standard"
 edition = "2021"
 license = "Apache-2.0"
+repository = "https://github.com/max-de-bug/solana-yield-adapter-standard"
+keywords = ["solana", "anchor", "defi", "yield", "adapter"]
+categories = ["cryptography::cryptocurrencies", "wasm"]
+readme = "README.md"
 
 [lib]
 crate-type = ["lib"]
@@ -12,7 +16,7 @@ crate-type = ["lib"]
 idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 
 [dependencies]
-anchor-lang = { workspace = true }
-anchor-spl = { workspace = true }
+anchor-lang = "=1.0.1"
+anchor-spl = "=1.0.1"
 
 
