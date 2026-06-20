@@ -13,6 +13,7 @@
 [![typecheck](https://github.com/btcthirst/Solana-Yield-Adapter-Standard/actions/workflows/ci.yml/badge.svg?job=typecheck)](https://github.com/btcthirst/Solana-Yield-Adapter-Standard/actions/workflows/ci.yml)
 [![mainnet-fork](https://img.shields.io/badge/mainnet--fork-119%2F119%20passing-brightgreen)](tests/fork/RESULTS.md)
 [![license: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![crates.io](https://img.shields.io/crates/v/yield-adapter-trait)](https://crates.io/crates/yield-adapter-trait)
 
 [Adapter Standard](docs/ADAPTER_STANDARD.md) · [Build Your Own](docs/BUILD_YOUR_OWN_ADAPTER.md) · [Documentation](https://syas.mintlify.app)
 
@@ -92,7 +93,7 @@ The Yield Adapter Standard solves this by providing a **single interface** that 
 
 | Component | Description |
 |---|---|---|
-| **Yield Adapter Trait** | Shared crate defining the standard interface, types, events, math, and account macros |
+| **Yield Adapter Trait** | Shared crate defining the standard interface, types, events, math, and account macros — published on [crates.io](https://crates.io/crates/yield-adapter-trait) |
 | **Yield Dispatcher** | Router that validates adapters and tracks user positions |
 | **Adapter Registry** | Governance-gated on-chain registry with guardian role for adapter approval/revocation |
 | **Reference Adapters** | Five reference adapters + template scaffold |
@@ -285,8 +286,8 @@ See [docs/BUILD_YOUR_OWN_ADAPTER.md](docs/BUILD_YOUR_OWN_ADAPTER.md) for a step-
 # 1. Scaffold
 anchor init my-adapter && cd my-adapter
 
-# 2. Add the trait dependency
-# In Cargo.toml: yield-adapter-trait = { git = "..." }
+# 2. Add the trait dependency from crates.io
+# In Cargo.toml: yield-adapter-trait = "1.0"
 
 # 3. Implement three instructions: deposit, withdraw, current_value
 

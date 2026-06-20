@@ -1,5 +1,7 @@
 # Solana Yield Adapter Standard — Specification v1.0
 
+> The core trait definitions are published on [crates.io](https://crates.io/crates/yield-adapter-trait) as `yield-adapter-trait = "1.0"`.
+
 ## 1. Abstract
 
 This document defines a standard interface for yield-bearing protocol adapters on Solana. The standard specifies three mandatory instructions, shared account structures, event definitions, and error codes that enable composable, auditable interaction with any yield source.
