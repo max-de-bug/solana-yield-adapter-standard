@@ -32,7 +32,7 @@ import { runConformance } from "../helpers/conformance";
 
 // Helper: toggle vault status until Active; handles Surfpool persistent state
 async function ensureMapleVaultActive(
-  program: Program,
+  program: any,
   authority: anchor.Wallet,
   vaultStatePda: PublicKey
 ): Promise<void> {
@@ -49,7 +49,7 @@ async function ensureMapleVaultActive(
 
 // Raw toggle using sendRawTransaction to avoid duplicate tx errors on Surfpool
 async function rawToggleStatus(
-  program: Program,
+  program: any,
   authority: anchor.Wallet,
   vaultStatePda: PublicKey
 ): Promise<void> {
@@ -92,7 +92,7 @@ async function refreshChainlinkFeed(conn: anchor.web3.Connection): Promise<void>
   // ts is u32 LE at offset 208
   const now = Math.floor(Date.now() / 1000);
   data.writeUInt32LE(now, 208);
-  await surfnetSetAccount(feedAddr.toString(), data.toString("hex"), info.lamports, info.owner.toString(), info.executable, info.rentEpoch);
+  await surfnetSetAccount(feedAddr.toString(), data.toString("hex"), info.lamports!, info.owner.toString(), info.executable, info.rentEpoch!);
 }
 
 /** Patch the vault state authority to match the current wallet (handles persistent state from prior runs where a different wallet initialized the vault). */
@@ -104,7 +104,7 @@ async function patchVaultAuthority(conn: anchor.web3.Connection, vaultPda: Publi
   const currentAuth = new PublicKey(data.slice(8, 40));
   if (currentAuth.equals(desiredAuthority)) return;
   desiredAuthority.toBuffer().copy(data, 8);
-  await surfnetSetAccount(vaultPda.toString(), data.toString("hex"), info.lamports, info.owner.toString(), info.executable, info.rentEpoch);
+  await surfnetSetAccount(vaultPda.toString(), data.toString("hex"), info.lamports!, info.owner.toString(), info.executable, info.rentEpoch!);
 }
 
 async function surfnetSetAccount(address: string, dataHex: string, lamports: number, owner: string, executable: boolean, rentEpoch_: number): Promise<void> {
@@ -140,7 +140,7 @@ describe("adapter-maple", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
-  const program = anchor.workspace.AdapterMaple as Program;
+  const program = anchor.workspace.AdapterMaple;
   const authority = provider.wallet as anchor.Wallet;
   const payer = (provider.wallet as anchor.Wallet).payer as Keypair;
 

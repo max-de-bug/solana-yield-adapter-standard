@@ -78,7 +78,7 @@ export async function hasUsdcFixture(
 }
 
 export interface AdapterTestContext {
-  program: Program;
+  program: any;
   vaultStatePda: PublicKey;
   vaultAuthorityPda: PublicKey;
   vaultTokenAccount: PublicKey;
@@ -88,7 +88,7 @@ export interface AdapterTestContext {
 }
 
 export interface AdapterFlowOptions {
-  program: Program;
+  program: any;
   vaultStateSeed: string;
   vaultAuthoritySeed: string;
   depositAmount?: number;
@@ -324,7 +324,7 @@ const ALL_VAULT_STATE_NAMES = [
 
 /** Fetch the underlying mint from an already-initialized vault state account. */
 async function fetchVaultUnderlyingMint(
-  program: Program,
+  program: any,
   vaultStatePda: PublicKey
 ): Promise<PublicKey | null> {
   for (const name of ALL_VAULT_STATE_NAMES) {
@@ -381,7 +381,7 @@ export async function patchVaultAuthority(conn: anchor.web3.Connection, vaultPda
   const currentAuth = new PublicKey(data.slice(8, 40));
   if (currentAuth.equals(desiredAuthority)) return;
   desiredAuthority.toBuffer().copy(data, 8);
-  await surfnetSetAccount(vaultPda.toString(), data.toString("hex"), info.lamports, info.owner.toString(), info.executable, info.rentEpoch);
+  await surfnetSetAccount(vaultPda.toString(), data.toString("hex"), info.lamports, info.owner.toString(), info.executable, info.rentEpoch!);
 }
 
 /** Refresh the SYRUP-USDC Chainlink feed timestamp to avoid MAX_STALE expiry on the frozen fork. */
@@ -393,7 +393,7 @@ export async function refreshChainlinkFeed(conn: anchor.web3.Connection): Promis
   const data = Buffer.from(info.data);
   const now = Math.floor(Date.now() / 1000);
   data.writeUInt32LE(now, 208);
-  await surfnetSetAccount(feedAddr.toString(), data.toString("hex"), info.lamports, info.owner.toString(), info.executable, info.rentEpoch);
+  await surfnetSetAccount(feedAddr.toString(), data.toString("hex"), info.lamports, info.owner.toString(), info.executable, info.rentEpoch!);
 }
 
 /** Replenish the fork fixture wallet's USDC ATA to ensure sufficient funds for deposit tests. */
@@ -413,14 +413,14 @@ export async function replenishFixtureUsdc(conn: anchor.web3.Connection): Promis
   const currentAmount = data.readBigUInt64LE(64);
   if (currentAmount >= desiredAmount) return;
   data.writeBigUInt64LE(desiredAmount, 64);
-  await surfnetSetAccount(fixtureAta.toString(), data.toString("hex"), info.lamports, info.owner.toString(), info.executable, info.rentEpoch);
+  await surfnetSetAccount(fixtureAta.toString(), data.toString("hex"), info.lamports, info.owner.toString(), info.executable, info.rentEpoch!);
 }
 
 /** Initialize adapter vault state PDA.
  *  Silently succeeds if already deployed and returns the on-chain underlying mint.
  *  Also ensures vault is in Active state (handles Surfpool persistence). */
 export async function initializeAdapterVault(
-  program: Program,
+  program: any,
   authority: anchor.Wallet,
   vaultStatePda: PublicKey,
   underlyingMint: PublicKey
@@ -636,7 +636,7 @@ export async function runAdapterDepositWithdrawFlow(
  * Exercises both deposit and withdraw slippage rejection paths.
  */
 export function addSlippageTests(opts: {
-  program: Program;
+  program: any;
   vaultStateSeed: string;
   vaultAuthoritySeed: string;
   underlyingMint?: PublicKey;
@@ -1655,7 +1655,7 @@ export async function runAdapterEmptyStateTests(
  */
 async function drainUserPosition(
   provider: anchor.AnchorProvider,
-  program: Program,
+  program: any,
   authority: anchor.Wallet,
   vaultStatePda: PublicKey,
   vaultTokenAccount: PublicKey,
@@ -1714,7 +1714,7 @@ async function drainUserPosition(
 /** Raw toggleStatus using sendRawTransaction (no retry — must not double-toggle).
  *  Waits for getTransaction to confirm state propagation. */
 async function rawToggleStatus(
-  program: Program,
+  program: any,
   authority: anchor.Wallet,
   vaultStatePda: PublicKey
 ): Promise<void> {
@@ -1749,7 +1749,7 @@ async function rawToggleStatus(
 
 /** Toggle the vault status until it reaches Active. Handles Surfpool persistent state. */
 async function ensureVaultActive(
-  program: Program,
+  program: any,
   authority: anchor.Wallet,
   vaultStatePda: PublicKey,
   vaultStateAccountName: string

@@ -19,7 +19,7 @@ describe("adapter-registry", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
-  const program = anchor.workspace.AdapterRegistry as Program;
+  const program = anchor.workspace.AdapterRegistry;
   const authority = provider.wallet as anchor.Wallet;
   let registryStatePda: PublicKey;
   let registryBump: number;
@@ -35,7 +35,7 @@ describe("adapter-registry", () => {
     const currentAdmin = new PublicKey(data.slice(8, 40));
     if (currentAdmin.equals(desiredAdmin)) return;
     desiredAdmin.toBuffer().copy(data, 8);
-    await surfnetSetAccount(registryPda.toString(), data.toString("hex"), info.lamports, info.owner.toString(), info.executable, info.rentEpoch);
+    await surfnetSetAccount(registryPda.toString(), data.toString("hex"), info.lamports, info.owner.toString(), info.executable, info.rentEpoch!);
   }
 
   before(async () => {

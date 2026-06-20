@@ -35,7 +35,7 @@ import { isMainnetFork } from "./constants";
  * ``` */
 export interface ConformanceConfig {
   label: string;
-  program: Program;
+  program: any;
   provider: AnchorProvider;
   authority: Wallet;
   payer: Keypair;

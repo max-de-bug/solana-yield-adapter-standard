@@ -30,9 +30,9 @@ describe("yield-dispatcher", () => {
   const provider = new anchor.AnchorProvider(connection, wallet, { commitment: "processed" });
   anchor.setProvider(provider);
 
-  const program = anchor.workspace.YieldDispatcher as Program;
-  const registryProgram = anchor.workspace.AdapterRegistry as Program;
-  const kaminoProgram = anchor.workspace.AdapterKamino as Program;
+  const program = anchor.workspace.YieldDispatcher;
+  const registryProgram = anchor.workspace.AdapterRegistry;
+  const kaminoProgram = anchor.workspace.AdapterKamino;
   const authority = provider.wallet as anchor.Wallet;
   const payer = (provider.wallet as anchor.Wallet).payer as Keypair;
 
@@ -72,7 +72,7 @@ describe("yield-dispatcher", () => {
     const currentAuth = new PublicKey(data.slice(8, 40));
     if (currentAuth.equals(desiredAuthority)) return;
     desiredAuthority.toBuffer().copy(data, 8);
-    await surfnetSetAccount(dispatcherPda.toString(), data.toString("hex"), info.lamports, info.owner.toString(), info.executable, info.rentEpoch);
+    await surfnetSetAccount(dispatcherPda.toString(), data.toString("hex"), info.lamports, info.owner.toString(), info.executable, info.rentEpoch!);
   }
 
   before(async () => {

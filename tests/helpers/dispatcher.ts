@@ -18,7 +18,7 @@ export interface ApprovedAdapterSetup {
 
 /** Ensure registry governance account exists. */
 export async function ensureRegistryInitialized(
-  registryProgram: Program,
+  registryProgram: any,
   authority: anchor.Wallet
 ): Promise<PublicKey> {
   const [registryStatePda] = findPda(
@@ -47,7 +47,7 @@ export async function ensureRegistryInitialized(
 
 /** Propose and approve an adapter in the registry. */
 export async function approveAdapterInRegistry(
-  registryProgram: Program,
+  registryProgram: any,
   authority: anchor.Wallet,
   registryStatePda: PublicKey,
   adapterProgram: PublicKey,
@@ -103,7 +103,7 @@ export async function approveAdapterInRegistry(
 
 /** Initialize a reference adapter vault and return PDAs for dispatcher CPI. */
 export async function setupReferenceAdapterVault(
-  adapterProgram: Program,
+  adapterProgram: any,
   provider: anchor.AnchorProvider,
   authority: anchor.Wallet,
   payer: anchor.web3.Keypair,
@@ -144,7 +144,7 @@ export async function setupReferenceAdapterVault(
 
 /** Resolve the Kamino vault mint (reuses vault from adapter tests when present). */
 export async function resolveKaminoVaultMint(
-  kaminoProgram: Program,
+  kaminoProgram: any,
   fallbackMint: PublicKey
 ): Promise<PublicKey> {
   const [vaultStatePda] = findPda(
@@ -168,12 +168,12 @@ export async function setupApprovedAdapterForDispatcher(
   authority: anchor.Wallet,
   payer: anchor.web3.Keypair,
   underlyingMint: PublicKey,
-  adapterProgram: Program,
+  adapterProgram: any,
   adapterName: string,
   vaultStateSeed: string,
   vaultAuthoritySeed: string
 ): Promise<ApprovedAdapterSetup> {
-  const registryProgram = anchor.workspace.AdapterRegistry as Program;
+  const registryProgram = anchor.workspace.AdapterRegistry;
   const registryStatePda = await ensureRegistryInitialized(registryProgram, authority);
 
   // Initialize vault FIRST to get the actual on-chain mint (may differ from
@@ -236,8 +236,8 @@ export async function setupApprovedKaminoForDispatcher(
   payer: anchor.web3.Keypair,
   underlyingMint: PublicKey
 ): Promise<ApprovedAdapterSetup> {
-  const registryProgram = anchor.workspace.AdapterRegistry as Program;
-  const kaminoProgram = anchor.workspace.AdapterKamino as Program;
+  const registryProgram = anchor.workspace.AdapterRegistry;
+  const kaminoProgram = anchor.workspace.AdapterKamino;
 
   const vaultMint = await resolveKaminoVaultMint(
     kaminoProgram,

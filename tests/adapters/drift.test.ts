@@ -46,7 +46,7 @@ describe("adapter-drift", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
-  const program = anchor.workspace.AdapterDrift as Program;
+  const program = anchor.workspace.AdapterDrift;
   const authority = provider.wallet as anchor.Wallet;
   const payer = (provider.wallet as anchor.Wallet).payer as Keypair;
 

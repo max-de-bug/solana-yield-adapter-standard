@@ -247,13 +247,21 @@ pub fn chainlink_value(syrup_amount: u64, feed: &AccountInfo) -> Result<u64> {
     require!(data.len() >= 232, YieldAdapterError::ProtocolCpiError);
     let decimals = data[138];
     require!(decimals <= 18, YieldAdapterError::ProtocolCpiError);
-    let ts = u32::from_le_bytes(data[208..212].try_into().expect("fixed-size slice: 4 bytes")) as i64;
+    let ts = u32::from_le_bytes(
+        data[208..212]
+            .try_into()
+            .expect("fixed-size slice: 4 bytes"),
+    ) as i64;
     let now = Clock::get()?.unix_timestamp;
     require!(
         ts > 0 && now >= ts && now - ts <= MAX_STALE,
         YieldAdapterError::ProtocolCpiError
     );
-    let answer = i128::from_le_bytes(data[216..232].try_into().expect("fixed-size slice: 16 bytes"));
+    let answer = i128::from_le_bytes(
+        data[216..232]
+            .try_into()
+            .expect("fixed-size slice: 16 bytes"),
+    );
     require!(answer > 0, YieldAdapterError::ProtocolCpiError);
 
     let scale = 10u64
@@ -365,5 +373,7 @@ fn token_amount(ai: &AccountInfo) -> Result<u64> {
         data.len() >= 72,
         yield_adapter_trait::YieldAdapterError::InvalidMetadata
     );
-    Ok(u64::from_le_bytes(data[64..72].try_into().expect("fixed-size slice: 8 bytes")))
+    Ok(u64::from_le_bytes(
+        data[64..72].try_into().expect("fixed-size slice: 8 bytes"),
+    ))
 }
