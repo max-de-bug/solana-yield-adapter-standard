@@ -1,5 +1,8 @@
 # Solana Yield Adapter Standard — Core Trait Definitions
 
+[![crates.io](https://img.shields.io/crates/v/yield-adapter-trait)](https://crates.io/crates/yield-adapter-trait)
+[![docs.rs](https://img.shields.io/docsrs/yield-adapter-trait)](https://docs.rs/yield-adapter-trait)
+
 Shared types, events, error codes, and math helpers for building compliant yield adapter programs on Solana.
 
 Part of the [Solana Yield Adapter Standard](https://github.com/max-de-bug/solana-yield-adapter-standard).
