@@ -9,8 +9,6 @@
 
 <div align="center">
 
-[![ci](https://github.com/btcthirst/Solana-Yield-Adapter-Standard/actions/workflows/ci.yml/badge.svg)](https://github.com/btcthirst/Solana-Yield-Adapter-Standard/actions/workflows/ci.yml)
-[![typecheck](https://github.com/btcthirst/Solana-Yield-Adapter-Standard/actions/workflows/ci.yml/badge.svg?job=typecheck)](https://github.com/btcthirst/Solana-Yield-Adapter-Standard/actions/workflows/ci.yml)
 [![mainnet-fork](https://img.shields.io/badge/mainnet--fork-112%2F112%20passing-brightgreen)](tests/fork/RESULTS.md)
 [![license: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![crates.io](https://img.shields.io/crates/v/yield-adapter-trait)](https://crates.io/crates/yield-adapter-trait)
