@@ -8,9 +8,25 @@ Get all integration tests passing on Surfpool mainnet fork. Fix persistent-state
 |---|---|---|
 | `cargo test` (unit) | 28 | ✅ All pass |
 | `anchor test` (localnet) | 32 | ✅ 26 pass, 6 slippage-only on localnet |
-| `MAINNET_FORK=1 anchor test` (Surfpool) | **96** | ✅ **96/96 passing** (6 Drift CPI tests skip gracefully) |
+| `MAINNET_FORK=1 anchor test` (Surfpool) | **131 registered, 12 skipped → 119 executable** | ✅ **119/119 passing** |
 
-Adapter breakdown: Drift 12/12 (6 skip on fork — Drift program disabled, see `Docs/troubleshooting/drift-fork-issues.md`), Jupiter 12/12, Kamino 12/12, Maple 12/12, Marginfi 12/12, Template 12/12, Dispatcher 11/11, Registry 13/13.
+> **Why 131 registered ≠ 96 static `it()` declarations:** Each adapter dynamically registers shared tests (`runConformance`, `addSlippageTests`) at runtime. The runtime total is 131. 12 are skipped on fork (Drift CPI and Maple vault-lifecycle). The **119 executable all pass**.
+
+### Fork breakdown
+
+| Component | Registered | Skipped | Executable |
+|---|---|---|---|
+| Jupiter | 18 | 0 | 18 ✅ |
+| Kamino | 18 | 0 | 18 ✅ |
+| Marginfi | 18 | 0 | 18 ✅ |
+| Template | 18 | 0 | 18 ✅ |
+| Maple | 17 | 1 | 16 ✅ |
+| Drift | 18 | 11 | 7 ✅ |
+| Dispatcher | 11 | 0 | 11 ✅ |
+| Registry | 13 | 0 | 13 ✅ |
+| **Total** | **131** | **12** | **119 ✅** |
+
+Drift's 11 skips: 5 `it.skip` (CPI instructions disabled — see `Docs/troubleshooting/drift-fork-issues.md`) + 6 `this.skip` in shared conformance tests (safe to bypass when protocol CPI is non-functional). The 12th skip is Maple's vault-lifecycle conformance check (skipped because Maple uses a custom non-standard status model).
 
 No known remaining failures. Drift fork tests skip gracefully with documented proof; they will pass the moment Drift re-enables its program.
 

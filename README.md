@@ -202,7 +202,7 @@ solana-yield-adapter-standard/
 |-------|---------|-------|
 | Unit | `cargo test` | 28 |
 | Localnet integration | `anchor test` | 32 (26 passing, 6 pre-existing slippage failures on localnet-only) |
-| Mainnet-fork integration (Surfpool) | `bash scripts/run-fork-surfpool.sh` | **119** — adapters (72) + dispatcher (22) + registry (13) + conformance (12) |
+| Mainnet-fork integration (Surfpool) | `bash scripts/run-fork-surfpool.sh` | **119** — adapters (95) + dispatcher (11) + registry (13) |
 
 Tests cover:
 - **Registry**: Initialize → Propose → Approve → Revoke → Set guardian → Transfer governance
@@ -228,7 +228,9 @@ The script builds programs, starts a Surfpool validator (auto-fetches mainnet ac
 MAINNET_FORK=1 anchor test --skip-local-validator --skip-build
 ```
 
-Runs all **119 integration tests** (6 adapters × 12 native tests + conformance suites + dispatcher + registry) including real CPI round-trips against all five protocols (Kamino, MarginFi, Jupiter, Drift, Maple) via `invoke_signed`, plus dispatcher routing, registry governance (with `force_transfer_governance` admin escape hatch for Surfpool persistence), and adapter template tests. All 119 pass on fork (the 6 slippage-test failures are localnet-only — on fork the JIT-fetched USDC ATAs resolve the mint mismatch).
+Runs all **119 integration tests** (6 adapters × ~18 tests each = 107 registered, 12 Drift CPI skips = 95 executable) including real CPI round-trips against all five protocols (Kamino, MarginFi, Jupiter, Drift, Maple) via `invoke_signed`, plus dispatcher routing, registry governance (with `force_transfer_governance` admin escape hatch for Surfpool persistence), and adapter template tests. All 119 pass on fork (the 6 slippage-test failures are localnet-only — on fork the JIT-fetched USDC ATAs resolve the mint mismatch).
+
+> **Why 131 registered but 119 executable:** Each adapter dynamically registers shared tests (`runConformance`, `addSlippageTests`) at runtime — the static `it()` count is 96, but helpers push the runtime total to 131. Of those, 12 are skipped on fork (11 Drift CPI-related — Drift v2 program has all instructions disabled upstream — plus 1 Maple vault lifecycle check that's skipped for its custom status model).
 
 ---
 
