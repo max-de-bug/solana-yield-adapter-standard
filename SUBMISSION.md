@@ -12,7 +12,7 @@ cd Solana-Yield-Adapter-Standard
 npm install
 npm run build
 npm test                    # localnet: 32 tests
-bash scripts/run-fork-surfpool.sh  # mainnet fork: 119 tests
+bash scripts/run-fork-surfpool.sh  # mainnet fork: 112 tests
 ```
 
 ## Requirements Coverage
@@ -20,9 +20,9 @@ bash scripts/run-fork-surfpool.sh  # mainnet fork: 119 tests
 | Requirement | Where It Lives | Verify |
 |-------------|---------------|--------|
 | **Core Dispatcher** | `programs/yield-dispatcher/src/lib.rs` — `deposit`, `withdraw`, `current_value` | `cargo test --package yield-dispatcher` |
-| **5 Reference Adapters** | `programs/adapter-{kamino,marginfi,jupiter,maple,drift}/src/lib.rs` | `MAINNET_FORK=1 anchor test` — 119/119 passing |
+| **5 Reference Adapters** | `programs/adapter-{kamino,marginfi,jupiter,maple,drift}/src/lib.rs` | `MAINNET_FORK=1 anchor test` — 112/112 passing |
 | **On-Chain Registry** | `programs/adapter-registry/src/lib.rs` — propose → approve → revoke | Deployed at `3DQGCPAjHcoT7uf9MJDM5ZTL7GEvTKU3MXFzzrHvqSWt` |
-| **Mainnet-Fork Tests** | `tests/adapters/{kamino,marginfi,jupiter,maple,drift}.test.ts` + `dispatcher.test.ts` + `registry.test.ts` | `tests/fork/RESULTS.md` — 119/119 passing |
+| **Mainnet-Fork Tests** | `tests/adapters/{kamino,marginfi,jupiter,maple,drift}.test.ts` + `dispatcher.test.ts` + `registry.test.ts` | `tests/fork/RESULTS.md` — 112/112 passing |
 | **Adapter Standard Spec** | `docs/ADAPTER_STANDARD.md` (261 lines) | Render and review |
 | **Build Your Own Adapter Guide** | `docs/BUILD_YOUR_OWN_ADAPTER.md` (316 lines) | Follow steps; template adapter at `programs/adapter-template/` |
 | **TypeScript SDK** | `packages/sdk/` — `AdapterClient`, `RegistryClient`, `DispatcherClient` | `cd packages/sdk && npm run build` |
@@ -32,7 +32,7 @@ bash scripts/run-fork-surfpool.sh  # mainnet fork: 119 tests
 
 | Criterion (Weight) | Evidence |
 |--------------------|----------|
-| **Correctness — 40%** | All 5 adapters pass fork CPI verification. Drift 6/12 tests skip gracefully (upstream program disabled — see `Docs/troubleshooting/drift-fork-issues.md`). 119/119 total passing. |
+| **Correctness — 40%** | All 5 adapters pass fork CPI verification. Drift 6/12 tests skip gracefully (upstream program disabled — see `Docs/troubleshooting/drift-fork-issues.md`). 112/112 total passing. |
 | **Interface Design — 25%** | 3-instruction standard (`deposit`/`withdraw`/`current_value`), vault status enum, share-price math, conditional CPI pattern. Full spec at `docs/ADAPTER_STANDARD.md`. |
 | **Developer Guide — 20%** | Step-by-step guide with code templates, checklist, and common pitfalls at `docs/BUILD_YOUR_OWN_ADAPTER.md`. Template adapter scaffold at `programs/adapter-template/`. |
 | **Code Quality — 15%** | Zero clippy warnings, JSDoc on all SDK exports, TypeScript strict mode, CI pipeline (`cargo fmt` + `clippy` + `tsc --noEmit` + build). |
@@ -63,7 +63,7 @@ Four of five adapters perform real `invoke_signed` CPI into cloned mainnet progr
 |-------|-------|--------|
 | Unit (`cargo test`) | 28 | ✅ All pass |
 | Localnet (`anchor test`) | 32 | ✅ 26 pass, 6 slippage-only |
-| Mainnet fork (Surfpool) | **119** | ✅ **119/119 passing** |
+| Mainnet fork (Surfpool) | **112** | ✅ **112/112 passing** |
 
 See `tests/fork/RESULTS.md` for per-adapter breakdown.
 

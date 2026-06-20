@@ -8,9 +8,9 @@ Get all integration tests passing on Surfpool mainnet fork. Fix persistent-state
 |---|---|---|
 | `cargo test` (unit) | 28 | ✅ All pass |
 | `anchor test` (localnet) | 32 | ✅ 26 pass, 6 slippage-only on localnet |
-| `MAINNET_FORK=1 anchor test` (Surfpool) | **131 registered, 12 skipped → 119 executable** | ✅ **119/119 passing** |
+| `MAINNET_FORK=1 anchor test` (Surfpool) | **124 registered, 12 skipped → 112 executable** | ✅ **112/112 passing** |
 
-> **Why 131 registered ≠ 96 static `it()` declarations:** Each adapter dynamically registers shared tests (`runConformance`, `addSlippageTests`) at runtime. The runtime total is 131. 12 are skipped on fork (Drift CPI and Maple vault-lifecycle). The **119 executable all pass**.
+> **Why 124 registered ≠ 96 static `it()` declarations:** Each adapter dynamically registers shared tests (`runConformance`, `addSlippageTests`) at runtime. The runtime total is 124. 12 are skipped on fork (Drift CPI and Maple vault-lifecycle). The **112 executable all pass**.
 
 ### Fork breakdown
 
@@ -24,7 +24,7 @@ Get all integration tests passing on Surfpool mainnet fork. Fix persistent-state
 | Drift | 18 | 11 | 7 ✅ |
 | Dispatcher | 11 | 0 | 11 ✅ |
 | Registry | 13 | 0 | 13 ✅ |
-| **Total** | **131** | **12** | **119 ✅** |
+| **Total** | **124** | **12** | **112 ✅** |
 
 Drift's 11 skips: 5 `it.skip` (CPI instructions disabled — see `Docs/troubleshooting/drift-fork-issues.md`) + 6 `this.skip` in shared conformance tests (safe to bypass when protocol CPI is non-functional). The 12th skip is Maple's vault-lifecycle conformance check (skipped because Maple uses a custom non-standard status model).
 

@@ -11,7 +11,7 @@
 
 [![ci](https://github.com/btcthirst/Solana-Yield-Adapter-Standard/actions/workflows/ci.yml/badge.svg)](https://github.com/btcthirst/Solana-Yield-Adapter-Standard/actions/workflows/ci.yml)
 [![typecheck](https://github.com/btcthirst/Solana-Yield-Adapter-Standard/actions/workflows/ci.yml/badge.svg?job=typecheck)](https://github.com/btcthirst/Solana-Yield-Adapter-Standard/actions/workflows/ci.yml)
-[![mainnet-fork](https://img.shields.io/badge/mainnet--fork-119%2F119%20passing-brightgreen)](tests/fork/RESULTS.md)
+[![mainnet-fork](https://img.shields.io/badge/mainnet--fork-112%2F112%20passing-brightgreen)](tests/fork/RESULTS.md)
 [![license: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![crates.io](https://img.shields.io/crates/v/yield-adapter-trait)](https://crates.io/crates/yield-adapter-trait)
 
@@ -202,7 +202,7 @@ solana-yield-adapter-standard/
 |-------|---------|-------|
 | Unit | `cargo test` | 28 |
 | Localnet integration | `anchor test` | 32 (26 passing, 6 pre-existing slippage failures on localnet-only) |
-| Mainnet-fork integration (Surfpool) | `bash scripts/run-fork-surfpool.sh` | **119** — adapters (95) + dispatcher (11) + registry (13) |
+| Mainnet-fork integration (Surfpool) | `bash scripts/run-fork-surfpool.sh` | **112** — adapters (88) + dispatcher (11) + registry (13) |
 
 Tests cover:
 - **Registry**: Initialize → Propose → Approve → Revoke → Set guardian → Transfer governance
@@ -228,9 +228,9 @@ The script builds programs, starts a Surfpool validator (auto-fetches mainnet ac
 MAINNET_FORK=1 anchor test --skip-local-validator --skip-build
 ```
 
-Runs all **119 integration tests** (6 adapters × ~18 tests each = 107 registered, 12 Drift CPI skips = 95 executable) including real CPI round-trips against all five protocols (Kamino, MarginFi, Jupiter, Drift, Maple) via `invoke_signed`, plus dispatcher routing, registry governance (with `force_transfer_governance` admin escape hatch for Surfpool persistence), and adapter template tests. All 119 pass on fork (the 6 slippage-test failures are localnet-only — on fork the JIT-fetched USDC ATAs resolve the mint mismatch).
+Runs all **112 integration tests** (6 adapters × ~18 tests each = 107 registered, 12 Drift CPI skips = 95 executable) including real CPI round-trips against all five protocols (Kamino, MarginFi, Jupiter, Drift, Maple) via `invoke_signed`, plus dispatcher routing, registry governance (with `force_transfer_governance` admin escape hatch for Surfpool persistence), and adapter template tests. All 112 pass on fork (the 6 slippage-test failures are localnet-only — on fork the JIT-fetched USDC ATAs resolve the mint mismatch).
 
-> **Why 131 registered but 119 executable:** Each adapter dynamically registers shared tests (`runConformance`, `addSlippageTests`) at runtime — the static `it()` count is 96, but helpers push the runtime total to 131. Of those, 12 are skipped on fork (11 Drift CPI-related — Drift v2 program has all instructions disabled upstream — plus 1 Maple vault lifecycle check that's skipped for its custom status model).
+> **Why 124 registered but 112 executable:** Each adapter dynamically registers shared tests (`runConformance`, `addSlippageTests`) at runtime — the static `it()` count is 96, but helpers push the runtime total to 124. Of those, 12 are skipped on fork (11 Drift CPI-related — Drift v2 program has all instructions disabled upstream — plus 1 Maple vault lifecycle check that's skipped for its custom status model).
 
 ---
 

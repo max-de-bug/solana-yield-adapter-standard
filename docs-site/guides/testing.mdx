@@ -10,9 +10,9 @@ The test suite validates registry governance, dispatcher routing, and all six ad
 | Command | Tests | Environment | Duration |
 |---|---|---|---|---|
 | `npm test` | 32 (26 passing, 6 pre-existing slippage failures on localnet) | Local validator | ~2 min |
-| `bash scripts/run-fork-surfpool.sh` | 119 executable (131 registered, 12 skipped¹) | Surfpool (JIT account fetching) | ~5–15 min |
+| `bash scripts/run-fork-surfpool.sh` | 112 executable (124 registered, 12 skipped¹) | Surfpool (JIT account fetching) | ~5–15 min |
 
-¹ 96 static `it()` declarations; shared helpers (`runConformance`, `addSlippageTests`) dynamically register more at runtime, bringing the fork total to 131. 11 Drift CPI tests and 1 Maple vault-lifecycle check are skipped — see [test count breakdown](#test-count-breakdown) below.
+¹ 96 static `it()` declarations; shared helpers (`runConformance`, `addSlippageTests`) dynamically register more at runtime, bringing the fork total to 124. 11 Drift CPI tests and 1 Maple vault-lifecycle check are skipped — see [test count breakdown](#test-count-breakdown) below.
 
 <Tip>
 `npm test` uses `anchor test --validator legacy --skip-build`. Run `npm run build` first if programs changed.
@@ -65,11 +65,11 @@ The script (`scripts/run-fork-surfpool.sh`):
 3. Deploys all programs to the fork
 4. Runs `MAINNET_FORK=1 anchor test --skip-local-validator --skip-build`
 
-All **119 tests pass** on fork (the 6 slippage failures seen on localnet are resolved on fork because JIT-fetched USDC ATAs provide the correct underlying mint). The full suite covers all adapters (Kamino, MarginFi, Jupiter, Maple, Drift, template), dispatcher routing with CPI-based `current_value`, complete registry lifecycle (including re-approval from `Revoked`), and Drift two-phase withdrawal with stale-ticket cleanup.
+All **112 tests pass** on fork (the 6 slippage failures seen on localnet are resolved on fork because JIT-fetched USDC ATAs provide the correct underlying mint). The full suite covers all adapters (Kamino, MarginFi, Jupiter, Maple, Drift, template), dispatcher routing with CPI-based `current_value`, complete registry lifecycle (including re-approval from `Revoked`), and Drift two-phase withdrawal with stale-ticket cleanup.
 
 ### Test count breakdown
 
-The static `it()` count across all test files is **96**, but shared helpers register additional tests per adapter at runtime, bringing the fork total to **131 registered**. Of those, **12 are skipped** on fork:
+The static `it()` count across all test files is **96**, but shared helpers register additional tests per adapter at runtime, bringing the fork total to **124 registered**. Of those, **12 are skipped** on fork:
 
 | Component | Registered | Skipped | Executable |
 |---|---|---|---|
@@ -81,7 +81,7 @@ The static `it()` count across all test files is **96**, but shared helpers regi
 | Drift adapter | 18 | 11 | 7 ✅ |
 | Dispatcher | 11 | 0 | 11 ✅ |
 | Registry | 13 | 0 | 13 ✅ |
-| **Total** | **131** | **12** | **119 ✅** |
+| **Total** | **124** | **12** | **112 ✅** |
 
 - **Drift (11 skips):** 5 `it.skip` (CPI instructions disabled upstream — Drift v2 program has all instruction handlers commented out) + 6 `this.skip` in shared conformance tests (safe to bypass when protocol CPI is non-functional). See `Docs/troubleshooting/drift-fork-issues.md`.
 - **Maple (1 skip):** Vault-lifecycle conformance check uses a non-standard status model.
