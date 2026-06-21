@@ -221,7 +221,7 @@ protocol state, not an adapter bug; full evidence in
 
 | Suite | Result |
 |-------|--------|
-| Kamino, MarginFi, Jupiter, Maple — deposit → current_value → withdraw | ✅ N passing |
+| Kamino, MarginFi, Jupiter, Maple — deposit → current_value → withdraw | ✅ 70 passing (18/18/18/16) |
 | Drift — program-load + non-CPI validation only | ✅ 7 passing |
 | Drift — CPI round-trip (deposit/withdraw/value/multi-user/lifecycle) | ⏭️ 5 skipped, see above |
 | Dispatcher routing & pause | ✅ 11 passing |
