@@ -59,32 +59,41 @@ The Yield Adapter Standard solves this by providing a **single interface** that 
 
 ## Architecture
 
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    Solana Yield Adapter Standard                        │
-│                                                                         │
-│  ┌─────────────────────────────────────────────────────────────────────┐│
-│  │                     Core Dispatcher Program                          ││
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────────┐                      ││
-│  │  │ deposit() │  │withdraw()│  │current_value()│                      ││
-│  │  └─────┬─────┘  └─────┬────┘  └──────┬───────┘                      ││
-│  │        └──────────────┴───────────────┘                              ││
-│  │                    │  Validates & Routes                              ││
-│  └────────────────────┼────────────────────────────────────────────────┘│
-│                       │                                                  │
-│  ┌────────────────────▼────────────────────────────────────────────────┐│
-│  │                    Adapter Registry (Governance-Gated)               ││
-│  │  propose_adapter() → approve_adapter() → revoke_adapter()           ││
-│  └─────────────────────────────────────────────────────────────────────┘│
-│                       │                                                  │
-│  ┌────────────────────▼────────────────────────────────────────────────┐│
-│  │                     Reference Adapters                               ││
- │  │  ┌─────────┐ ┌──────────┐ ┌──────────┐ ┌───────┐ ┌──────────────┐ ┌──────────┐ ││
- │  │  │ Kamino  │ │ MarginFi │ │ Jupiter  │ │ Maple │ │    Drift     │ │Template │ ││
- │  │  │  USDC   │ │   USDC   │ │   LP     │ │ Syrup │ │ Insurance    │ │Scaffold │ ││
- │  │  └─────────┘ └──────────┘ └──────────┘ └───────┘ └──────────────┘ └──────────┘ ││
-│  └─────────────────────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph SYAS["Solana Yield Adapter Standard"]
+        direction TB
+
+        subgraph Dispatcher["Core Dispatcher Program"]
+            direction LR
+            D1["deposit()"]
+            D2["withdraw()"]
+            D3["current_value()"]
+        end
+
+        Dispatcher -->|validates & routes| Registry
+
+        Registry["Adapter Registry (Governance-Gated)
+        propose → approve → revoke"]
+
+        Registry --> Adapters
+
+        subgraph Adapters["Reference Adapters"]
+            direction LR
+            A1["Kamino
+            USDC"]
+            A2["MarginFi
+            USDC"]
+            A3["Jupiter
+            LP"]
+            A4["Maple
+            Syrup"]
+            A5["Drift
+            Insurance"]
+            A6["Template
+            Scaffold"]
+        end
+    end
 ```
 
 ### Components
