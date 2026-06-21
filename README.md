@@ -146,16 +146,18 @@ bash scripts/run-fork-surfpool.sh
 ## Reference Adapters
 
 | Adapter | Protocol | Underlying | Model | CPI Round-trip | Status |
-|---|---|---|---|---|---|---|
+|---|---|---|---|---|---|
 | **Kamino USDC** | [Kamino Finance](https://kamino.finance) | USDC | Share-based lending vault | ✅ Real CPI | 🔶 Reference |
 | **MarginFi USDC** | [MarginFi](https://marginfi.com) | USDC | Share-based lending vault | ✅ Real CPI | 🔶 Reference |
 | **Jupiter LP** | [Jupiter](https://jup.ag) | USDC | Share-based LP vault | ✅ Real CPI | 🔶 Reference |
 | **Maple Syrup** | [Maple Finance](https://maple.finance) | syrupUSDC | Swap-and-hold via Orca Whirlpool + Chainlink | ✅ Real Orca CPI | 🔶 Reference |
 | **Drift Insurance** | [Drift Protocol](https://drift.trade) | USDC | Two-phase spot market deposit (IF staking blocked upstream) | ✅ Real Drift CPI | 🔶 Reference |
 
-> **Maple**: Uses Orca Whirlpool to swap USDC ↔ syrupUSDC at deposit/withdraw time, and Chainlink oracle for `current_value`. This is a genuine mainnet-fork CPI round-trip — syrupUSDC has no native Solana program, so the adapter acquires it via a DEX swap.
->
-> **Drift**: Performs a real CPI round-trip into Drift's spot market (deposit/withdraw). The ideal yield source (Insurance Fund staking) is blocked upstream — those instructions are commented out of Drift's deployed `#[program]`. We document this transparently and provide a probe script at `scripts/probe-drift-if.sh`. The two-phase (cooldown) withdrawal lifecycle is fully tested.
+### Notable Adapters
+
+**Maple Syrup** — Uses Orca Whirlpool to swap USDC ↔ syrupUSDC at deposit/withdraw time, and Chainlink oracle for `current_value`. This is a genuine mainnet-fork CPI round-trip — syrupUSDC has no native Solana program, so the adapter acquires it via a DEX swap.
+
+**Drift Insurance** — Performs a real CPI round-trip into Drift's spot market (deposit/withdraw). The ideal yield source (Insurance Fund staking) is blocked upstream — those instructions are commented out of Drift's deployed `#[program]`. We document this transparently and provide a probe script at `scripts/probe-drift-if.sh`. The two-phase (cooldown) withdrawal lifecycle is fully tested.
 
 ---
 
