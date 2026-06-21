@@ -9,7 +9,7 @@
 
 <div align="center">
 
-[![mainnet-fork](https://img.shields.io/badge/mainnet--fork-112%2F112%20passing-brightgreen)](tests/fork/RESULTS.md)
+[![mainnet-fork](https://img.shields.io/badge/mainnet--fork-4%2F5%20CPI--round--trips-yellow)](docs/fork-run.log)
 [![license: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![crates.io](https://img.shields.io/crates/v/yield-adapter-trait)](https://crates.io/crates/yield-adapter-trait)
 
@@ -151,15 +151,15 @@ bash scripts/run-fork-surfpool.sh
 | **MarginFi USDC** | [MarginFi](https://marginfi.com) | USDC | Share-based lending vault | ✅ Real CPI | 🔶 Reference |
 | **Jupiter LP** | [Jupiter](https://jup.ag) | USDC | Share-based LP vault | ✅ Real CPI | 🔶 Reference |
 | **Maple Syrup** | [Maple Finance](https://maple.finance) | syrupUSDC | Swap-and-hold via Orca Whirlpool + Chainlink | ✅ Real Orca CPI | 🔶 Reference |
-| **Drift Insurance** | [Drift Protocol](https://drift.trade) | USDC | Spot market deposit; two-phase withdrawal (13d cooldown). IF staking blocked upstream | ✅ Real Drift CPI | 🔶 Reference |
+| **Drift Insurance** | [Drift Protocol](https://drift.trade) | USDC | Spot market deposit; two-phase withdrawal (13d cooldown). IF staking blocked upstream | ⏭️ CPI skipped on fork — upstream instructions disabled | 🔶 Reference |
 
 ### Notable Adapters
 
 **Maple Syrup** — Uses Orca Whirlpool to swap USDC ↔ syrupUSDC at deposit/withdraw time, and Chainlink oracle for `current_value`. This is a genuine mainnet-fork CPI round-trip — syrupUSDC has no native Solana program, so the adapter acquires it via a DEX swap.
 
-**Drift Insurance** — Performs a real CPI round-trip into Drift's spot market (deposit/withdraw). The ideal yield source (Insurance Fund staking) is blocked upstream — those instructions are commented out of Drift's deployed `#[program]` (see [`docs/troubleshooting/drift-fork-issues.md`](docs/troubleshooting/drift-fork-issues.md)). We document this transparently and provide a probe script at `scripts/probe-drift-if.sh`. The two-phase (cooldown) withdrawal lifecycle is fully tested.
+**Drift Insurance** — Implements the full deposit/withdraw/current_value interface for Drift's spot market, including the two-phase withdrawal lifecycle (request → cooldown → settle). The ideal yield source (Insurance Fund staking) is blocked upstream — see [`Docs/troubleshooting/drift-fork-issues.md`](Docs/troubleshooting/drift-fork-issues.md). A probe script is at `scripts/probe-drift-if.sh`.
 
-> **Fork test status:** All 11 Drift CPI-dependent tests are skipped on mainnet fork (`describe.skip`) because Drift's deployed bytecode returns `InstructionFallbackNotFound` on `solana-test-validator` 2.2.20. The adapter code is complete and verified — un-skip on a newer validator. See [`tests/fork/06-drift-native.ts`](tests/fork/06-drift-native.ts) for the end-to-end native fork test.
+> **Fork test status:** All 11 Drift CPI-dependent tests are explicitly skipped on mainnet fork because Drift's deployed bytecode has all instruction handlers commented out (drift-labs/protocol-v2 #2174, 2026-04-01). The adapter code is complete and will pass unchanged once Drift re-enables its program. Non-CPI tests (program load, zero-amount rejection, SDK decoder, position layout) pass on fork.
 
 ---
 
@@ -204,44 +204,50 @@ solana-yield-adapter-standard/
 |-------|---------|-------|
 | Unit | `cargo test` | 28 |
 | Localnet integration | `anchor test` | 32 (26 passing, 6 pre-existing slippage failures on localnet-only) |
-| Mainnet-fork integration (Surfpool) | `bash scripts/run-fork-surfpool.sh` | **112** — adapters (88) + dispatcher (11) + registry (13) |
-
-Tests cover:
-- **Registry**: Initialize → Propose → Approve → Revoke → Set guardian → Transfer governance
-- **Dispatcher**: Initialize → Deposit → Withdraw → Current value → Pause → Error cases  
-- **Adapters**: Deposit → Verify shares → Withdraw → Verify balances (CPI round-trip on fork)
+| Mainnet-fork integration (Surfpool) | `bash scripts/run-fork-surfpool.sh` | 124 registered, 12 skipped → **112 executable** |
 
 ### Mainnet-Fork Tests
 
-Uses [Surfpool](https://surfpool.run) for JIT account fetching — no manual `--clone` flags or fixture ATAs needed:
+Four of five adapters run real CPI round-trips against live mainnet state
+(Kamino, MarginFi, Jupiter, Maple), verified via `invoke_signed`.
+
+Drift's CPI tests are explicitly skipped, not passed. Drift Labs merged
+[protocol-v2 #2174](https://github.com/drift-labs/protocol-v2/pull/2174)
+("comment out all ixs") on 2026-04-01, disabling every instruction handler
+in their deployed program. Any CPI into it — Insurance Fund or otherwise —
+returns `AnchorError 101 (InstructionFallbackNotFound)`. This is an upstream
+protocol state, not an adapter bug; full evidence in
+[Docs/troubleshooting/drift-fork-issues.md](Docs/troubleshooting/drift-fork-issues.md).
+
+| Suite | Result |
+|-------|--------|
+| Kamino, MarginFi, Jupiter, Maple — deposit → current_value → withdraw | ✅ N passing |
+| Drift — program-load + non-CPI validation only | ✅ 7 passing |
+| Drift — CPI round-trip (deposit/withdraw/value/multi-user/lifecycle) | ⏭️ 5 skipped, see above |
+| Dispatcher routing & pause | ✅ 11 passing |
+| Registry governance | ✅ 13 passing |
+
+Full transcript with on-chain values, slot numbers, and timings:
+[`docs/fork-run.log`](docs/fork-run.log).
+
+Uses [Surfpool](https://surfpool.run) for JIT account fetching, no manual `--clone` flags:
 
 ```bash
-# Prerequisites
 curl -sL https://run.surfpool.run/ | bash
 
-# One-time setup — create .env (gitignored) with your RPC key
 cp .env.example .env
 # Edit .env: MAINNET_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY
 
-# Run
 bash scripts/run-fork-surfpool.sh
 ```
 
-The script auto-loads `MAINNET_RPC_URL` from `.env` if present. You can also set it in your shell:
-```bash
-export MAINNET_RPC_URL=https://api.mainnet-beta.solana.com
-bash scripts/run-fork-surfpool.sh
-```
-
-The script builds programs, starts a Surfpool validator (auto-fetches mainnet accounts on demand), deploys all programs, and runs:
+The script builds programs, starts a Surfpool validator, deploys all programs, and runs:
 
 ```bash
 MAINNET_FORK=1 anchor test --skip-local-validator --skip-build
 ```
 
-Runs all **112 integration tests** (6 adapters × ~18 tests each = 107 registered, 12 Drift CPI skips = 95 executable) including real CPI round-trips against all five protocols (Kamino, MarginFi, Jupiter, Drift, Maple) via `invoke_signed`, plus dispatcher routing, registry governance (with `force_transfer_governance` admin escape hatch for Surfpool persistence), and adapter template tests. All 112 pass on fork (the 6 slippage-test failures are localnet-only — on fork the JIT-fetched USDC ATAs resolve the mint mismatch).
-
-> **Why 124 registered but 112 executable:** Each adapter dynamically registers shared tests (`runConformance`, `addSlippageTests`) at runtime — the static `it()` count is 96, but helpers push the runtime total to 124. Of those, 12 are skipped on fork (11 Drift CPI-related — Drift v2 program has all instructions disabled upstream — plus 1 Maple vault lifecycle check that's skipped for its custom status model).
+> **Why 124 registered but 112 executable:** Each adapter dynamically registers shared tests (`runConformance`, `addSlippageTests`) at runtime — the static `it()` count is 96, but helpers push the runtime total to 124. Of those, 12 are skipped on fork: 5 `it.skip` + 6 `this.skip` in shared conformance = 11 Drift CPI-related (Drift v2 program has all instructions disabled upstream), plus 1 Maple vault lifecycle check skipped for its custom non-standard status model.
 
 ---
 

@@ -15,6 +15,7 @@ import {
   runAdapterMultipleUsers,
   runAdapterEmptyStateTests,
   runAdapterVaultStatusLifecycle,
+  skipIfNoUsdcOnFork,
 } from "../helpers/adapter";
 import { isMainnetFork, MAINNET_USDC_MINT, ADAPTER_VAULT_SEEDS, ADAPTER_VAULT_AUTHORITY_SEEDS } from "../helpers/constants";
 import { findPda, createTestMint } from "../helpers";
@@ -60,7 +61,8 @@ describe("adapter-template", () => {
       );
     });
 
-    it("protocol CPI executed on deposit", async () => {
+    it("protocol CPI executed on deposit", async function () {
+      await skipIfNoUsdcOnFork(provider, this);
       await runAdapterProtocolCpiVerification(provider, authority, payer, {
         program,
         vaultStateSeed,
@@ -69,7 +71,8 @@ describe("adapter-template", () => {
       });
     });
 
-    it("current_value matches deposit amount (protocol-exact share math)", async () => {
+    it("current_value matches deposit amount (internal share math)", async function () {
+      await skipIfNoUsdcOnFork(provider, this);
       await runAdapterCurrentValueAccuracy(provider, authority, payer, {
         program,
         vaultStateSeed,
@@ -78,7 +81,8 @@ describe("adapter-template", () => {
       });
     });
 
-    it("multiple users maintain independent positions", async () => {
+    it("multiple users maintain independent positions", async function () {
+      await skipIfNoUsdcOnFork(provider, this);
       await runAdapterMultipleUsers(provider, authority, payer, {
         program,
         vaultStateSeed,
@@ -87,7 +91,8 @@ describe("adapter-template", () => {
       });
     });
 
-    it("empty state: current_value no-op, withdraw from empty rejected, reuse after full withdraw", async () => {
+    it("empty state: current_value no-op, withdraw from empty rejected, reuse after full withdraw", async function () {
+      await skipIfNoUsdcOnFork(provider, this);
       await runAdapterEmptyStateTests(provider, authority, payer, {
         program,
         vaultStateSeed,
@@ -96,7 +101,8 @@ describe("adapter-template", () => {
       });
     });
 
-    it("vault status lifecycle: toggle DepositsPaused → Paused → Active", async () => {
+    it("vault status lifecycle: toggle DepositsPaused → Paused → Active", async function () {
+      await skipIfNoUsdcOnFork(provider, this);
       await runAdapterVaultStatusLifecycle(provider, authority, payer, {
         program,
         vaultStateSeed,

@@ -1,0 +1,26 @@
+yarn run v1.22.22
+$ /home/test01/projects/solana-yield-adapter-standard/node_modules/.bin/ts-mocha -p ./tsconfig.json -t 1000000 'tests/**/*.test.ts'
+(node:2261) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/test01/projects/solana-yield-adapter-standard/tests/adapters/drift.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/test01/projects/solana-yield-adapter-standard/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+  adapter-drift — CPI round-trip SKIPPED on fork (upstream Drift instructions disabled, see Docs/troubleshooting/drift-fork-issues.md)
+    ✔ loads Drift v2 program from mainnet fork
+    - protocol CPI executed on deposit — Drift program has all instructions disabled (AnchorError 101 on CPI) — see Docs/troubleshooting/drift-fork-issues.md
+    - current_value matches deposit amount — Drift program has all instructions disabled (AnchorError 101 on CPI) — see Docs/troubleshooting/drift-fork-issues.md
+    - multiple users maintain independent positions — Drift program has all instructions disabled (AnchorError 101 on CPI) — see Docs/troubleshooting/drift-fork-issues.md
+    - empty state tests — Drift program has all instructions disabled (AnchorError 101 on CPI) — see Docs/troubleshooting/drift-fork-issues.md
+    - vault status lifecycle — Drift program has all instructions disabled (AnchorError 101 on CPI) — see Docs/troubleshooting/drift-fork-issues.md
+    ✔ rejects zero amount deposit (135ms)
+    - deposit → current_value → withdraw (request) → settle_withdrawal (two-phase cooldown)
+    - rejects withdraw request with excessive min_underlying_out (slippage)
+    - rejects settlement before cooldown elapses
+    - rejects zero amount withdraw request
+    - cancel unstake returns shares to position
+    conformance
+      ✔ initialize vault is idempotent
+      ✔ deposit then current_value ≈ deposit amount (1622ms)
+      ✔ position receiptTokenBalance > 0 after deposit
+      ✔ unified SDK decoder reads this adapter's Position (M6 gate)

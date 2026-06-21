@@ -101,11 +101,40 @@ if ! solana cluster-version -u "$VALIDATOR_URL" &>/dev/null; then
   exit 1
 fi
 
-# ── Step 4: Pre-warm JIT cache ──
+# ── Step 4.5: Inject fork fixture ATA accounts into Surfpool ──
+# The fixture JSON files are generated in step 1 but Surfpool doesn't
+# auto-create them. We inject them via surfnet_setAccount so tests that
+# require real USDC (protocol CPI verification, current_value accuracy,
+# multi-user, vault lifecycle) can find the fixture ATA.
+echo ""
+echo "[4.5] Injecting fork fixture ATA accounts..."
+for fixture in "$FIXTURE_DIR"/fork-*-ata.json; do
+  [ -f "$fixture" ] || continue
+  fname=$(basename "$fixture")
+  echo "  Injecting $fname..."
+  node -e "
+    const fs = require('fs');
+    const f = JSON.parse(fs.readFileSync('${fixture}', 'utf8'));
+    const hex = Buffer.from(f.account.data[0], 'base64').toString('hex');
+    const http = require('http');
+    const body = JSON.stringify({
+      jsonrpc: '2.0', id: 1, method: 'surfnet_setAccount',
+      params: [f.pubkey, { lamports: f.account.lamports, owner: f.account.owner, executable: false, rentEpoch: 1844674407370955300, data: hex }]
+    });
+    const req = http.request({ hostname: '127.0.0.1', port: 8899, method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } }, (res) => {
+      let d = ''; res.on('data', (c) => d += c); res.on('end', () => { const j = JSON.parse(d); if (j.error) { console.error('  ERROR:', j.error); process.exit(1); } });
+    });
+    req.on('error', (e) => { console.error('  ERROR:', e.message); process.exit(1); });
+    req.write(body); req.end();
+  " || exit 1
+done
+echo "  Fixture injection complete."
+
+# ── Step 5: Pre-warm JIT cache ──
 # Force fetch critical protocol programs/accounts so tests don't time out
 # waiting for Surfpool's first-touch JIT fetching.
 echo ""
-echo "[4/6] Pre-warming JIT cache..."
+echo "[5/7] Pre-warming JIT cache..."
 PROTOCOL_ACCOUNTS=(
   "KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD"   # Kamino K-Lend
   "MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA"    # MarginFi v2
@@ -136,9 +165,9 @@ done
 wait
 echo "    Pre-warm complete."
 
-# ── Step 5: Deploy programs ──
+# ── Step 6: Deploy programs ──
 echo ""
-echo "[5/6] Deploying programs..."
+echo "[6/7] Deploying programs..."
 for so in "$PROJECT_DIR/target/deploy"/*.so; do
   base=$(basename "$so" .so)
   keypair="$PROJECT_DIR/target/deploy/${base}-keypair.json"
@@ -153,9 +182,9 @@ for so in "$PROJECT_DIR/target/deploy"/*.so; do
   fi
 done
 
-# ── Step 6: Run fork tests ──
+# ── Step 7: Run fork tests ──
 echo ""
-echo "[6/6] Running fork tests..."
+echo "[7/7] Running fork tests..."
 export MAINNET_FORK=1
 export ANCHOR_PROVIDER_URL="$VALIDATOR_URL"
 export ANCHOR_WALLET="$HOME/.config/solana/id.json"

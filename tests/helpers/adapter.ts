@@ -1080,6 +1080,21 @@ export async function runAdapterFullWithdrawFlow(
 }
 
 /**
+ * Skip the current test when running on mainnet fork without a funded USDC fixture.
+ * Must be called from an `it()` block that uses `function()` (not arrow) to access `this`.
+ * Callers look like: `it("name", async function () { await skipIfNoUsdcOnFork(provider, this); ... })`
+ */
+export async function skipIfNoUsdcOnFork(
+  provider: anchor.AnchorProvider,
+  context: any
+): Promise<void> {
+  if (isMainnetFork() && !(await hasUsdcFixture(provider))) {
+    console.log("⏭️  SKIP: No USDC fixture available on mainnet fork");
+    context.skip();
+  }
+}
+
+/**
  * Fork-only verification that protocol CPI was actually executed on deposit.
  * Checks that `protocol_routed_underlying` is > 0 after a deposit when
  * remaining accounts (the protocol program) are provided.
@@ -1093,8 +1108,6 @@ export async function runAdapterProtocolCpiVerification(
   payer: Keypair,
   opts: AdapterFlowOptions & { vaultStateAccountName: string }
 ): Promise<void> {
-  // Requires real USDC from the fork fixture
-  if (isMainnetFork() && !(await hasUsdcFixture(provider))) return;
 
   const { program, vaultStateSeed, vaultAuthoritySeed, vaultStateAccountName, depositAmount = 1_000_000 } = opts;
   const [vaultStatePda] = findPda([Buffer.from(vaultStateSeed)], program.programId);
@@ -1173,8 +1186,6 @@ export async function runAdapterCurrentValueAccuracy(
   payer: Keypair,
   opts: AdapterFlowOptions & { vaultStateAccountName: string }
 ): Promise<void> {
-  // Requires real USDC from the fork fixture
-  if (isMainnetFork() && !(await hasUsdcFixture(provider))) return;
 
   const { program, vaultStateSeed, vaultAuthoritySeed, vaultStateAccountName, depositAmount = 1_000_000 } = opts;
   const [vaultStatePda] = findPda([Buffer.from(vaultStateSeed)], program.programId);
@@ -1267,8 +1278,6 @@ export async function runAdapterMultipleUsers(
   payer: Keypair,
   opts: AdapterFlowOptions & { vaultStateAccountName: string }
 ): Promise<void> {
-  // Requires real USDC from the fork fixture
-  if (isMainnetFork() && !(await hasUsdcFixture(provider))) return;
 
   const { program, vaultStateSeed, vaultAuthoritySeed, depositAmount = 1_000_000 } = opts;
   const [vaultStatePda] = findPda([Buffer.from(vaultStateSeed)], program.programId);
@@ -1483,8 +1492,6 @@ export async function runAdapterEmptyStateTests(
   payer: Keypair,
   opts: AdapterFlowOptions & { vaultStateAccountName: string }
 ): Promise<void> {
-  // Requires real USDC from the fork fixture
-  if (isMainnetFork() && !(await hasUsdcFixture(provider))) return;
 
   const { program, vaultStateSeed, vaultAuthoritySeed, depositAmount = 1_000_000 } = opts;
   const [vaultStatePda] = findPda([Buffer.from(vaultStateSeed)], program.programId);
@@ -1822,8 +1829,6 @@ export async function runAdapterVaultStatusLifecycle(
   payer: Keypair,
   opts: AdapterFlowOptions & { vaultStateAccountName: string }
 ): Promise<void> {
-  // Requires real USDC from the fork fixture
-  if (isMainnetFork() && !(await hasUsdcFixture(provider))) return;
 
   const { program, vaultStateSeed, vaultAuthoritySeed, depositAmount = 1_000_000 } = opts;
   const [vaultStatePda] = findPda([Buffer.from(vaultStateSeed)], program.programId);

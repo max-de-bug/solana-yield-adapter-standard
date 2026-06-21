@@ -42,7 +42,7 @@ import { getAssociatedTokenAddressSync, getOrCreateAssociatedTokenAccount } from
 import { runConformance } from "../helpers/conformance";
 import { expect } from "chai";
 
-describe("adapter-drift", () => {
+describe("adapter-drift — CPI round-trip SKIPPED on fork (upstream Drift instructions disabled, see Docs/troubleshooting/drift-fork-issues.md)", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
