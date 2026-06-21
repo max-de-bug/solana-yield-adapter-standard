@@ -72,9 +72,14 @@ npm run build
     - Dispatcher routing, pause, `current_value` CPI
     - Drift two-phase withdrawal + cooldown enforcement + stale ticket cleanup
 
-    <Warning>
-    Requires `MAINNET_RPC_URL` for JIT fetching. See `scripts/run-fork-surfpool.sh`.
-    </Warning>
+    <Tip>
+    Create a `.env` file (gitignored) with your RPC key — the script auto-loads it:
+    ```bash
+    cp .env.example .env
+    # Edit .env: MAINNET_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY
+    bash scripts/run-fork-surfpool.sh
+    ```
+    </Tip>
 
     <Note>
     ¹ 96 static `it()` declarations; shared helpers (`runConformance`, `addSlippageTests`) dynamically register more at runtime. 11 Drift CPI and 1 Maple vault-lifecycle tests are skipped. See the [Testing guide](/guides/testing#test-count-breakdown) for the full breakdown.

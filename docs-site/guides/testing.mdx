@@ -52,9 +52,12 @@ Uses [Surfpool](https://surfpool.run) for JIT account fetching — no manual `--
 ```bash
 # Prerequisites
 curl -sL https://run.surfpool.run/ | bash
-export MAINNET_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY
 
-# Run
+# One-time setup — create .env (gitignored) with your RPC key
+cp .env.example .env
+# Edit .env: MAINNET_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY
+
+# Run (auto-loads MAINNET_RPC_URL from .env)
 bash scripts/run-fork-surfpool.sh
 ```
 

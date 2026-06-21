@@ -20,9 +20,23 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 FIXTURE_DIR="${PROJECT_DIR}/tests/fixtures"
 VALIDATOR_URL="http://127.0.0.1:8899"
 
+# Load MAINNET_RPC_URL from .env if not already set (CLI/env takes precedence)
+if [ -z "${MAINNET_RPC_URL:-}" ] && [ -f "${PROJECT_DIR}/.env" ]; then
+  set -a
+  source "${PROJECT_DIR}/.env"
+  set +a
+fi
+
 if [ -z "${MAINNET_RPC_URL:-}" ]; then
   echo "ERROR: MAINNET_RPC_URL is not set."
-  echo "Usage: MAINNET_RPC_URL=<url> $0"
+  echo ""
+  echo "  Set it in your shell:"
+  echo "    export MAINNET_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY"
+  echo ""
+  echo "  Or create a ${PROJECT_DIR}/.env file (gitignored):"
+  echo "    cp .env.example .env"
+  echo "    # then edit .env with your key"
+  echo ""
   exit 1
 fi
 

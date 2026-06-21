@@ -216,9 +216,18 @@ Uses [Surfpool](https://surfpool.run) for JIT account fetching — no manual `--
 ```bash
 # Prerequisites
 curl -sL https://run.surfpool.run/ | bash
-export MAINNET_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY
+
+# One-time setup — create .env (gitignored) with your RPC key
+cp .env.example .env
+# Edit .env: MAINNET_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY
 
 # Run
+bash scripts/run-fork-surfpool.sh
+```
+
+The script auto-loads `MAINNET_RPC_URL` from `.env` if present. You can also set it in your shell:
+```bash
+export MAINNET_RPC_URL=https://api.mainnet-beta.solana.com
 bash scripts/run-fork-surfpool.sh
 ```
 
