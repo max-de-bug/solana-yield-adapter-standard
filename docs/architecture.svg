@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 800" width="960" height="800">
+  <style>
+    text { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+    .title { font-size: 20px; font-weight: bold; fill: #e6edf3; }
+    .section-title { font-size: 14px; font-weight: bold; fill: #e6edf3; }
+    .label { font-size: 13px; fill: #c9d1d9; }
+    .sublabel { font-size: 12px; fill: #8b949e; }
+    .card-title { font-size: 13px; font-weight: bold; fill: #e6edf3; }
+    .card-sub { font-size: 11px; fill: #8b949e; }
+    .arrow-label { font-size: 11px; fill: #8b949e; font-style: italic; }
+    .proto-title { font-size: 12px; font-weight: bold; fill: #e6edf3; }
+    .proto-sub { font-size: 10px; fill: #8b949e; }
+  </style>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="960" height="800" fill="#0d1117" />
+
+  <!-- Outer container -->
+  <rect x="20" y="15" width="920" height="770" rx="8" ry="8" fill="#161b22" stroke="#30363d" stroke-width="1.5" />
+
+  <!-- Title -->
+  <text x="480" y="48" text-anchor="middle" class="title">Solana Yield Adapter Standard</text>
+
+  <!-- ===== Layer 1: Core Dispatcher Program ===== -->
+  <rect x="60" y="70" width="560" height="140" rx="6" ry="6" fill="#161b22" stroke="#30363d" stroke-width="1.5" />
+  <text x="340" y="94" text-anchor="middle" class="section-title">Core Dispatcher Program</text>
+
+  <rect x="90" y="116" width="130" height="42" rx="4" ry="4" fill="#0d1117" stroke="#21262d" stroke-width="1" />
+  <text x="155" y="142" text-anchor="middle" class="label">deposit()</text>
+
+  <rect x="260" y="116" width="150" height="42" rx="4" ry="4" fill="#0d1117" stroke="#21262d" stroke-width="1" />
+  <text x="335" y="142" text-anchor="middle" class="label">withdraw()</text>
+
+  <rect x="450" y="116" width="140" height="42" rx="4" ry="4" fill="#0d1117" stroke="#21262d" stroke-width="1" />
+  <text x="520" y="142" text-anchor="middle" class="label">current_value()</text>
+
+  <text x="340" y="196" text-anchor="middle" class="arrow-label">CPI routes to</text>
+  <line x1="340" y1="210" x2="340" y2="270" stroke="#484f58" stroke-width="1.5" marker-end="url(#arrow)" />
+
+  <!-- ===== Side panel: Adapter Registry ===== -->
+  <rect x="660" y="70" width="245" height="140" rx="6" ry="6" fill="#161b22" stroke="#30363d" stroke-width="1.5" stroke-dasharray="4" />
+  <text x="782" y="94" text-anchor="middle" class="section-title">Adapter Registry</text>
+  <text x="782" y="120" text-anchor="middle" class="sublabel" font-size="11px">propose_adapter()</text>
+  <text x="782" y="140" text-anchor="middle" class="sublabel" font-size="11px">approve_adapter()</text>
+  <text x="782" y="160" text-anchor="middle" class="sublabel" font-size="11px">revoke_adapter()</text>
+  <text x="782" y="190" text-anchor="middle" class="sublabel" font-size="10px" fill="#484f58">Governance-Gated</text>
+
+  <text x="640" y="130" text-anchor="middle" class="arrow-label" font-size="10px">validates</text>
+  <line x1="620" y1="128" x2="654" y2="128" stroke="#484f58" stroke-width="1.5" marker-end="url(#arrow)" />
+
+  <!-- ===== Reference Adapters ===== -->
+  <rect x="60" y="280" width="840" height="155" rx="6" ry="6" fill="#161b22" stroke="#30363d" stroke-width="1.5" />
+  <text x="480" y="305" text-anchor="middle" class="section-title">Reference Adapters</text>
+
+  <!--
+    6 adapter cards, each 115w x 56h, 20px gap.
+    Total = 790. Start = 480 - 395 = 85.
+    Card Y = 322
+  -->
+  <rect x="85" y="322" width="115" height="56" rx="4" ry="4" fill="#0d1117" stroke="#21262d" stroke-width="1" />
+  <text x="142" y="348" text-anchor="middle" class="card-title">Kamino</text>
+  <text x="142" y="368" text-anchor="middle" class="card-sub">USDC</text>
+
+  <rect x="220" y="322" width="115" height="56" rx="4" ry="4" fill="#0d1117" stroke="#21262d" stroke-width="1" />
+  <text x="277" y="348" text-anchor="middle" class="card-title">MarginFi</text>
+  <text x="277" y="368" text-anchor="middle" class="card-sub">USDC</text>
+
+  <rect x="355" y="322" width="115" height="56" rx="4" ry="4" fill="#0d1117" stroke="#21262d" stroke-width="1" />
+  <text x="412" y="348" text-anchor="middle" class="card-title">Jupiter</text>
+  <text x="412" y="368" text-anchor="middle" class="card-sub">LP</text>
+
+  <rect x="490" y="322" width="115" height="56" rx="4" ry="4" fill="#0d1117" stroke="#21262d" stroke-width="1" />
+  <text x="547" y="348" text-anchor="middle" class="card-title">Maple</text>
+  <text x="547" y="368" text-anchor="middle" class="card-sub">Syrup</text>
+
+  <rect x="625" y="322" width="115" height="56" rx="4" ry="4" fill="#0d1117" stroke="#21262d" stroke-width="1" />
+  <text x="682" y="348" text-anchor="middle" class="card-title">Drift</text>
+  <text x="682" y="368" text-anchor="middle" class="card-sub">Insurance</text>
+
+  <rect x="760" y="322" width="115" height="56" rx="4" ry="4" fill="#0d1117" stroke="#21262d" stroke-width="1" />
+  <text x="817" y="348" text-anchor="middle" class="card-title">Template</text>
+  <text x="817" y="368" text-anchor="middle" class="card-sub">Scaffold</text>
+
+  <!-- 6 vertical arrows: adapter → protocol -->
+  <line x1="142" y1="378" x2="142" y2="445" stroke="#484f58" stroke-width="1.5" marker-end="url(#arrowProto)" />
+  <line x1="277" y1="378" x2="277" y2="445" stroke="#484f58" stroke-width="1.5" marker-end="url(#arrowProto)" />
+  <line x1="412" y1="378" x2="412" y2="445" stroke="#484f58" stroke-width="1.5" marker-end="url(#arrowProto)" />
+  <line x1="547" y1="378" x2="547" y2="445" stroke="#484f58" stroke-width="1.5" marker-end="url(#arrowProto)" />
+  <line x1="682" y1="378" x2="682" y2="445" stroke="#484f58" stroke-width="1.5" marker-end="url(#arrowProto)" />
+  <line x1="817" y1="378" x2="817" y2="445" stroke="#484f58" stroke-width="1.5" marker-end="url(#arrowProto)" />
+
+  <!-- ===== Protocol Programs ===== -->
+  <rect x="60" y="455" width="840" height="155" rx="6" ry="6" fill="#161b22" stroke="#30363d" stroke-width="1.5" />
+  <text x="480" y="480" text-anchor="middle" class="section-title">Protocol Programs</text>
+  <text x="480" y="496" text-anchor="middle" class="sublabel" font-size="10px">(CPI destination — actual on-chain programs)</text>
+
+  <!--
+    6 protocol cards, same x positions as adapters, each 115w x 56h.
+    Y = 515
+  -->
+  <rect x="85" y="515" width="115" height="56" rx="4" ry="4" fill="#161b22" stroke="#30363d" stroke-width="1" />
+  <text x="142" y="540" text-anchor="middle" class="proto-title">Kamino K-Lend</text>
+  <text x="142" y="560" text-anchor="middle" class="proto-sub">Lending Market</text>
+
+  <rect x="220" y="515" width="115" height="56" rx="4" ry="4" fill="#161b22" stroke="#30363d" stroke-width="1" />
+  <text x="277" y="540" text-anchor="middle" class="proto-title">MarginFi v2</text>
+  <text x="277" y="560" text-anchor="middle" class="proto-sub">Lending Pool</text>
+
+  <rect x="355" y="515" width="115" height="56" rx="4" ry="4" fill="#161b22" stroke="#30363d" stroke-width="1" />
+  <text x="412" y="540" text-anchor="middle" class="proto-title">Jupiter Perps</text>
+  <text x="412" y="560" text-anchor="middle" class="proto-sub">Liquidity Pool</text>
+
+  <rect x="490" y="515" width="115" height="56" rx="4" ry="4" fill="#161b22" stroke="#30363d" stroke-width="1" />
+  <text x="547" y="540" text-anchor="middle" class="proto-title">Orca Whirlpool</text>
+  <text x="547" y="560" text-anchor="middle" class="proto-sub">USDC / syrupUSDC</text>
+
+  <rect x="625" y="515" width="115" height="56" rx="4" ry="4" fill="#161b22" stroke="#30363d" stroke-width="1" />
+  <text x="682" y="540" text-anchor="middle" class="proto-title">Drift v2</text>
+  <text x="682" y="560" text-anchor="middle" class="proto-sub">Spot Market</text>
+
+  <rect x="760" y="515" width="115" height="56" rx="4" ry="4" fill="#161b22" stroke="#30363d" stroke-width="1" stroke-dasharray="3" />
+  <text x="817" y="540" text-anchor="middle" class="proto-title" fill="#484f58">(your protocol)</text>
+  <text x="817" y="560" text-anchor="middle" class="proto-sub" fill="#484f58">configure</text>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#484f58" />
+    </marker>
+    <marker id="arrowProto" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#484f58" />
+    </marker>
+  </defs>
+</svg>
