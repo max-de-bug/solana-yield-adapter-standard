@@ -90,7 +90,7 @@ The Yield Adapter Standard solves this by providing a **single interface** that 
 ### Components
 
 | Component | Description |
-|---|---|---|
+|-----------|-------------|
 | **Yield Adapter Trait** | Shared crate defining the standard interface, types, events, math, and account macros — published on [crates.io](https://crates.io/crates/yield-adapter-trait) |
 | **Yield Dispatcher** | Router that validates adapters and tracks user positions |
 | **Adapter Registry** | Governance-gated on-chain registry with guardian role for adapter approval/revocation |
