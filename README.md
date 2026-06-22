@@ -18,9 +18,7 @@
 
 </div>
 
-<p align="center">
-🔬 <strong>Live demo:</strong> <a href="https://solana-yield-adapter.vercel.app">solana-yield-adapter.vercel.app</a> — the full architecture runs in your browser: connect a wallet, deposit/withdraw through any of the 6 adapters, route via the dispatcher, or toggle vault status — all on devnet.
-</p>
+> **🔬 Live demo: [solana-yield-adapter.vercel.app](https://solana-yield-adapter.vercel.app)** — the full architecture runs in your browser: connect a wallet, deposit/withdraw through any of the 6 adapters, route via the dispatcher, or toggle vault status — all on devnet. ([source](./packages/demo))
 
 ---
 
