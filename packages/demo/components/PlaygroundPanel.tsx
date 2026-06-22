@@ -260,7 +260,7 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
         initAccounts.vault_syrup = getVaultSyrupPda(cfg.id);
         initAccounts.token_program = TOKEN_PROGRAM_ID;
       }
-      const ix = await adapterRef.current.methods.initialize().accounts(initAccounts).instruction();
+      const ix = await adapterRef.current.methods.initialize(USDC_MINT).accounts(initAccounts).instruction();
       await sendTx(ix, `Initialized ${cfg.label} vault`);
       setVaultState({ exists: true, status: "Active" });
     } catch (err: unknown) {
