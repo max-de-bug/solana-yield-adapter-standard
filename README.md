@@ -106,7 +106,7 @@ npm run build
 npm test
 
 # Run mainnet-fork integration tests via Surfpool
-bash scripts/run-fork-surfpool.sh
+npm run test:fork
 ```
 
 ### Deploy to Devnet
@@ -212,10 +212,10 @@ curl -sL https://run.surfpool.run/ | bash
 cp .env.example .env
 # Edit .env: MAINNET_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY
 
-bash scripts/run-fork-surfpool.sh
+npm run test:fork
 ```
 
-The script builds programs, starts a Surfpool validator, deploys all programs, and runs:
+The script (`scripts/run-fork-surfpool.sh`) builds programs, starts a Surfpool validator, deploys all programs, and runs:
 
 ```bash
 MAINNET_FORK=1 anchor test --skip-local-validator --skip-build

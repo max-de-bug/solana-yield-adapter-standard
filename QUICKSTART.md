@@ -32,16 +32,16 @@ curl -sL https://run.surfpool.run/ | bash
 export MAINNET_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY
 
 # Run
-bash scripts/run-fork-surfpool.sh
+npm run test:fork
 ```
 
-Expected: **81 tests pass**, including real CPI round-trips against cloned Kamino K-Lend, MarginFi v2, Jupiter Perps JLP, Drift IF v2, and Maple syrupUSDC, plus dispatcher routing and full registry governance lifecycle.
+Expected: **112/112 executable pass** (124 registered, 12 skipped), including real CPI round-trips against cloned Kamino K-Lend, MarginFi v2, Jupiter Perps JLP, and Maple syrupUSDC (Drift IF v2 CPI skipped upstream — see `Docs/troubleshooting/drift-fork-issues.md`), plus dispatcher routing and full registry governance lifecycle.
 
 The Surfpool approach replaces the legacy `solana-test-validator` + manual `--clone` method. Key improvements:
 
 - **No fixture ATAs** — accounts are JIT-fetched on demand
 - **State persistence** — Surfpool preserves accounts across restarts; the registry's `force_transfer_governance` instruction handles stale governance
-- **All 81 tests pass** (previously 31) — includes adapter-template, dispatcher `current_value` CPI, and registry re-approval lifecycle
+- **All 112 executable tests pass** (previously 81) — includes adapter-template, dispatcher `current_value` CPI, and registry re-approval lifecycle
 
 ## 3. Verify devnet deployment
 
