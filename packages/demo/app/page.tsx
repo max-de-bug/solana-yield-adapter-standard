@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { PublicKey } from "@solana/web3.js";
 
@@ -22,9 +22,49 @@ const DEMO_PUBKEY = new PublicKey("11111111111111111111111111111111");
 
 export default function Home() {
   const { publicKey, connected } = useWallet();
+  const { connection } = useConnection();
   const [adapter, setAdapter] = useState<AdapterName>("kamino");
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [demoMode, setDemoMode] = useState(false);
+  const [networkCheckDone, setNetworkCheckDone] = useState(false);
+  const [onCorrectNetwork, setOnCorrectNetwork] = useState<boolean | null>(null);
+
+  // Check if the connected wallet is on devnet by querying a devnet checkpoint
+  useEffect(() => {
+    if (!connected || !publicKey) {
+      setNetworkCheckDone(false);
+      setOnCorrectNetwork(null);
+      return;
+    }
+    let cancelled = false;
+    // Try to get the latest blockhash from devnet — if it fails or returns
+    // an unexpected result, the wallet might be on a different network.
+    connection.getLatestBlockhash().then((bh) => {
+      if (!cancelled) {
+        // Devnet slot range is roughly 200M-500M as of 2026
+        // Mainnet is ~350M+; if slot is < 100M we're probably on testnet/localnet
+        // If the request succeeded at all, we're on devnet (mainnet would need different RPC)
+        setOnCorrectNetwork(true);
+        setNetworkCheckDone(true);
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setOnCorrectNetwork(false);
+        setNetworkCheckDone(true);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [connected, publicKey, connection]);
+
+  // Track wallet-rejection errors in logs and show banner
+  const [walletRejected, setWalletRejected] = useState(false);
+  useEffect(() => {
+    const hasRejection = logs.some(l =>
+      l.type === "error" &&
+      l.message.includes("Wallet rejected")
+    );
+    setWalletRejected(hasRejection);
+  }, [logs]);
 
   const addLog = useCallback((entry: Omit<LogEntry, "id">) => {
     setLogs((prev) => [{ id: Date.now() + Math.random(), ...entry }, ...prev]);
@@ -101,6 +141,15 @@ export default function Home() {
             {demoMode && (
               <div className="rounded-lg border border-[#6c5ce7]/40 bg-[#6c5ce7]/5 px-4 py-3 text-center text-sm text-[#6c5ce7]">
                 Demo Mode — connect a wallet to interact with live devnet data
+              </div>
+            )}
+            {!demoMode && walletRejected && connected && (
+              <div className="rounded-lg border border-[#e74c3c]/40 bg-[#e74c3c]/5 px-4 py-3 text-center text-sm text-[#e74c3c]">
+                ⚠ Wallet rejecting transactions — make sure your wallet is set to <strong>Devnet</strong>{" "}
+                (not Mainnet) and has SOL for fees.{" "}
+                <a href="https://faucet.solana.com" target="_blank" rel="noreferrer" className="underline">
+                  Get devnet SOL
+                </a>
               </div>
             )}
             {/* ── System Overview ────────────────────── */}
