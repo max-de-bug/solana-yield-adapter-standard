@@ -1,0 +1,27 @@
+# Anchor local ledger (stale socket)
+.anchor/
+
+# Rust / Anchor build artifacts
+target/
+programs/
+crates/
+
+# Tests
+tests/
+
+# Docs
+Docs/
+docs/
+docs-site/
+skills/
+
+# SDK (not needed for demo)
+packages/sdk/
+
+# Scripts
+scripts/
+assets/
+
+# Git
+.git/
+.gitignore

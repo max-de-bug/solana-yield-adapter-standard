@@ -41,3 +41,4 @@ deploy-keypairs/
 # Environment
 .env
 .env.*
+.vercel

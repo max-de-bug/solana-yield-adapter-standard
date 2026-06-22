@@ -239,9 +239,12 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
     tx.recentBlockhash = bh.blockhash;
     let sig: string;
     try {
-      sig = await wallet.sendTransaction!(tx, connection);
+      // Use signTransaction + sendRawTransaction instead of sendTransaction
+      // to bypass Phantom's internal simulation which can produce generic
+      // "Internal error" with no details.
+      const signed = await wallet.signTransaction!(tx);
+      sig = await connection.sendRawTransaction(signed.serialize(), { skipPreflight: false });
     } catch (sendErr: unknown) {
-      // Re-throw with extracted message to avoid cryptic "p: Internal error" in parent
       const sendErrObj = sendErr as any;
       const candidate =
         sendErrObj.transactionMessage ??
@@ -255,7 +258,14 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
           : null) ??
         null;
       const better = candidate && candidate !== "Internal error" ? String(candidate) : null;
-      throw new Error(better ?? `Wallet rejected the transaction — ensure your wallet is set to Devnet and has SOL for fees`);
+      // Provide specific guidance if wallet couldn't sign
+      if (!better) {
+        throw new Error(
+          `Wallet failed to sign the transaction — ensure your wallet is set to Devnet and has SOL for fees. ` +
+          `If the problem persists, try refreshing the page or reconnecting your wallet.`
+        );
+      }
+      throw new Error(better);
     }
 
     try {
