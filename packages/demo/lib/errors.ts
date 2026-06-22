@@ -62,12 +62,12 @@ export function parseAnchorError(err: unknown): { message: string; code?: number
       console.error(`[${name}]`, err);
     }
 
-    // Try to extract program logs from SendTransactionError (has transactionMessage)
+    // WalletSendTransactionError wraps SendTransactionError in .error
     const sendTxErr = err as any;
-    if (sendTxErr.transactionMessage) {
-      const txMsg = String(sendTxErr.transactionMessage);
-      // Check if it's a program error in the transaction message
-      const codeMatch = txMsg.match(/custom program error:\s*(0x[0-9a-fA-F]+|\d+)/);
+    const innerErr = sendTxErr.error as any;
+    const txMsg = innerErr?.transactionMessage ?? sendTxErr.transactionMessage;
+    if (txMsg) {
+      const codeMatch = String(txMsg).match(/custom program error:\s*(0x[0-9a-fA-F]+|\d+)/);
       if (codeMatch) {
         const raw = codeMatch[1];
         const code = raw.startsWith("0x") ? parseInt(raw, 16) : parseInt(raw, 10);
@@ -77,8 +77,7 @@ export function parseAnchorError(err: unknown): { message: string; code?: number
           code,
         };
       }
-      // Show the raw transaction message
-      const cleaned = txMsg.replace(/^error processing instruction \d+:\s*/i, "");
+      const cleaned = String(txMsg).replace(/^error processing instruction \d+:\s*/i, "");
       return { message: cleaned };
     }
 
