@@ -7,7 +7,7 @@ import { getAssociatedTokenAddressSync, createAssociatedTokenAccountInstruction 
 import BN from "bn.js";
 
 import { getAdapter, getVaultStatePda, getVaultAuthorityPda, getVaultSyrupPda } from "@/lib/adapters";
-import { adapterUserPositionPda } from "@/lib/pda";
+import { adapterUserPositionPda, findPda } from "@/lib/pda";
 import { PROGRAM_IDS, USDC_MINT, SYRUP_USDC_MINT, TOKEN_PROGRAM_ID, type AdapterName } from "@/lib/constants";
 import { parseAnchorError, formatU64 } from "@/lib/errors";
 import { adapterEntryPda } from "@/lib/registry";
@@ -238,7 +238,11 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
     const bh = await connection.getLatestBlockhash();
     tx.recentBlockhash = bh.blockhash;
     const sig = await wallet.sendTransaction!(tx, connection);
-    await connection.confirmTransaction(sig, "confirmed");
+    await connection.confirmTransaction({
+      signature: sig,
+      blockhash: bh.blockhash,
+      lastValidBlockHeight: bh.lastValidBlockHeight + 150,
+    });
     onLog({ type: "success", message: label, txSig: sig });
     return sig;
   }, [connection, wallet, onLog]);
@@ -327,7 +331,14 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
   const getWithdrawAccts = useCallback((ata: PublicKey): Record<string, PublicKey> => {
     if (useDispatcher) return buildDispatcherWithdrawAccts(ata);
     const va = currentValtAccts();
-    return { user: wallet.publicKey!, vaultState: va.vaultState, userPosition: adapterUserPositionPda(cfg.id, wallet.publicKey!)[0], userTokenAccount: ata, vaultAuthority: va.vaultAuthority, vaultTokenAccount: va.vaultTokenAccount, tokenProgram: TOKEN_PROGRAM_ID };
+    if (adapterName === "drift") {
+      const ticketPda = findPda(
+        [Buffer.from("withdrawal_ticket"), wallet.publicKey!.toBuffer()],
+        cfg.id
+      )[0];
+      return { user: wallet.publicKey!, vaultState: va.vaultState, userPosition: adapterUserPositionPda(cfg.id, wallet.publicKey!)[0], ticket: ticketPda, tokenProgram: TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId };
+    }
+    return { user: wallet.publicKey!, vaultState: va.vaultState, userPosition: adapterUserPositionPda(cfg.id, wallet.publicKey!)[0], userTokenAccount: ata, vaultTokenAccount: va.vaultTokenAccount, vaultAuthority: va.vaultAuthority, tokenProgram: TOKEN_PROGRAM_ID };
   }, [adapterName, useDispatcher, buildDispatcherWithdrawAccts, wallet, cfg.id]);
 
   const handleWithdraw = useCallback(async () => {

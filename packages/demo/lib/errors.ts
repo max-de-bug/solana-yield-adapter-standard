@@ -56,6 +56,11 @@ export function parseAnchorError(err: unknown): { message: string; code?: number
   if (err instanceof Error) {
     const msg = err.message;
 
+    // TransactionExpiredTimeoutError or similar
+    if (msg.includes("timed out") || msg.includes("timeout") || msg.includes("cancelled")) {
+      return { message: `${msg} — try increasing the amount or checking your wallet` };
+    }
+
     // Try to extract error code from Anchor's log format
     const codeMatch = msg.match(/Error Number:\s*(\d+)/);
     if (codeMatch) {
@@ -83,6 +88,12 @@ export function parseAnchorError(err: unknown): { message: string; code?: number
     const nameMatch = msg.match(/Error Code:\s*(\w+)/);
     if (nameMatch) {
       return { message: nameMatch[1] };
+    }
+
+    // Try to extract program log from SendTransactionError
+    const logMatch = msg.match(/Simulation failed:\s*\n([\s\S]+?)(?:\n\n|\n$|$)/);
+    if (logMatch) {
+      return { message: logMatch[1].trim().split("\n").pop() ?? msg };
     }
 
     return { message: msg };
