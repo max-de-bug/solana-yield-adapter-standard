@@ -96,49 +96,113 @@ function extractProgramErrorFromLogs(logs: string[]): { message: string; code?: 
  *
  * Also handles minified class names where constructor.name is something like "p" or "te".
  */
-function extractNestedError(err: any): { message: string; logs?: string[] } | null {
-  let current = err;
-  for (let i = 0; i < 8; i++) {
-    if (!current) break;
+/**
+ * Find all values in an error tree that look like RPC logs from a transaction
+ * simulation/send failure.  Works with minified (Terser) builds where property
+ * names are mangled — enumerates own properties dynamically rather than relying
+ * on known names like `.logs`, `.transactionMessage`, etc.
+ */
+function findLogsInErrorTree(err: any, depth: number): string[] | null {
+  if (!err || depth > 6) return null;
 
-    // SendTransactionError has logs as a string array
-    if (current.logs && Array.isArray(current.logs) && current.logs.length > 0) {
-      return { message: current.message ?? "", logs: current.logs };
-    }
+  // Enumerate all own properties
+  const keys = Object.keys(err);
+  for (const k of keys) {
+    try {
+      const v = (err as any)[k];
 
-    // SendTransactionError also stores logs in _txnLogs or txnLogs in some builds
-    if (current._txnLogs && Array.isArray(current._txnLogs) && current._txnLogs.length > 0) {
-      return { message: current.message ?? "", logs: current._txnLogs };
-    }
-    if (current.txnLogs && Array.isArray(current.txnLogs) && current.txnLogs.length > 0) {
-      return { message: current.message ?? "", logs: current.txnLogs };
-    }
-
-    // Some builds expose the original RPC error with program logs
-    if (current.context && current.value?.err) {
-      // SimulatedTransactionResponse or similar
-      if (current.value.logs && Array.isArray(current.value.logs)) {
-        return { message: "Simulation failed", logs: current.value.logs };
+      // If it's a string and looks like an RPC error message, we found it
+      if (typeof v === "string" && v.length > 10 && !v.startsWith("Internal") && !v.startsWith("failed")) {
+        // Good candidate — but continue looking for logs first
       }
-    }
 
-    // transactionMessage is a descriptive string like "custom program error: 0x2F49"
-    if (current.transactionMessage) {
-      return { message: current.transactionMessage, logs: current.logs };
-    }
-
-    // transactionLogs — alternative naming in some builds
-    if (current.transactionLogs && Array.isArray(current.transactionLogs)) {
-      return { message: current.message ?? "", logs: current.transactionLogs };
-    }
-
-    // Descend into .error (WalletSendTransactionError → inner error)
-    if (current.error && current.error !== err) {
-      current = current.error;
-    } else {
-      break;
+      // Logs are always string arrays with program log lines
+      if (Array.isArray(v) && v.length > 0 && typeof v[0] === "string") {
+        const s = v[0] as string;
+        if (s.includes("Program ") || s.includes("program ") || s.includes("log")) {
+          // Found logs
+          const logs = v as string[];
+          // Check if any look like program logs
+          if (logs.some(l => l.startsWith("Program ") || l.includes("Program log") || l.includes("Error"))) {
+            return logs;
+          }
+        }
+      }
+    } catch {
+      // skip
     }
   }
+
+  // Check all own property values recursively
+  for (const k of keys) {
+    try {
+      const v = (err as any)[k];
+      if (v && typeof v === "object" && v !== err) {
+        const found = findLogsInErrorTree(v, depth + 1);
+        if (found) return found;
+      }
+    } catch {
+      // skip
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Find a descriptive message string in an error tree, regardless of property name.
+ */
+function findMessageInErrorTree(err: any, depth: number): string | null {
+  if (!err || depth > 6) return null;
+
+  const keys = Object.keys(err);
+  for (const k of keys) {
+    try {
+      const v = (err as any)[k];
+      if (typeof v === "string" && v.length > 5 && !v.startsWith("Internal") &&
+          !v.startsWith("failed to") && !v.startsWith("error processing") &&
+          !v.startsWith("Transaction simulation failed")) {
+        // Suspiciously not a generic message — try to recurse deeper first
+        // but keep as fallback
+      }
+      if (typeof v === "string" && (v.includes("custom program error") || v.includes("Error Number") || v.includes("Error Code"))) {
+        return v;
+      }
+    } catch { /* skip */ }
+  }
+
+  // Recurse into child objects
+  for (const k of keys) {
+    try {
+      const v = (err as any)[k];
+      if (v && typeof v === "object" && v !== err) {
+        const found = findMessageInErrorTree(v, depth + 1);
+        if (found) return found;
+      }
+    } catch { /* skip */ }
+  }
+
+  return null;
+}
+
+/**
+ * Extract error info from any error shape by traversing known envelope properties.
+ *
+ * Known error chains (web3.js 1.x + wallet-adapter):
+ *   WalletSendTransactionError (.error) → SendTransactionError (.logs, .transactionMessage)
+ *   WalletSendTransactionError (.error) → regular Error (wallet rejected, no logs)
+ *   SendTransactionError directly (if caught by user code before wallet wrapping)
+ *
+ * Also handles minified class names where constructor.name is something like "p" or "te".
+ */
+function extractNestedError(err: any): { message: string; logs?: string[] } | null {
+  // Use dynamic enumeration to handle minified (mangled) property names
+  const logs = findLogsInErrorTree(err, 0);
+  if (logs) return { message: "", logs };
+
+  const msg = findMessageInErrorTree(err, 0);
+  if (msg) return { message: msg };
+
   return null;
 }
 
@@ -231,7 +295,9 @@ export function parseAnchorError(err: unknown): { message: string; code?: number
       if (transactionMessage && transactionMessage !== "Internal error") {
         return { message: transactionMessage };
       }
-      return { message: `Transaction failed — check the transaction log for details` };
+      // Wallet rejected the transaction entirely (no logs, no message)
+      // Common causes: wrong network (wallet on mainnet, app on devnet), insufficient funds, user cancelled
+      return { message: `Wallet rejected the transaction — ensure your wallet is set to Devnet and has SOL for fees` };
     }
 
     return { message: msg };

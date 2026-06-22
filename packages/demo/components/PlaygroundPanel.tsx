@@ -241,19 +241,21 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
     try {
       sig = await wallet.sendTransaction!(tx, connection);
     } catch (sendErr: unknown) {
-      // Re-throw a new Error so the parent catch block gets a clean message.
-      // The parent catch block uses parseAnchorError() which has more robust extraction logic.
+      // Re-throw with extracted message to avoid cryptic "p: Internal error" in parent
       const sendErrObj = sendErr as any;
-      // Explore all known properties that might contain the real error
       const candidate =
         sendErrObj.transactionMessage ??
         sendErrObj.error?.transactionMessage ??
         sendErrObj.error?.message ??
-        sendErrObj.logs?.filter?.((l: string) => l.startsWith("Program log:")).pop()?.replace("Program log: ", "") ??
-        sendErrObj.error?.logs?.filter?.((l: string) => l.startsWith("Program log:")).pop()?.replace("Program log: ", "") ??
+        (Array.isArray(sendErrObj.logs)
+          ? sendErrObj.logs.filter((l: string) => l.startsWith("Program log:")).pop()?.replace("Program log: ", "")
+          : null) ??
+        (Array.isArray(sendErrObj.error?.logs)
+          ? sendErrObj.error.logs.filter((l: string) => l.startsWith("Program log:")).pop()?.replace("Program log: ", "")
+          : null) ??
         null;
       const better = candidate && candidate !== "Internal error" ? String(candidate) : null;
-      throw new Error(better ?? `Transaction rejected by wallet`);
+      throw new Error(better ?? `Wallet rejected the transaction — ensure your wallet is set to Devnet and has SOL for fees`);
     }
 
     try {
@@ -300,6 +302,31 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
   }, [cfg, connection, wallet, onLog, adapterName, sendTx]);
 
   const handleToggleStatus = useCallback(async () => {
+    if (!adapterRef.current || !wallet.signTransaction || !wallet.publicKey) return;
+    setTxStatus("toggling");
+    try {
+      const ix = await adapterRef.current.methods
+        .toggleStatus()
+        .accounts({ authority: wallet.publicKey, vaultState: currentValtAccts().vaultState })
+        .instruction();
+      await sendTx(ix, `Toggled status for ${cfg.label}`);
+      await fetchChainData();
+    } catch (err: unknown) {
+      onLog({ type: "error", message: `Toggle status failed: ${parseAnchorError(err).message}` });
+    } finally { setTxStatus("idle"); }
+  }, [cfg, connection, wallet, onLog, adapterName, sendTx, fetchChainData]);
+
+  const getDepositAccts = useCallback((ata: PublicKey, userPosition: PublicKey): Record<string, PublicKey> => {
+    if (useDispatcher) return buildDispatcherDepositAccts(ata, userPosition);
+    const va = currentValtAccts();
+    return { user: wallet.publicKey!, vaultState: va.vaultState, userPosition, userTokenAccount: ata, vaultAuthority: va.vaultAuthority, vaultTokenAccount: va.vaultTokenAccount, tokenProgram: TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId };
+  }, [adapterName, useDispatcher, buildDispatcherDepositAccts, wallet]);
+
+  const handleDeposit = useCallback(async () => {
+    if (!adapterRef.current || !dispatcherRef.current || !wallet.signTransaction || !wallet.publicKey) return;
+    setTxStatus("depositing");
+    try {
+      const ata = await ensureUserAta();
       const amountRaw = Math.round(parseFloat(amount) * 1_000_000);
       if (!(amountRaw > 0)) throw new Error("Amount must be greater than 0");
       const [userPosition] = adapterUserPositionPda(cfg.id, wallet.publicKey);
@@ -499,5 +526,3 @@ interface PositionRaw {
   exists: boolean;
   shares?: bigint;
 }
-
-
