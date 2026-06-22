@@ -88,20 +88,51 @@ function extractProgramErrorFromLogs(logs: string[]): { message: string; code?: 
 
 /**
  * Extract error info from any error shape by traversing known envelope properties.
+ *
+ * Known error chains (web3.js 1.x + wallet-adapter):
+ *   WalletSendTransactionError (.error) → SendTransactionError (.logs, .transactionMessage)
+ *   WalletSendTransactionError (.error) → regular Error (wallet rejected, no logs)
+ *   SendTransactionError directly (if caught by user code before wallet wrapping)
+ *
+ * Also handles minified class names where constructor.name is something like "p" or "te".
  */
 function extractNestedError(err: any): { message: string; logs?: string[] } | null {
-  // SendTransactionError.shape: { error: { transactionMessage, logs }, message }
-  // WalletSendTransactionError.shape: { error: SendTransactionError, message }
-  // Try descending into common wrapper layers
   let current = err;
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 8; i++) {
     if (!current) break;
+
+    // SendTransactionError has logs as a string array
     if (current.logs && Array.isArray(current.logs) && current.logs.length > 0) {
       return { message: current.message ?? "", logs: current.logs };
     }
+
+    // SendTransactionError also stores logs in _txnLogs or txnLogs in some builds
+    if (current._txnLogs && Array.isArray(current._txnLogs) && current._txnLogs.length > 0) {
+      return { message: current.message ?? "", logs: current._txnLogs };
+    }
+    if (current.txnLogs && Array.isArray(current.txnLogs) && current.txnLogs.length > 0) {
+      return { message: current.message ?? "", logs: current.txnLogs };
+    }
+
+    // Some builds expose the original RPC error with program logs
+    if (current.context && current.value?.err) {
+      // SimulatedTransactionResponse or similar
+      if (current.value.logs && Array.isArray(current.value.logs)) {
+        return { message: "Simulation failed", logs: current.value.logs };
+      }
+    }
+
+    // transactionMessage is a descriptive string like "custom program error: 0x2F49"
     if (current.transactionMessage) {
       return { message: current.transactionMessage, logs: current.logs };
     }
+
+    // transactionLogs — alternative naming in some builds
+    if (current.transactionLogs && Array.isArray(current.transactionLogs)) {
+      return { message: current.message ?? "", logs: current.transactionLogs };
+    }
+
+    // Descend into .error (WalletSendTransactionError → inner error)
     if (current.error && current.error !== err) {
       current = current.error;
     } else {

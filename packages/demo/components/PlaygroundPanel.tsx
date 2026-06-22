@@ -232,51 +232,6 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
     return ata;
   }, [connection, user, userAta, wallet, onLog, adapterName]);
 
-  function extractBestMessage(err: any): string {
-    // Traverse nested error objects to find the real message
-    let depth = 0;
-    let current = err;
-    while (current && depth < 5) {
-      // If logs are available, extract program error from them
-      if (current.logs && Array.isArray(current.logs) && current.logs.length > 0) {
-        const logs = current.logs as string[];
-        for (const line of logs) {
-          const m = line.match(/Program log: (Error Code|AnchorError)\s*[:\s]+(\w+)/);
-          if (m) return `Program error: ${m[2]}`;
-          const mn = line.match(/Program log:.*Error Number:\s*(\d+)/);
-          if (mn) return `Program error code ${mn[1]}`;
-          const mr = line.match(/Program log:.*custom program error:\s*(0x[0-9a-fA-F]+|\d+)/);
-          if (mr) return `Program error ${mr[1]}`;
-        }
-        // Return last program log
-        const programLogs = logs.filter(l => l.startsWith("Program log:"));
-        if (programLogs.length > 0) {
-          const last = programLogs[programLogs.length - 1].replace(/^Program log:\s*/, "");
-          if (last && !last.startsWith("{")) return last;
-        }
-        // Fall back to transactionMessage if no program error found
-        if (current.transactionMessage) return current.transactionMessage;
-      }
-      // If there's a transactionMessage, use it
-      if (current.transactionMessage && current.transactionMessage !== "Internal error") {
-        return current.transactionMessage;
-      }
-      // If there's a non-generic message, use it
-      if (current.message && current.message !== "Internal error") {
-        return current.message;
-      }
-      // Descend into .error
-      if (current.error && current.error !== err) {
-        current = current.error;
-        depth++;
-      } else {
-        break;
-      }
-    }
-    // Last resort
-    return err?.message ?? "Unknown error";
-  }
-
   const sendTx = useCallback(async (ix: any, label: string) => {
     const tx = new Transaction().add(ix);
     tx.feePayer = wallet.publicKey!;
@@ -286,38 +241,65 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
     try {
       sig = await wallet.sendTransaction!(tx, connection);
     } catch (sendErr: unknown) {
-      const innerMsg = extractBestMessage(sendErr);
-      onLog({ type: "error", message: `Send failed: ${innerMsg}` });
-      throw sendErr;
+      // Re-throw a new Error so the parent catch block gets a clean message.
+      // The parent catch block uses parseAnchorError() which has more robust extraction logic.
+      const sendErrObj = sendErr as any;
+      // Explore all known properties that might contain the real error
+      const candidate =
+        sendErrObj.transactionMessage ??
+        sendErrObj.error?.transactionMessage ??
+        sendErrObj.error?.message ??
+        sendErrObj.logs?.filter?.((l: string) => l.startsWith("Program log:")).pop()?.replace("Program log: ", "") ??
+        sendErrObj.error?.logs?.filter?.((l: string) => l.startsWith("Program log:")).pop()?.replace("Program log: ", "") ??
+        null;
+      const better = candidate && candidate !== "Internal error" ? String(candidate) : null;
+      throw new Error(better ?? `Transaction rejected by wallet`);
     }
+
+    try {
+      await connection.confirmTransaction({
+        signature: sig,
+        blockhash: bh.blockhash,
+        lastValidBlockHeight: bh.lastValidBlockHeight + 150,
+      });
+    } catch (confirmErr) {
+      if (confirmErr instanceof Error) {
+        const confirmErrObj = confirmErr as any;
+        const innerMsg = confirmErrObj.transactionMessage ?? confirmErrObj.message;
+        throw new Error(`${String(innerMsg)}`);
+      }
+      throw confirmErr;
+    }
+    onLog({ type: "success", message: label, txSig: sig });
+    return sig;
+  }, [connection, wallet, onLog]);
+
+  const handleInitialize = useCallback(async () => {
+    if (!adapterRef.current || !wallet.signTransaction || !wallet.publicKey) return;
+    setTxStatus("initializing");
+    try {
+      const va = currentValtAccts();
+      const initAccounts: Record<string, PublicKey> = {
+        authority: wallet.publicKey,
+        vault_state: va.vaultState,
+        system_program: SystemProgram.programId,
+      };
+      if (adapterName === "maple") {
+        initAccounts.vault_authority = va.vaultAuthority;
+        initAccounts.underlying_mint = USDC_MINT;
+        initAccounts.syrup_mint = SYRUP_USDC_MINT;
+        initAccounts.vault_syrup = getVaultSyrupPda(cfg.id);
+        initAccounts.token_program = TOKEN_PROGRAM_ID;
+      }
+      const ix = await adapterRef.current.methods.initialize(USDC_MINT).accounts(initAccounts).instruction();
+      await sendTx(ix, `Initialized ${cfg.label} vault`);
+      setVaultState({ exists: true, status: "Active" });
+    } catch (err: unknown) {
+      onLog({ type: "error", message: `Initialize failed: ${parseAnchorError(err).message}` });
+    } finally { setTxStatus("idle"); }
   }, [cfg, connection, wallet, onLog, adapterName, sendTx]);
 
   const handleToggleStatus = useCallback(async () => {
-    if (!adapterRef.current || !wallet.signTransaction || !wallet.publicKey) return;
-    setTxStatus("toggling");
-    try {
-      const ix = await adapterRef.current.methods
-        .toggleStatus()
-        .accounts({ authority: wallet.publicKey, vaultState: currentValtAccts().vaultState })
-        .instruction();
-      await sendTx(ix, `Toggled status for ${cfg.label}`);
-      await fetchChainData();
-    } catch (err: unknown) {
-      onLog({ type: "error", message: `Toggle status failed: ${parseAnchorError(err).message}` });
-    } finally { setTxStatus("idle"); }
-  }, [cfg, connection, wallet, onLog, adapterName, sendTx, fetchChainData]);
-
-  const getDepositAccts = useCallback((ata: PublicKey, userPosition: PublicKey): Record<string, PublicKey> => {
-    if (useDispatcher) return buildDispatcherDepositAccts(ata, userPosition);
-    const va = currentValtAccts();
-    return { user: wallet.publicKey!, vaultState: va.vaultState, userPosition, userTokenAccount: ata, vaultAuthority: va.vaultAuthority, vaultTokenAccount: va.vaultTokenAccount, tokenProgram: TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId };
-  }, [adapterName, useDispatcher, buildDispatcherDepositAccts, wallet]);
-
-  const handleDeposit = useCallback(async () => {
-    if (!adapterRef.current || !dispatcherRef.current || !wallet.signTransaction || !wallet.publicKey) return;
-    setTxStatus("depositing");
-    try {
-      const ata = await ensureUserAta();
       const amountRaw = Math.round(parseFloat(amount) * 1_000_000);
       if (!(amountRaw > 0)) throw new Error("Amount must be greater than 0");
       const [userPosition] = adapterUserPositionPda(cfg.id, wallet.publicKey);
