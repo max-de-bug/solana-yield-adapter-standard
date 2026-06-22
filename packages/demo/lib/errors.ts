@@ -52,6 +52,65 @@ const KNOWN_ERRORS: Record<number, string> = {
  * Parse an Anchor error from a transaction response or error object.
  * Returns a human-readable message and the raw error code (if found).
  */
+/**
+ * Extract a program error code from transaction logs.
+ */
+function extractProgramErrorFromLogs(logs: string[]): { message: string; code?: number } | null {
+  for (const line of logs) {
+    const match = line.match(/Program log: (Error Code|AnchorError)\s*[:\s]+(\w+)/);
+    if (match) return { message: match[2] };
+  }
+  for (const line of logs) {
+    const match = line.match(/Program log:.*Error Number:\s*(\d+)/);
+    if (match) {
+      const code = parseInt(match[1], 10);
+      const known = KNOWN_ERRORS[code];
+      return { message: known ?? `Program error 0x${code.toString(16).toUpperCase()}`, code };
+    }
+  }
+  for (const line of logs) {
+    const match = line.match(/Program log:.*custom program error:\s*(0x[0-9a-fA-F]+|\d+)/);
+    if (match) {
+      const raw = match[1];
+      const code = raw.startsWith("0x") ? parseInt(raw, 16) : parseInt(raw, 10);
+      const known = KNOWN_ERRORS[code];
+      return { message: known ?? `Program error 0x${code.toString(16).toUpperCase()}`, code };
+    }
+  }
+  // Return the last program log line as a fallback
+  const programLogs = logs.filter(l => l.startsWith("Program log:"));
+  if (programLogs.length > 0) {
+    const last = programLogs[programLogs.length - 1].replace(/^Program log:\s*/, "");
+    if (last && !last.startsWith("{")) return { message: last };
+  }
+  return null;
+}
+
+/**
+ * Extract error info from any error shape by traversing known envelope properties.
+ */
+function extractNestedError(err: any): { message: string; logs?: string[] } | null {
+  // SendTransactionError.shape: { error: { transactionMessage, logs }, message }
+  // WalletSendTransactionError.shape: { error: SendTransactionError, message }
+  // Try descending into common wrapper layers
+  let current = err;
+  for (let i = 0; i < 5; i++) {
+    if (!current) break;
+    if (current.logs && Array.isArray(current.logs) && current.logs.length > 0) {
+      return { message: current.message ?? "", logs: current.logs };
+    }
+    if (current.transactionMessage) {
+      return { message: current.transactionMessage, logs: current.logs };
+    }
+    if (current.error && current.error !== err) {
+      current = current.error;
+    } else {
+      break;
+    }
+  }
+  return null;
+}
+
 export function parseAnchorError(err: unknown): { message: string; code?: number } {
   if (err instanceof Error) {
     const name = err.constructor?.name ?? "Error";
@@ -62,31 +121,33 @@ export function parseAnchorError(err: unknown): { message: string; code?: number
       console.error(`[${name}]`, err);
     }
 
-    // WalletSendTransactionError wraps SendTransactionError in .error
-    const sendTxErr = err as any;
-    const innerErr = sendTxErr.error as any;
-    const txMsg = innerErr?.transactionMessage ?? sendTxErr.transactionMessage;
-    if (txMsg) {
-      const codeMatch = String(txMsg).match(/custom program error:\s*(0x[0-9a-fA-F]+|\d+)/);
-      if (codeMatch) {
-        const raw = codeMatch[1];
-        const code = raw.startsWith("0x") ? parseInt(raw, 16) : parseInt(raw, 10);
-        const known = KNOWN_ERRORS[code];
-        return {
-          message: known ?? `Program error 0x${code.toString(16).toUpperCase()}`,
-          code,
-        };
+    // Try to extract nested error info (SendTransactionError / WalletSendTransactionError)
+    const nested = extractNestedError(err);
+    if (nested) {
+      // If we have logs, try to parse program error from them
+      if (nested.logs && nested.logs.length > 0) {
+        const fromLogs = extractProgramErrorFromLogs(nested.logs);
+        if (fromLogs) return fromLogs;
       }
-      const cleaned = String(txMsg).replace(/^error processing instruction \d+:\s*/i, "");
-      return { message: cleaned };
+      // Check the message itself
+      const txMsg = nested.message;
+      if (txMsg && txMsg !== "Internal error") {
+        const codeMatch = String(txMsg).match(/custom program error:\s*(0x[0-9a-fA-F]+|\d+)/);
+        if (codeMatch) {
+          const raw = codeMatch[1];
+          const code = raw.startsWith("0x") ? parseInt(raw, 16) : parseInt(raw, 10);
+          const known = KNOWN_ERRORS[code];
+          return {
+            message: known ?? `Program error 0x${code.toString(16).toUpperCase()}`,
+            code,
+          };
+        }
+        const cleaned = String(txMsg).replace(/^error processing instruction \d+:\s*/i, "");
+        return { message: cleaned };
+      }
     }
 
-    // TransactionExpiredTimeoutError or similar
-    if (msg.includes("timed out") || msg.includes("timeout") || msg.includes("cancelled")) {
-      return { message: `${msg} — try increasing the amount or checking your wallet` };
-    }
-
-    // Try to extract error code from Anchor's log format
+    // Try to extract error code from Anchor's log format in message
     const codeMatch = msg.match(/Error Number:\s*(\d+)/);
     if (codeMatch) {
       const code = parseInt(codeMatch[1], 10);
@@ -97,7 +158,7 @@ export function parseAnchorError(err: unknown): { message: string; code?: number
       };
     }
 
-    // Try to extract error code from raw program error
+    // Try to extract error code from raw program error in message
     const rawMatch = msg.match(/custom program error:\s*(0x[0-9a-fA-F]+|\d+)/);
     if (rawMatch) {
       const raw = rawMatch[1];
@@ -107,6 +168,11 @@ export function parseAnchorError(err: unknown): { message: string; code?: number
         message: known ?? `Program error 0x${code.toString(16).toUpperCase()}`,
         code,
       };
+    }
+
+    // TransactionExpiredTimeoutError or similar
+    if (msg.includes("timed out") || msg.includes("timeout") || msg.includes("cancelled")) {
+      return { message: `${msg} — try increasing the amount or checking your wallet` };
     }
 
     // Try to extract error name from Anchor's log format
@@ -121,9 +187,20 @@ export function parseAnchorError(err: unknown): { message: string; code?: number
       return { message: logMatch[1].trim().split("\n").pop() ?? msg };
     }
 
-    // Last resort: show the constructor name and message
+    // Last resort: if message is just "Internal error", try err.logs directly
     if (msg === "Internal error" || !msg) {
-      return { message: `${name}: ${msg || "no details"}` };
+      // @ts-ignore - some error types expose logs at top level
+      const logs = (err as any).logs as string[] | undefined;
+      if (logs && logs.length > 0) {
+        const fromLogs = extractProgramErrorFromLogs(logs);
+        if (fromLogs) return fromLogs;
+      }
+      // @ts-ignore
+      const transactionMessage = (err as any).transactionMessage as string | undefined;
+      if (transactionMessage && transactionMessage !== "Internal error") {
+        return { message: transactionMessage };
+      }
+      return { message: `Transaction failed — check the transaction log for details` };
     }
 
     return { message: msg };

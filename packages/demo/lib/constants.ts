@@ -16,3 +16,5 @@ export const SYRUP_USDC_MINT = new PublicKey("AvZZF1YaZDziPY2RCK4oJrRVrbN3mTD9NL
 export const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 
 export type AdapterName = keyof typeof PROGRAM_IDS;
+
+export const DEPLOYED_ADAPTERS: Set<AdapterName> = new Set(["kamino"]);
