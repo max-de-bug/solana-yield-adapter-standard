@@ -237,7 +237,18 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
     tx.feePayer = wallet.publicKey!;
     const bh = await connection.getLatestBlockhash();
     tx.recentBlockhash = bh.blockhash;
-    const sig = await wallet.sendTransaction!(tx, connection);
+    let sig: string;
+    try {
+      sig = await wallet.sendTransaction!(tx, connection);
+    } catch (sendErr: unknown) {
+      // Wrap send errors with more detail
+      const sendErrObj = sendErr as any;
+      const innerMsg = sendErrObj.error?.transactionMessage
+        ?? sendErrObj.error?.message
+        ?? sendErrObj.message;
+      onLog({ type: "error", message: `Send failed: ${String(innerMsg)}` });
+      throw sendErr;
+    }
     try {
       await connection.confirmTransaction({
         signature: sig,
@@ -246,11 +257,9 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
       });
     } catch (confirmErr) {
       if (confirmErr instanceof Error) {
-        const sendTxErr = confirmErr as any;
-        const logDetail = sendTxErr.transactionMessage
-          ? ` — ${String(sendTxErr.transactionMessage).replace(/^error processing instruction \d+:\s*/i, "")}`
-          : "";
-        throw new Error(`Transaction failed${logDetail}`);
+        const confirmErrObj = confirmErr as any;
+        const innerMsg = confirmErrObj.transactionMessage ?? confirmErrObj.message;
+        throw new Error(`${String(innerMsg)}`);
       }
       throw confirmErr;
     }
