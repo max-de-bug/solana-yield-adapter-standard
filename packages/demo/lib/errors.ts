@@ -54,7 +54,33 @@ const KNOWN_ERRORS: Record<number, string> = {
  */
 export function parseAnchorError(err: unknown): { message: string; code?: number } {
   if (err instanceof Error) {
+    const name = err.constructor?.name ?? "Error";
     const msg = err.message;
+
+    // Log full error details for debugging
+    if (msg === "Internal error" || name !== "Error") {
+      console.error(`[${name}]`, err);
+    }
+
+    // Try to extract program logs from SendTransactionError (has transactionMessage)
+    const sendTxErr = err as any;
+    if (sendTxErr.transactionMessage) {
+      const txMsg = String(sendTxErr.transactionMessage);
+      // Check if it's a program error in the transaction message
+      const codeMatch = txMsg.match(/custom program error:\s*(0x[0-9a-fA-F]+|\d+)/);
+      if (codeMatch) {
+        const raw = codeMatch[1];
+        const code = raw.startsWith("0x") ? parseInt(raw, 16) : parseInt(raw, 10);
+        const known = KNOWN_ERRORS[code];
+        return {
+          message: known ?? `Program error 0x${code.toString(16).toUpperCase()}`,
+          code,
+        };
+      }
+      // Show the raw transaction message
+      const cleaned = txMsg.replace(/^error processing instruction \d+:\s*/i, "");
+      return { message: cleaned };
+    }
 
     // TransactionExpiredTimeoutError or similar
     if (msg.includes("timed out") || msg.includes("timeout") || msg.includes("cancelled")) {
@@ -90,10 +116,15 @@ export function parseAnchorError(err: unknown): { message: string; code?: number
       return { message: nameMatch[1] };
     }
 
-    // Try to extract program log from SendTransactionError
+    // Try to extract program log from simulation error
     const logMatch = msg.match(/Simulation failed:\s*\n([\s\S]+?)(?:\n\n|\n$|$)/);
     if (logMatch) {
       return { message: logMatch[1].trim().split("\n").pop() ?? msg };
+    }
+
+    // Last resort: show the constructor name and message
+    if (msg === "Internal error" || !msg) {
+      return { message: `${name}: ${msg || "no details"}` };
     }
 
     return { message: msg };

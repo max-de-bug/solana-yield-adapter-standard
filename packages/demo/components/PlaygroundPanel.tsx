@@ -238,11 +238,22 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
     const bh = await connection.getLatestBlockhash();
     tx.recentBlockhash = bh.blockhash;
     const sig = await wallet.sendTransaction!(tx, connection);
-    await connection.confirmTransaction({
-      signature: sig,
-      blockhash: bh.blockhash,
-      lastValidBlockHeight: bh.lastValidBlockHeight + 150,
-    });
+    try {
+      await connection.confirmTransaction({
+        signature: sig,
+        blockhash: bh.blockhash,
+        lastValidBlockHeight: bh.lastValidBlockHeight + 150,
+      });
+    } catch (confirmErr) {
+      if (confirmErr instanceof Error) {
+        const sendTxErr = confirmErr as any;
+        const logDetail = sendTxErr.transactionMessage
+          ? ` — ${String(sendTxErr.transactionMessage).replace(/^error processing instruction \d+:\s*/i, "")}`
+          : "";
+        throw new Error(`Transaction failed${logDetail}`);
+      }
+      throw confirmErr;
+    }
     onLog({ type: "success", message: label, txSig: sig });
     return sig;
   }, [connection, wallet, onLog]);
