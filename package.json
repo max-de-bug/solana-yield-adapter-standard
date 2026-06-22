@@ -15,6 +15,8 @@
     "validate": "bash scripts/validate.sh",
     "deploy:devnet": "bash scripts/deploy-devnet.sh",
     "docs:dev": "cd docs-site && npx mintlify dev",
+    "demo:dev": "cd packages/demo && npm run dev",
+    "demo:build": "cd packages/demo && npm run build",
     "check": "cd packages/sdk && npx tsc --noEmit && npm run build && echo 'SDK: OK'",
     "clean": "anchor clean && rm -rf node_modules"
   },

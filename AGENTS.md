@@ -74,3 +74,18 @@ Rewrote to use `expectRejected` polling instead of single-shot confirm + error c
 - `tests/helpers/index.ts`: `sendAndConfirm()`, `sendInstruction()` — retry loop for sendRawTransaction, blockheight-based confirm with +2000 buffer
 - `tests/helpers/adapter.ts`: `expectRejected()`, `rawToggleStatus()`, `fundUserUsdcOnFork()`, `runAdapterVaultStatusLifecycle()` — all negative tests use polling, fundUserUsdcOnFork uses blockheight confirm
 - `tests/adapters/drift.test.ts`: settlement cooldown check uses `expectRejected()` polling
+
+---
+
+## Demo (`packages/demo/`)
+
+### Done
+- **Routing path indicator** — shows `User → Adapter → Vault` (direct) or `User → Dispatcher → Registry → Adapter → Vault` (via dispatcher) in PlaygroundPanel
+- **TypeScript cleanup** — fixed `PublicKey | null` issue in `getDepositAccts`/`getWithdrawAccts` by adding `Record<string, PublicKey>` return type + non-null assertion on `wallet.publicKey!`
+- **Removed unused imports** — cleaned up RegistryPanel (removed `onLog` prop), PlaygroundPanel (removed `type Program = any` alias, imported `Program` from `@anchor-lang/core`)
+- **Build verified** — clean build at 69.9 kB with zero warnings (suppressed ox/tempo & pino-pretty via `ignoreWarnings` in `next.config.ts` + `serverExternalPackages: ["pino-pretty"]`)
+
+### Files touched
+- `packages/demo/components/PlaygroundPanel.tsx`: added routing path indicator, fixed types in getDepositAccts/getWithdrawAccts, fixed Program import
+- `packages/demo/components/RegistryPanel.tsx`: removed unused onLog prop, removed error state, simplified to makeProvider/makeProgram pattern
+- `packages/demo/app/page.tsx`: removed `onLog={addLog}` from `<RegistryPanel>`

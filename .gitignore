@@ -5,6 +5,8 @@ target/deploy/*
 !target/deploy/*-keypair.json
 dist/
 .anchor/
+.next/
+.vercel/
 
 # Node
 node_modules/
