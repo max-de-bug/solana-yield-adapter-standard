@@ -11,8 +11,6 @@ dist/
 # Node
 node_modules/
 yarn-error.log
-package-lock.json
-
 # Solana
 test-ledger/
 *.so
@@ -32,6 +30,8 @@ Thumbs.db
 deploy-keypairs/
 *.json
 !package.json
+!package-lock.json
+!packages/*/package-lock.json
 !tsconfig.json
 !docs-site/docs.json
 !tests/fixtures/fork-usdc-ata.json
