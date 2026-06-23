@@ -68,7 +68,7 @@ export default function Home() {
       <TopNavBar />
 
       <div className="flex flex-1">
-        <Sidebar activeView="playground" onViewChange={() => {}} />
+        <Sidebar />
 
         <main className="flex-1 ml-0 md:ml-64 mt-16 pt-8 px-margin-mobile md:px-margin-desktop pb-24 max-w-container-max mx-auto w-full">
           {!showContent ? (

@@ -12,13 +12,13 @@
 [![mainnet-fork](https://img.shields.io/badge/mainnet--fork-4%2F5%20CPI--round--trips-yellow)](docs/fork-run.log)
 [![license: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![crates.io](https://img.shields.io/crates/v/yield-adapter-trait)](https://crates.io/crates/yield-adapter-trait)
-[![live demo](https://img.shields.io/badge/live%20demo-vercel-000?logo=vercel)](https://solana-yield-adapter.vercel.app)
+[![live demo](https://img.shields.io/badge/live%20demo-vercel-000?logo=vercel)](https://solana-yield-adapter-standard.vercel.app)
 
-[Adapter Standard](docs/ADAPTER_STANDARD.md) · [Build Your Own](docs/BUILD_YOUR_OWN_ADAPTER.md) · [Documentation](https://syas.mintlify.app) · [Live Demo](https://solana-yield-adapter.vercel.app)
+[Adapter Standard](docs/ADAPTER_STANDARD.md) · [Build Your Own](docs/BUILD_YOUR_OWN_ADAPTER.md) · [Documentation](https://syas.mintlify.app) · [Live Demo](https://solana-yield-adapter-standard.vercel.app)
 
 </div>
 
-> **🔬 Live demo: [solana-yield-adapter.vercel.app](https://solana-yield-adapter-standard.vercel.app/)** — the full architecture runs in your browser: connect a wallet, deposit/withdraw through any of the 6 adapters, route via the dispatcher, or toggle vault status — all on devnet. ([source](./packages/demo))
+> **🔬 Live demo: [solana-yield-adapter-standard.vercel.app](https://solana-yield-adapter-standard.vercel.app/)** — the full architecture runs in your browser: connect a wallet, deposit/withdraw through any of the 6 adapters, route via the dispatcher, or toggle vault status — all on devnet. ([source](./packages/demo))
 
 ---
 

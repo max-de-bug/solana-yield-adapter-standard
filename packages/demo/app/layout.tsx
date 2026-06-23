@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   openGraph: {
     title,
     description,
-    url: "https://solana-yield-adapter.vercel.app",
+    url: "https://solana-yield-adapter-standard.vercel.app",
     siteName: "Solana Yield Adapter Standard",
     type: "website",
   },
