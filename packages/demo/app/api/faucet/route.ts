@@ -1,16 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Connection, Keypair, PublicKey, Transaction } from "@solana/web3.js";
-import {
-  createAssociatedTokenAccountInstruction,
-  createMintToInstruction,
-  getAssociatedTokenAddressSync,
-  TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
+import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import { getOrCreateAssociatedTokenAccount, mintTo } from "@solana/spl-token";
 
 const CONNECTION = new Connection("https://api.devnet.solana.com");
 const TOKEN_MINT = new PublicKey("4iaAEQ656fjfLMVCAYQcTquXV12E99zKYKFdJ44S8xuT");
-const DECIMALS = 6;
-const AMOUNT = BigInt(1_000_000) * BigInt(10 ** DECIMALS); // 1,000,000 tokens
+const AMOUNT = 1_000_000_000_000; // 1,000,000 tokens (6 decimals)
 
 const FAUCET_SECRET = new Uint8Array([
   60, 46, 177, 145, 168, 198, 71, 118, 211, 84, 177, 131, 242, 166, 138, 29,
@@ -28,37 +22,21 @@ export async function GET(request: NextRequest) {
 
   try {
     const user = new PublicKey(to);
-    const ata = getAssociatedTokenAddressSync(TOKEN_MINT, user);
 
-    const tx = new Transaction();
-    tx.add(
-      createAssociatedTokenAccountInstruction(
-        FAUCET.publicKey,
-        ata,
-        user,
-        TOKEN_MINT,
-        TOKEN_PROGRAM_ID,
-      ),
-      createMintToInstruction(
-        TOKEN_MINT,
-        ata,
-        FAUCET.publicKey,
-        AMOUNT,
-      ),
+    const ata = await getOrCreateAssociatedTokenAccount(
+      CONNECTION,
+      FAUCET,
+      TOKEN_MINT,
+      user,
     );
-    tx.feePayer = FAUCET.publicKey;
 
-    const bh = await CONNECTION.getLatestBlockhash("confirmed");
-    tx.recentBlockhash = bh.blockhash;
-    tx.lastValidBlockHeight = bh.lastValidBlockHeight + 150;
-    tx.sign(FAUCET);
-
-    const sig = await CONNECTION.sendRawTransaction(tx.serialize(), {
-      skipPreflight: true,
-    });
-    await CONNECTION.confirmTransaction(
-      { signature: sig, blockhash: bh.blockhash, lastValidBlockHeight: bh.lastValidBlockHeight + 150 },
-      "confirmed",
+    const sig = await mintTo(
+      CONNECTION,
+      FAUCET,
+      TOKEN_MINT,
+      ata.address,
+      FAUCET,
+      AMOUNT,
     );
 
     return NextResponse.json({ success: true, tx: sig });

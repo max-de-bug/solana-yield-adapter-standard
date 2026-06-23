@@ -404,7 +404,7 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
       const txInfo = await connection.getTransaction(sig, { commitment: "confirmed" });
       const logs = txInfo?.meta?.logMessages?.join("\n") ?? "";
       const match = logs.match(/(\d+)\s*shares?/i);
-      setCurrentValue(match ? match[1] : "ok");
+      setCurrentValue(match ? formatU64(match[1]) : "ok");
     } catch (err: unknown) {
       onLog({ type: "error", message: `currentValue failed: ${parseAnchorError(err).message}` });
     } finally { setTxStatus("idle"); }
