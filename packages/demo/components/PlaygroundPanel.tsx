@@ -286,6 +286,19 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
     return sig;
   }, [connection, wallet, onLog]);
 
+  const ensureVaultAta = useCallback(async (): Promise<void> => {
+    const va = currentValtAccts();
+    const existing = await connection.getAccountInfo(va.vaultTokenAccount);
+    if (existing) return;
+    const ix = createAssociatedTokenAccountInstruction(
+      wallet.publicKey!,
+      va.vaultTokenAccount,
+      va.vaultAuthority,
+      vaultMint(adapterName),
+    );
+    await sendTx(ix, `Created vault ATA for ${cfg.label}`);
+  }, [adapterName, cfg, connection, wallet, sendTx]);
+
   const handleInitialize = useCallback(async () => {
     if (!adapterRef.current || !wallet.signTransaction || !wallet.publicKey) return;
     setTxStatus("initializing");
@@ -305,6 +318,20 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
       }
       const ix = await adapterRef.current.methods.initialize(USDC_MINT).accounts(initAccounts).instruction();
       await sendTx(ix, `Initialized ${cfg.label} vault`);
+
+      // Create the vault's token ATA (needed by deposit/withdraw instructions)
+      const vaultAta = getAssociatedTokenAddressSync(USDC_MINT, va.vaultAuthority, true);
+      const ataInfo = await connection.getAccountInfo(vaultAta);
+      if (!ataInfo) {
+        const createAtaIx = createAssociatedTokenAccountInstruction(
+          wallet.publicKey,
+          vaultAta,
+          va.vaultAuthority,
+          USDC_MINT,
+        );
+        await sendTx(createAtaIx, `Created vault ATA for ${cfg.label}`);
+      }
+
       setVaultState({ exists: true, status: "Active" });
     } catch (err: unknown) {
       onLog({ type: "error", message: `Initialize failed: ${parseAnchorError(err).message}` });
@@ -336,6 +363,7 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
     if (!adapterRef.current || !dispatcherRef.current || !wallet.signTransaction || !wallet.publicKey) return;
     setTxStatus("depositing");
     try {
+      await ensureVaultAta();
       const ata = await ensureUserAta();
       const amountRaw = Math.round(parseFloat(amount) * 1_000_000);
       if (!(amountRaw > 0)) throw new Error("Amount must be greater than 0");
@@ -347,7 +375,7 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
     } catch (err: unknown) {
       onLog({ type: "error", message: `Deposit failed: ${parseAnchorError(err).message}` });
     } finally { setTxStatus("idle"); }
-  }, [amount, cfg, connection, ensureUserAta, wallet, adapterName, useDispatcher, getDepositAccts, sendTx, fetchChainData]);
+  }, [amount, cfg, connection, ensureUserAta, ensureVaultAta, wallet, adapterName, useDispatcher, getDepositAccts, sendTx, fetchChainData]);
 
   const handleCurrentValue = useCallback(async () => {
     if (!adapterRef.current || !dispatcherRef.current || !wallet.signTransaction || !wallet.publicKey) return;
@@ -384,6 +412,7 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
     if (!adapterRef.current || !dispatcherRef.current || !wallet.signTransaction || !wallet.publicKey) return;
     setTxStatus("withdrawing");
     try {
+      await ensureVaultAta();
       const ata = await ensureUserAta();
       const sharesRaw = Math.round(parseFloat(amount) * 1_000_000);
       if (!(sharesRaw > 0)) throw new Error("Amount must be greater than 0");
@@ -395,7 +424,7 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
     } catch (err: unknown) {
       onLog({ type: "error", message: `Withdraw failed: ${parseAnchorError(err).message}` });
     } finally { setTxStatus("idle"); }
-  }, [amount, cfg, connection, ensureUserAta, wallet, adapterName, useDispatcher, getWithdrawAccts, sendTx, fetchChainData]);
+  }, [amount, cfg, connection, ensureUserAta, ensureVaultAta, wallet, adapterName, useDispatcher, getWithdrawAccts, sendTx, fetchChainData]);
 
   const isBusy = txStatus !== "idle";
 
