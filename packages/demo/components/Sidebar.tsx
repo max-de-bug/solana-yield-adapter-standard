@@ -9,7 +9,6 @@ export default function Sidebar() {
         </div>
         <div>
           <h2 className="font-label-md text-label-md text-primary font-bold">SOL Yield</h2>
-          <p className="font-label-sm text-label-sm text-on-surface-variant">v2.4.0-stable</p>
         </div>
       </div>
       <nav className="flex-1 flex flex-col gap-1">
