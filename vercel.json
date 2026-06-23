@@ -1,4 +1,4 @@
 {
-  "rootDirectory": "packages/demo",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "rootDirectory": "packages/demo"
 }
