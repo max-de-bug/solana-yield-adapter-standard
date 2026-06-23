@@ -3,7 +3,7 @@
 import { useCallback, useState, useRef, useEffect } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey, Transaction, SystemProgram } from "@solana/web3.js";
-import { getAssociatedTokenAddressSync, createAssociatedTokenAccountInstruction } from "@solana/spl-token";
+import { getAssociatedTokenAddressSync, createAssociatedTokenAccountInstruction, getAccount } from "@solana/spl-token";
 import BN from "bn.js";
 
 import { getAdapter, getVaultStatePda, getVaultAuthorityPda, getVaultSyrupPda } from "@/lib/adapters";
@@ -82,6 +82,7 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
   const [checkingVault, setCheckingVault] = useState(true);
   const [metricsLoading, setMetricsLoading] = useState(false);
   const [useDispatcher, setUseDispatcher] = useState(false);
+  const [userBalance, setUserBalance] = useState<bigint | null>(null);
   const adapterRef = useRef<Program | null>(null);
   const dispatcherRef = useRef<Program | null>(null);
   const cancelledRef = useRef(false);
@@ -206,6 +207,16 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
     connection.getAccountInfo(ata).then((info) => {
       if (!cancelledRef.current && info) setUserAta(ata);
     });
+
+    (async () => {
+      const ata = getAssociatedTokenAddressSync(vaultMint(adapterName), user);
+      try {
+        const info = await getAccount(connection, ata, "confirmed");
+        if (!cancelledRef.current) setUserBalance(info.amount);
+      } catch {
+        if (!cancelledRef.current) setUserBalance(BigInt(0));
+      }
+    })();
 
     return () => { cancelledRef.current = true; };
   }, [adapterName, connection, wallet, cfg, user]);
@@ -371,6 +382,10 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
       const prog = useDispatcher ? dispatcherRef.current! : adapterRef.current!;
       const ix = await prog.methods.deposit(new BN(amountRaw), new BN(0)).accounts(getDepositAccts(ata, userPosition)).instruction();
       await sendTx(ix, `Deposited ${amount} → ${cfg.label}${useDispatcher ? " (via dispatcher)" : ""}`);
+      try {
+        const info = await getAccount(connection, ata, "confirmed");
+        setUserBalance(info.amount);
+      } catch { setUserBalance(BigInt(0)); }
       await fetchChainData();
     } catch (err: unknown) {
       onLog({ type: "error", message: `Deposit failed: ${parseAnchorError(err).message}` });
@@ -420,6 +435,11 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
       const ix = await prog.methods.withdraw(new BN(sharesRaw), new BN(0)).accounts(getWithdrawAccts(ata)).instruction();
       const sig = await sendTx(ix, `Withdrew ${amount} shares from ${cfg.label}${useDispatcher ? " (via dispatcher)" : ""}`);
       setCurrentValue(null);
+      try {
+        const ata = getAssociatedTokenAddressSync(USDC_MINT, user);
+        const info = await getAccount(connection, ata, "confirmed");
+        setUserBalance(info.amount);
+      } catch { setUserBalance(BigInt(0)); }
       await fetchChainData();
     } catch (err: unknown) {
       onLog({ type: "error", message: `Withdraw failed: ${parseAnchorError(err).message}` });
@@ -487,6 +507,33 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
       {vaultState.exists && (
         <>
           <VaultMetrics metrics={metrics} loading={metricsLoading} mintLabel={mintLabel} />
+
+          <div className="mb-3 flex items-center justify-between rounded-lg border border-[#2a2d35] bg-[#1c1f26] px-3 py-2">
+            <span className="text-[11px] text-muted">Balance</span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-sm text-white">{userBalance !== null ? formatU64(userBalance) : "..."}</span>
+              {userBalance !== null && userBalance === BigInt(0) && (
+                <button
+                  className="rounded bg-[#6c5ce7] px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-[#5a4bd1]"
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(`/api/faucet?to=${user.toBase58()}`);
+                      const data = await res.json();
+                      if (!data.success) throw new Error(data.error);
+                      const ata = getAssociatedTokenAddressSync(USDC_MINT, user);
+                      const info = await getAccount(connection, ata, "confirmed");
+                      setUserBalance(info.amount);
+                      onLog({ type: "success", message: "1,000,000 test tokens received", txSig: data.tx });
+                    } catch (e: unknown) {
+                      onLog({ type: "error", message: `Faucet error: ${e instanceof Error ? e.message : String(e)}` });
+                    }
+                  }}
+                >
+                  Get tokens
+                </button>
+              )}
+            </div>
+          </div>
 
           <div className="mb-4">
             <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted">Amount ({mintLabel})</label>
