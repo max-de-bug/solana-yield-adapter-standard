@@ -3,14 +3,6 @@
 export default function Sidebar() {
   return (
     <aside className="fixed left-0 top-16 h-[calc(100vh-64px)] w-64 border-r border-outline-variant flex flex-col py-6 bg-surface-container-low z-40 hidden md:flex">
-      <div className="px-6 mb-8 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center border border-outline-variant">
-          <span className="material-symbols-outlined text-primary">hub</span>
-        </div>
-        <div>
-          <h2 className="font-label-md text-label-md text-primary font-bold">SOL Yield</h2>
-        </div>
-      </div>
       <nav className="flex-1 flex flex-col gap-1">
         <div className="flex items-center gap-3 px-6 py-3 bg-surface-container-highest text-primary border-r-2 border-primary font-label-md text-label-md">
           <span className="material-symbols-outlined">terminal</span>
