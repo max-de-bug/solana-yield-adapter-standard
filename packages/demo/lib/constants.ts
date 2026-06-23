@@ -17,4 +17,4 @@ export const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9
 
 export type AdapterName = keyof typeof PROGRAM_IDS;
 
-export const DEPLOYED_ADAPTERS: Set<AdapterName> = new Set(["kamino"]);
+export const DEPLOYED_ADAPTERS: Set<AdapterName> = new Set(["kamino", "marginfi", "jupiter", "maple", "drift", "template"]);
