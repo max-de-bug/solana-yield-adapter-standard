@@ -10,6 +10,9 @@
  * Only Drift's IDL exports errors (13000+); the rest are compiled from source.
  */
 const KNOWN_ERRORS: Record<number, string> = {
+  // ── Anchor framework errors ──────────────────────────
+  3012: "No position found — deposit first",
+
   // ── Dispatcher (12100–12105) ────────────────────────────
   12100: "Dispatcher is paused",
   12101: "Adapter not registered or not approved",
@@ -77,11 +80,11 @@ function extractProgramErrorFromLogs(logs: string[]): { message: string; code?: 
       return { message: known ?? `Program error 0x${code.toString(16).toUpperCase()}`, code };
     }
   }
-  // Return the last program log line as a fallback
+  // Return the last program log line as a fallback (only if it looks like an error, not a status update)
   const programLogs = logs.filter(l => l.startsWith("Program log:"));
   if (programLogs.length > 0) {
     const last = programLogs[programLogs.length - 1].replace(/^Program log:\s*/, "");
-    if (last && !last.startsWith("{")) return { message: last };
+    if (last && !last.startsWith("{") && !last.startsWith("Dispatcher ")) return { message: last };
   }
   return null;
 }

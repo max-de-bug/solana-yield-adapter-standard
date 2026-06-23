@@ -251,10 +251,10 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
         sendErrObj.error?.transactionMessage ??
         sendErrObj.error?.message ??
         (Array.isArray(sendErrObj.logs)
-          ? sendErrObj.logs.filter((l: string) => l.startsWith("Program log:")).pop()?.replace("Program log: ", "")
+          ? sendErrObj.logs.filter((l: string) => l.startsWith("Program log:") && !l.includes("Dispatcher ")).pop()?.replace("Program log: ", "")
           : null) ??
         (Array.isArray(sendErrObj.error?.logs)
-          ? sendErrObj.error.logs.filter((l: string) => l.startsWith("Program log:")).pop()?.replace("Program log: ", "")
+          ? sendErrObj.error.logs.filter((l: string) => l.startsWith("Program log:") && !l.includes("Dispatcher ")).pop()?.replace("Program log: ", "")
           : null) ??
         null;
       const better = candidate && candidate !== "Internal error" ? String(candidate) : null;
@@ -472,10 +472,10 @@ export default function PlaygroundPanel({ adapterName, user, onLog }: Props) {
             <button className="btn btn-deposit flex-1" onClick={handleDeposit} disabled={isBusy}>
               {txStatus === "depositing" ? "Depositing..." : "deposit(amount)"}
             </button>
-            <button className="btn btn-value flex-1" onClick={handleCurrentValue} disabled={isBusy}>
+            <button className="btn btn-value flex-1" onClick={handleCurrentValue} disabled={isBusy || !position.exists} title={!position.exists ? "Deposit first to create a position" : ""}>
               {txStatus === "valuing" ? "Querying..." : "currentValue()"}
             </button>
-            <button className="btn btn-withdraw flex-1" onClick={handleWithdraw} disabled={isBusy}>
+            <button className="btn btn-withdraw flex-1" onClick={handleWithdraw} disabled={isBusy || !position.exists} title={!position.exists ? "Deposit first to create a position" : ""}>
               {txStatus === "withdrawing" ? "Withdrawing..." : "withdraw(shares)"}
             </button>
           </div>
