@@ -2,51 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 
-@layer base {
-  body {
-    @apply bg-[#0b0d11] text-[#e4e6ea] antialiased;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  }
-  code {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  }
-  *:focus-visible {
-    @apply outline-none ring-2 ring-[#6c5ce7] ring-offset-2 ring-offset-[#0b0d11];
-  }
+body {
+  background-color: #0b1326;
+  color: #dae2fd;
 }
-
-@layer components {
-  .btn {
-    @apply px-4 py-2 rounded-lg text-sm font-mono border border-border bg-surface2
-           transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed;
-  }
-  .btn:hover:not(:disabled) {
-    @apply border-accent bg-surface;
-  }
-  .btn-deposit {
-    @apply border-[#2ecc71] text-[#2ecc71];
-  }
-  .btn-deposit:hover:not(:disabled) {
-    @apply bg-[#2ecc71]/10;
-  }
-  .btn-value {
-    @apply border-[#f1c40f] text-[#f1c40f];
-  }
-  .btn-value:hover:not(:disabled) {
-    @apply bg-[#f1c40f]/10;
-  }
-  .btn-withdraw {
-    @apply border-[#e74c3c] text-[#e74c3c];
-  }
-  .btn-withdraw:hover:not(:disabled) {
-    @apply bg-[#e74c3c]/10;
-  }
-  .btn-initialize {
-    @apply border-[#3498db] text-[#3498db];
-  }
-  .btn-initialize:hover:not(:disabled) {
-    @apply bg-[#3498db]/10;
-  }
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }

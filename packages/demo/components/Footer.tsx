@@ -1,26 +1,15 @@
+"use client";
+
 export default function Footer() {
   return (
-    <footer className="mt-12 border-t border-[#2a2d35] pt-6 pb-4">
-      <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-between">
-        <div className="flex items-center gap-2 text-xs text-muted">
-          <span>Built with</span>
-          <a href="https://solana.com" target="_blank" rel="noreferrer" className="text-white underline-offset-2 hover:underline">Solana</a>
-          <span>·</span>
-          <a href="https://nextjs.org" target="_blank" rel="noreferrer" className="text-white underline-offset-2 hover:underline">Next.js</a>
-          <span>·</span>
-          <a href="https://vercel.com" target="_blank" rel="noreferrer" className="text-white underline-offset-2 hover:underline">Vercel</a>
-        </div>
-        <div className="flex items-center gap-3 text-xs text-muted">
-          <a href="https://github.com/max-de-bug/solana-yield-adapter-standard" target="_blank" rel="noreferrer" className="underline-offset-2 hover:text-white hover:underline">
-            GitHub
-          </a>
-          <a href="https://syas.mintlify.app" target="_blank" rel="noreferrer" className="underline-offset-2 hover:text-white hover:underline">
-            Documentation
-          </a>
-          <a href="https://solana-yield-adapter.vercel.app" target="_blank" rel="noreferrer" className="underline-offset-2 hover:text-white hover:underline">
-            Live Demo
-          </a>
-        </div>
+    <footer className="fixed bottom-0 right-0 left-0 md:left-64 h-10 border-t border-outline-variant flex items-center justify-between px-margin-desktop w-full z-40 bg-surface-container-lowest text-on-surface-variant font-label-sm text-label-sm">
+      <div className="font-label-sm text-label-sm uppercase tracking-widest text-on-surface-variant opacity-50 hidden md:block">
+        © 2024 Solana-Yield Adapter. System Operational.
+      </div>
+      <div className="flex gap-6 w-full md:w-auto justify-between md:justify-end">
+        <span className="hover:text-primary transition-colors cursor-default">Network: Devnet</span>
+        <span className="hover:text-primary transition-colors cursor-default">Total Adapters: 6</span>
+        <span className="hover:text-primary transition-colors cursor-default">Interface Coverage: 100%</span>
       </div>
     </footer>
   );
