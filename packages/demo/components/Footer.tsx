@@ -2,7 +2,7 @@
 
 export default function Footer() {
   return (
-    <footer className="fixed bottom-0 right-0 left-0 md:left-64 h-10 border-t border-outline-variant flex items-center justify-start px-margin-desktop w-full z-40 bg-surface-container-lowest text-on-surface-variant font-label-sm text-label-sm">
+    <footer className="fixed bottom-0 left-0 right-0 h-10 border-t border-outline-variant flex items-center justify-start px-margin-desktop w-full z-40 bg-surface-container-lowest text-on-surface-variant font-label-sm text-label-sm">
       <div className="font-label-sm text-label-sm uppercase tracking-widest text-on-surface-variant whitespace-nowrap overflow-hidden text-ellipsis">
         © 2026 Solana-Yield Adapter
       </div>

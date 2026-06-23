@@ -12,3 +12,94 @@ body {
 .material-symbols-outlined {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
+
+/* ── Button base ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 0.5rem;
+  padding: 8px 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn:focus-visible {
+  outline: 2px solid #6c5ce7;
+  outline-offset: 2px;
+}
+
+/* ── Initialize / toggle (purple outline) ── */
+.btn-initialize {
+  background: transparent;
+  color: #6c5ce7;
+  border-color: #6c5ce7;
+}
+
+.btn-initialize:hover:not(:disabled) {
+  background: rgba(108, 92, 231, 0.12);
+}
+
+.btn-initialize:active:not(:disabled) {
+  background: rgba(108, 92, 231, 0.2);
+}
+
+/* ── deposit(amount) — solid purple ── */
+.btn-deposit {
+  background: #6c5ce7;
+  color: #fff;
+  border-color: #6c5ce7;
+}
+
+.btn-deposit:hover:not(:disabled) {
+  background: #5a4bd1;
+  border-color: #5a4bd1;
+}
+
+.btn-deposit:active:not(:disabled) {
+  background: #4d3fc0;
+  border-color: #4d3fc0;
+}
+
+/* ── currentValue() — teal ── */
+.btn-value {
+  background: transparent;
+  color: #00d2a0;
+  border-color: #00d2a0;
+}
+
+.btn-value:hover:not(:disabled) {
+  background: rgba(0, 210, 160, 0.12);
+}
+
+.btn-value:active:not(:disabled) {
+  background: rgba(0, 210, 160, 0.2);
+}
+
+/* ── withdraw(shares) — rose ── */
+.btn-withdraw {
+  background: transparent;
+  color: #ff6b6b;
+  border-color: #ff6b6b;
+}
+
+.btn-withdraw:hover:not(:disabled) {
+  background: rgba(255, 107, 107, 0.12);
+}
+
+.btn-withdraw:active:not(:disabled) {
+  background: rgba(255, 107, 107, 0.2);
+}
