@@ -2348,6 +2348,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ya-cooldown-standin"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "yield-adapter-trait",
+]
+
+[[package]]
 name = "yield-adapter-trait"
 version = "1.0.0"
 dependencies = [

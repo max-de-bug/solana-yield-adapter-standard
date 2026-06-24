@@ -57,6 +57,13 @@ export interface ConformanceConfig {
 }
 
 /**
+ * Build AccountMeta from raw pubkey for remaining accounts.
+ * Ensures isSigner/isWritable defaults are set to avoid type issues. */
+function toAccountMeta(pk: PublicKey, isWritable: boolean, isSigner: boolean): AccountMeta {
+  return { pubkey: pk, isWritable, isSigner };
+}
+
+/**
  * Registers a standard set of conformance tests for any yield adapter.
  *
  * Call this inside a `describe()` block. The `get` function is evaluated
@@ -69,7 +76,7 @@ export function runConformance(get: () => ConformanceConfig): void {
     return c;
   };
 
-  // Check 1: initialize idempotent (skip for adapters with extra required accounts like maple)
+  // Check 1: initialize idempotent
   if (!cfg().skipInitTest) {
     it("initialize vault is idempotent", async () => {
       const { program, authority, vaultStatePda, underlyingMint } = cfg();
@@ -86,7 +93,7 @@ export function runConformance(get: () => ConformanceConfig): void {
   }
 
   // Check 2: deposit → current_value ≈ amount
-  it(`deposit then current_value ≈ deposit amount`, async () => {
+  it("deposit then current_value ≈ deposit amount", async () => {
     const c = cfg();
     const amt = c.depositAmount!.toNumber();
     const userAta = await fundUserAta(c.provider, c.payer, c.authority.publicKey, c.underlyingMint, amt * 2);
@@ -102,7 +109,9 @@ export function runConformance(get: () => ConformanceConfig): void {
         systemProgram: SystemProgram.programId,
       })
       .instruction();
-    if (c.depositRemainingAccounts) di.keys.push(...c.depositRemainingAccounts.map(a => ({ ...a, pubkey: a.pubkey, isSigner: a.isSigner ?? false, isWritable: a.isWritable ?? false })));
+    if (c.depositRemainingAccounts) {
+      di.keys.push(...c.depositRemainingAccounts.map(a => toAccountMeta(a.pubkey, a.isWritable ?? false, a.isSigner ?? false)));
+    }
     await sendInstruction(c.provider, di);
 
     await sleep(500);
@@ -110,7 +119,9 @@ export function runConformance(get: () => ConformanceConfig): void {
       .currentValue()
       .accounts({ user: c.authority.publicKey, vaultState: c.vaultStatePda, userPosition: posPda })
       .instruction();
-    if (c.valueRemainingAccounts) cv.keys.push(...c.valueRemainingAccounts.map(a => ({ ...a, pubkey: a.pubkey, isSigner: a.isSigner ?? false, isWritable: a.isWritable ?? false })));
+    if (c.valueRemainingAccounts) {
+      cv.keys.push(...c.valueRemainingAccounts.map(a => toAccountMeta(a.pubkey, a.isWritable ?? false, a.isSigner ?? false)));
+    }
     await sendInstruction(c.provider, cv);
 
     const vaultBal = await getTokenBalance(c.provider, c.vaultTokenAccount);
@@ -134,19 +145,18 @@ export function runConformance(get: () => ConformanceConfig): void {
           systemProgram: SystemProgram.programId,
         })
         .instruction();
-      if (c.depositRemainingAccounts) di.keys.push(...c.depositRemainingAccounts.map(a => ({ ...a, pubkey: a.pubkey, isSigner: a.isSigner ?? false, isWritable: a.isWritable ?? false })));
+      if (c.depositRemainingAccounts) {
+        di.keys.push(...c.depositRemainingAccounts.map(a => toAccountMeta(a.pubkey, a.isWritable ?? false, a.isSigner ?? false)));
+      }
       await sendInstruction(c.provider, di);
       await sleep(500);
       acc = await c.provider.connection.getAccountInfo(posPda);
       if (!acc) throw new Error("position not created after deposit");
     }
-    // Poll for fresh position data (Surfpool cache may be stale).
-    // Use raw getAccountInfo to bypass Anchor's AccountClient cache.
     let posRaw = await c.provider.connection.getAccountInfo(posPda);
     let receiptBalance = "0";
     for (let i = 0; i < 15; i++) {
       if (posRaw && posRaw.data.length >= 113) {
-        // receipt_token_balance at offset 8+32+32+8+8 = 88
         receiptBalance = posRaw.data.readBigUInt64LE(88).toString();
         if (receiptBalance !== "0") break;
       }
@@ -156,8 +166,8 @@ export function runConformance(get: () => ConformanceConfig): void {
     expect(Number(receiptBalance)).to.be.greaterThan(0);
   });
 
-  // Check 4: unified decoder M6 gate
-  it("unified SDK decoder reads this adapter's Position (M6 gate)", async () => {
+  // Check 4: unified decoder gate
+  it("unified SDK decoder reads this adapter's Position", async () => {
     const c = cfg();
     const [posPda] = adapterUserPositionPda(c.program.programId, c.authority.publicKey);
     let info = await c.provider.connection.getAccountInfo(posPda);
@@ -173,13 +183,14 @@ export function runConformance(get: () => ConformanceConfig): void {
           systemProgram: SystemProgram.programId,
         })
         .instruction();
-      if (c.depositRemainingAccounts) di.keys.push(...c.depositRemainingAccounts.map(a => ({ ...a, pubkey: a.pubkey, isSigner: a.isSigner ?? false, isWritable: a.isWritable ?? false })));
+      if (c.depositRemainingAccounts) {
+        di.keys.push(...c.depositRemainingAccounts.map(a => toAccountMeta(a.pubkey, a.isWritable ?? false, a.isSigner ?? false)));
+      }
       await sendInstruction(c.provider, di);
       await sleep(500);
       info = await c.provider.connection.getAccountInfo(posPda);
     }
     expect(info, "Position account should exist").to.not.be.null;
-    // Poll for fresh position data (Surfpool cache may be stale)
     let data = info!.data;
     for (let i = 0; i < 15; i++) {
       const fresh = await c.provider.connection.getAccountInfo(posPda);
@@ -190,7 +201,7 @@ export function runConformance(get: () => ConformanceConfig): void {
       await sleep(2000);
     }
     info = { ...info!, data };
-    expect(data.length, "Position data should be 113 bytes (8 discriminator + 105 fields)").to.equal(113);
+    expect(data.length, "Position data should be 113 bytes").to.equal(113);
 
     const decoded = decodePosition(data);
     expect(decoded.owner.equals(c.authority.publicKey), "decoded owner matches user").to.be.true;
@@ -204,8 +215,7 @@ export function runConformance(get: () => ConformanceConfig): void {
     const c = cfg();
     const tempUser = Keypair.generate();
     const tempPosPda = adapterUserPositionPda(c.program.programId, tempUser.publicKey)[0];
-    // Fund tempUser with 2 SOL and create USDC ATA
-      const tempAta = await getOrCreateAssociatedTokenAccount(
+    const tempAta = await getOrCreateAssociatedTokenAccount(
       c.provider.connection, c.payer, c.underlyingMint, tempUser.publicKey
     ).then(a => a.address);
     await sendInstruction(c.provider,
@@ -233,7 +243,9 @@ export function runConformance(get: () => ConformanceConfig): void {
         systemProgram: SystemProgram.programId,
       })
       .instruction();
-    if (c.depositRemainingAccounts) di.keys.push(...c.depositRemainingAccounts.map(a => ({ ...a, pubkey: a.pubkey, isSigner: a.isSigner ?? false, isWritable: a.isWritable ?? false })));
+    if (c.depositRemainingAccounts) {
+      di.keys.push(...c.depositRemainingAccounts.map(a => toAccountMeta(a.pubkey, a.isWritable ?? false, a.isSigner ?? false)));
+    }
 
     const tx = new Transaction().add(di);
     tx.feePayer = tempUser.publicKey;
@@ -264,7 +276,122 @@ export function runConformance(get: () => ConformanceConfig): void {
     );
   });
 
-  // Check 6: vault status lifecycle (fork-only)
+  // Check 6: reject zero amount withdraw
+  it("rejects zero amount withdraw", async function () {
+    this.timeout(120000);
+    const c = cfg();
+    const amt = Number(c.depositAmount!);
+    const userAta = await fundUserAta(c.provider, c.payer, c.authority.publicKey, c.underlyingMint, amt * 2);
+    const [posPda] = adapterUserPositionPda(c.program.programId, c.authority.publicKey);
+
+    // Deposit first
+    await sleep(500);
+    const di = await c.program.methods
+      .deposit(c.depositAmount!, new BN(0))
+      .accounts({
+        user: c.authority.publicKey, vaultState: c.vaultStatePda, userPosition: posPda,
+        userTokenAccount: userAta, vaultAuthority: c.vaultAuthorityPda,
+        vaultTokenAccount: c.vaultTokenAccount, tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      })
+      .instruction();
+    if (c.depositRemainingAccounts) {
+      di.keys.push(...c.depositRemainingAccounts.map(a => toAccountMeta(a.pubkey, a.isWritable ?? false, a.isSigner ?? false)));
+    }
+    await sendInstruction(c.provider, di);
+    await sleep(500);
+
+    // Try zero withdraw using raw transaction for reliable error detection
+    const wi = await c.program.methods
+      .withdraw(new BN(0), new BN(0))
+      .accounts({
+        user: c.authority.publicKey, vaultState: c.vaultStatePda, userPosition: posPda,
+        userTokenAccount: userAta, vaultTokenAccount: c.vaultTokenAccount,
+        vaultAuthority: c.vaultAuthorityPda, tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .instruction();
+    const wTx = new Transaction().add(wi);
+    wTx.feePayer = c.authority.publicKey;
+    const wBh = await c.provider.connection.getLatestBlockhash();
+    wTx.recentBlockhash = wBh.blockhash;
+    wTx.lastValidBlockHeight = wBh.lastValidBlockHeight + 2000;
+    try {
+      if ("signTransaction" in c.authority) {
+        await c.authority.signTransaction(wTx);
+      }
+      const wSig = await c.provider.connection.sendRawTransaction(wTx.serialize(), { skipPreflight: true });
+      const wCr = await c.provider.connection.confirmTransaction({
+        signature: wSig, blockhash: wBh.blockhash, lastValidBlockHeight: wBh.lastValidBlockHeight + 2000,
+      });
+      if (!wCr.value.err) {
+        expect.fail("Should have rejected zero withdraw");
+      }
+      const wLogs = (await c.provider.connection.getTransaction(wSig, { commitment: "confirmed" }))
+        ?.meta?.logMessages?.join("\n") ?? "";
+      expect(wLogs).to.satisfy((s: string) =>
+        s.includes("ZeroWithdrawAmount") || s.includes("withdrawal") || s.includes("must be greater")
+      );
+    } catch (err: unknown) {
+      const msg = typeof err === 'string' ? err
+        : err instanceof Error ? err.message
+          : JSON.stringify(err);
+      expect(msg).to.satisfy((s: string) =>
+        s.includes("ZeroWithdrawAmount") || s.includes("withdrawal") || s.includes("must be greater")
+      );
+    }
+  });
+
+  // Check 7: full round-trip
+  it("full round-trip: deposit → withdraw all shares → vault empty", async function () {
+    this.timeout(120000);
+    const c = cfg();
+    const amt = Number(c.depositAmount!);
+    const userAta = await fundUserAta(c.provider, c.payer, c.authority.publicKey, c.underlyingMint, amt * 2);
+    const [posPda] = adapterUserPositionPda(c.program.programId, c.authority.publicKey);
+
+    const vaultBefore = await getTokenBalance(c.provider, c.vaultTokenAccount);
+
+    // Deposit
+    await sleep(500);
+    const di = await c.program.methods
+      .deposit(c.depositAmount!, new BN(0))
+      .accounts({
+        user: c.authority.publicKey, vaultState: c.vaultStatePda, userPosition: posPda,
+        userTokenAccount: userAta, vaultAuthority: c.vaultAuthorityPda,
+        vaultTokenAccount: c.vaultTokenAccount, tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      })
+      .instruction();
+    if (c.depositRemainingAccounts) {
+      di.keys.push(...c.depositRemainingAccounts.map(a => toAccountMeta(a.pubkey, a.isWritable ?? false, a.isSigner ?? false)));
+    }
+    await sendInstruction(c.provider, di);
+    await sleep(500);
+
+    const pos = await c.program.account.adapterPosition.fetch(posPda);
+    const totalShares = pos.receiptTokenBalance.toNumber();
+    expect(totalShares).to.be.greaterThan(0);
+
+    // Withdraw all shares
+    const wi = await c.program.methods
+      .withdraw(new BN(totalShares), new BN(0))
+      .accounts({
+        user: c.authority.publicKey, vaultState: c.vaultStatePda, userPosition: posPda,
+        userTokenAccount: userAta, vaultTokenAccount: c.vaultTokenAccount,
+        vaultAuthority: c.vaultAuthorityPda, tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .instruction();
+    await sendInstruction(c.provider, wi);
+    await sleep(500);
+
+    const vaultAfter = await getTokenBalance(c.provider, c.vaultTokenAccount);
+    expect(vaultAfter).to.equal(vaultBefore);
+
+    const posAfter = await c.program.account.adapterPosition.fetch(posPda);
+    expect(posAfter.receiptTokenBalance.toNumber()).to.equal(0);
+  });
+
+  // Check 8: vault status lifecycle (fork-only)
   if (isMainnetFork()) {
     it("vault status lifecycle: toggle DepositsPaused → Paused → Active", async function () {
       const c = cfg();
