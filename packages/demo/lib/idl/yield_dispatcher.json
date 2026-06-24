@@ -1,0 +1,1053 @@
+{
+  "address": "8u4YFQiTCR5n5dijVoinXyZ962ngVmFuWKELDUjVCqAR",
+  "metadata": {
+    "name": "yield_dispatcher",
+    "version": "1.0.0",
+    "spec": "0.1.0",
+    "description": "Core dispatcher/router for the Solana Yield Adapter Standard"
+  },
+  "instructions": [
+    {
+      "name": "current_value",
+      "docs": [
+        "Query the current value of a user's position in an adapter.",
+        "",
+        "Returns the value in underlying token units via an event emission."
+      ],
+      "discriminator": [
+        232,
+        199,
+        167,
+        206,
+        247,
+        56,
+        234,
+        20
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "signer": true
+        },
+        {
+          "name": "dispatcher_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  105,
+                  115,
+                  112,
+                  97,
+                  116,
+                  99,
+                  104,
+                  101,
+                  114,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_position",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  95,
+                  112,
+                  111,
+                  115,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "account",
+                "path": "adapter_program"
+              }
+            ]
+          }
+        },
+        {
+          "name": "registry_program",
+          "address": "8TAhAne1z4chGzuP9EeXFuYsqyGHzACWuD7sURS3ydAq"
+        },
+        {
+          "name": "adapter_entry",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  97,
+                  112,
+                  116,
+                  101,
+                  114,
+                  95,
+                  101,
+                  110,
+                  116,
+                  114,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "adapter_program"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "registry_program"
+            }
+          }
+        },
+        {
+          "name": "adapter_program"
+        },
+        {
+          "name": "adapter_vault_state",
+          "writable": true
+        },
+        {
+          "name": "adapter_user_position"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "deposit",
+      "docs": [
+        "Deposit underlying tokens into a registered adapter.",
+        "",
+        "The dispatcher validates the adapter is approved in the registry,",
+        "then performs a CPI to the adapter's `deposit` instruction."
+      ],
+      "discriminator": [
+        242,
+        35,
+        198,
+        137,
+        82,
+        225,
+        242,
+        182
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "dispatcher_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  105,
+                  115,
+                  112,
+                  97,
+                  116,
+                  99,
+                  104,
+                  101,
+                  114,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_position",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  95,
+                  112,
+                  111,
+                  115,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "account",
+                "path": "adapter_program"
+              }
+            ]
+          }
+        },
+        {
+          "name": "registry_program",
+          "address": "8TAhAne1z4chGzuP9EeXFuYsqyGHzACWuD7sURS3ydAq"
+        },
+        {
+          "name": "adapter_entry",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  97,
+                  112,
+                  116,
+                  101,
+                  114,
+                  95,
+                  101,
+                  110,
+                  116,
+                  114,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "adapter_program"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "registry_program"
+            }
+          }
+        },
+        {
+          "name": "adapter_program"
+        },
+        {
+          "name": "user_token_account",
+          "writable": true
+        },
+        {
+          "name": "adapter_vault_state",
+          "writable": true
+        },
+        {
+          "name": "adapter_vault",
+          "writable": true
+        },
+        {
+          "name": "adapter_vault_authority"
+        },
+        {
+          "name": "adapter_user_position",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "min_shares_out",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initialize",
+      "docs": [
+        "Initialize the dispatcher with a governance authority."
+      ],
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "docs": [
+            "The governance authority who will control this dispatcher."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "dispatcher_state",
+          "docs": [
+            "The dispatcher state PDA — created on first call."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  105,
+                  115,
+                  112,
+                  97,
+                  116,
+                  99,
+                  104,
+                  101,
+                  114,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "registry_program",
+          "docs": [
+            "The adapter registry program that this dispatcher will trust."
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "toggle_pause",
+      "docs": [
+        "Toggle the dispatcher pause state. Authority-only.",
+        "",
+        "When paused, all deposit/withdraw routing is blocked."
+      ],
+      "discriminator": [
+        238,
+        237,
+        206,
+        27,
+        255,
+        95,
+        123,
+        229
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "docs": [
+            "Must be the dispatcher authority."
+          ],
+          "signer": true
+        },
+        {
+          "name": "dispatcher_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  105,
+                  115,
+                  112,
+                  97,
+                  116,
+                  99,
+                  104,
+                  101,
+                  114,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "withdraw",
+      "docs": [
+        "Withdraw underlying tokens from a registered adapter.",
+        "",
+        "Burns receipt tokens and returns underlying tokens to the user."
+      ],
+      "discriminator": [
+        183,
+        18,
+        70,
+        156,
+        148,
+        109,
+        161,
+        34
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "dispatcher_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  105,
+                  115,
+                  112,
+                  97,
+                  116,
+                  99,
+                  104,
+                  101,
+                  114,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_position",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  95,
+                  112,
+                  111,
+                  115,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "account",
+                "path": "adapter_program"
+              }
+            ]
+          }
+        },
+        {
+          "name": "registry_program",
+          "address": "8TAhAne1z4chGzuP9EeXFuYsqyGHzACWuD7sURS3ydAq"
+        },
+        {
+          "name": "adapter_entry",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  97,
+                  112,
+                  116,
+                  101,
+                  114,
+                  95,
+                  101,
+                  110,
+                  116,
+                  114,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "adapter_program"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "registry_program"
+            }
+          }
+        },
+        {
+          "name": "adapter_program"
+        },
+        {
+          "name": "user_token_account",
+          "writable": true
+        },
+        {
+          "name": "adapter_vault_state",
+          "writable": true
+        },
+        {
+          "name": "adapter_vault",
+          "writable": true
+        },
+        {
+          "name": "adapter_vault_authority"
+        },
+        {
+          "name": "adapter_user_position",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "shares",
+          "type": "u64"
+        },
+        {
+          "name": "min_underlying_out",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "DispatcherState",
+      "discriminator": [
+        254,
+        164,
+        233,
+        90,
+        230,
+        8,
+        121,
+        140
+      ]
+    },
+    {
+      "name": "UserPosition",
+      "discriminator": [
+        251,
+        248,
+        209,
+        245,
+        83,
+        234,
+        17,
+        27
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "DispatchCurrentValueEvent",
+      "discriminator": [
+        9,
+        109,
+        20,
+        85,
+        114,
+        33,
+        74,
+        46
+      ]
+    },
+    {
+      "name": "DispatchDepositEvent",
+      "discriminator": [
+        200,
+        69,
+        160,
+        191,
+        218,
+        154,
+        222,
+        39
+      ]
+    },
+    {
+      "name": "DispatchWithdrawEvent",
+      "discriminator": [
+        210,
+        140,
+        106,
+        150,
+        150,
+        103,
+        154,
+        253
+      ]
+    },
+    {
+      "name": "DispatcherInitializedEvent",
+      "discriminator": [
+        230,
+        184,
+        118,
+        94,
+        132,
+        196,
+        147,
+        126
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 12100,
+      "name": "DispatcherPaused",
+      "msg": "Dispatcher is paused"
+    },
+    {
+      "code": 12101,
+      "name": "AdapterNotApproved",
+      "msg": "Adapter not registered or not approved"
+    },
+    {
+      "code": 12102,
+      "name": "ZeroAmount",
+      "msg": "Amount must be greater than zero"
+    },
+    {
+      "code": 12103,
+      "name": "Unauthorized",
+      "msg": "Unauthorized: not the dispatcher authority"
+    },
+    {
+      "code": 12104,
+      "name": "AdapterCpiError",
+      "msg": "Adapter CPI call failed"
+    },
+    {
+      "code": 12105,
+      "name": "RegistryMismatch",
+      "msg": "Registry program mismatch"
+    }
+  ],
+  "types": [
+    {
+      "name": "AdapterEntry",
+      "docs": [
+        "On-chain record for a registered adapter.",
+        "PDA seeded by `[ADAPTER_ENTRY_SEED, adapter_program_id]`."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "adapter_program_id",
+            "docs": [
+              "The adapter program's ID."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "docs": [
+              "Human-readable adapter name."
+            ],
+            "type": "string"
+          },
+          {
+            "name": "status",
+            "docs": [
+              "Current approval status."
+            ],
+            "type": {
+              "defined": {
+                "name": "AdapterStatus"
+              }
+            }
+          },
+          {
+            "name": "underlying_mint",
+            "docs": [
+              "Mint of the underlying token this adapter handles."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "metadata_uri",
+            "docs": [
+              "URI pointing to off-chain metadata (JSON)."
+            ],
+            "type": "string"
+          },
+          {
+            "name": "vault_state_seed",
+            "docs": [
+              "The PDA seed bytes used by this adapter for its vault state account.",
+              "Allows the dispatcher to validate vault state PDAs without hardcoding."
+            ],
+            "type": "bytes"
+          },
+          {
+            "name": "vault_authority_seed",
+            "docs": [
+              "The PDA seed bytes used by this adapter for its vault authority account.",
+              "Allows the dispatcher to validate vault authority PDAs generically."
+            ],
+            "type": "bytes"
+          },
+          {
+            "name": "proposer",
+            "docs": [
+              "The account that proposed this adapter."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "proposed_at",
+            "docs": [
+              "Timestamp when the adapter was proposed."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "approved_at",
+            "docs": [
+              "Timestamp when the adapter was approved (0 if not approved)."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "revoked_at",
+            "docs": [
+              "Timestamp when the adapter was revoked (0 if not revoked)."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "Bump seed for the PDA."
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AdapterStatus",
+      "docs": [
+        "The status of an adapter in the registry."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Proposed"
+          },
+          {
+            "name": "Approved"
+          },
+          {
+            "name": "Revoked"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DispatchCurrentValueEvent",
+      "docs": [
+        "Emitted when a current value query is dispatched."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "adapter_program_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "value",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DispatchDepositEvent",
+      "docs": [
+        "Emitted when the dispatcher routes a deposit to an adapter."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "adapter_program_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DispatchWithdrawEvent",
+      "docs": [
+        "Emitted when the dispatcher routes a withdrawal from an adapter."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "adapter_program_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DispatcherInitializedEvent",
+      "docs": [
+        "Emitted when the dispatcher is initialized."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "registry_program_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DispatcherState",
+      "docs": [
+        "Global dispatcher configuration.",
+        "There is exactly one instance of this account per deployment."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "docs": [
+              "The governance authority who can update dispatcher configuration."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "registry_program_id",
+            "docs": [
+              "The adapter registry program ID that this dispatcher trusts."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "total_deposits",
+            "docs": [
+              "Total number of deposits routed through this dispatcher."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "total_withdrawals",
+            "docs": [
+              "Total number of withdrawals routed through this dispatcher."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "is_paused",
+            "docs": [
+              "Whether the dispatcher is paused (emergency stop)."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "Bump seed for the PDA."
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UserPosition",
+      "docs": [
+        "Tracks a user's position within a specific adapter, managed by the dispatcher."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "docs": [
+              "The user who owns this position."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "adapter_program_id",
+            "docs": [
+              "The adapter program this position is associated with."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "deposited_amount",
+            "docs": [
+              "Total underlying tokens deposited through the dispatcher."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "withdrawn_amount",
+            "docs": [
+              "Total underlying tokens withdrawn through the dispatcher."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "receipt_token_balance",
+            "docs": [
+              "Current receipt/share token balance."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "last_updated",
+            "docs": [
+              "Timestamp of the last interaction."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "Bump seed for the PDA."
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}

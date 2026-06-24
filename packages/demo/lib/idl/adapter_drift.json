@@ -1,0 +1,1054 @@
+{
+  "address": "2zMNZcFzAx9bFNchTWDqiJGt5H3bCDgo8PW1TTskwcLJ",
+  "metadata": {
+    "name": "adapter_drift",
+    "version": "1.0.0",
+    "spec": "0.1.0",
+    "description": "Drift Insurance Fund yield adapter for the Solana Yield Adapter Standard"
+  },
+  "instructions": [
+    {
+      "name": "cancel_unstake",
+      "docs": [
+        "Cancel a pending unstake request and return locked shares to the position."
+      ],
+      "discriminator": [
+        64,
+        65,
+        53,
+        227,
+        125,
+        153,
+        3,
+        167
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "user_position",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  97,
+                  112,
+                  116,
+                  101,
+                  114,
+                  95,
+                  112,
+                  111,
+                  115,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "ticket",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  114,
+                  105,
+                  102,
+                  116,
+                  95,
+                  116,
+                  105,
+                  99,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user_position"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "current_value",
+      "discriminator": [
+        232,
+        199,
+        167,
+        206,
+        247,
+        56,
+        234,
+        20
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "signer": true
+        },
+        {
+          "name": "vault_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  114,
+                  105,
+                  102,
+                  116,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_position",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  97,
+                  112,
+                  116,
+                  101,
+                  114,
+                  95,
+                  112,
+                  111,
+                  115,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "deposit",
+      "discriminator": [
+        242,
+        35,
+        198,
+        137,
+        82,
+        225,
+        242,
+        182
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  114,
+                  105,
+                  102,
+                  116,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_position",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  97,
+                  112,
+                  116,
+                  101,
+                  114,
+                  95,
+                  112,
+                  111,
+                  115,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_token_account",
+          "writable": true
+        },
+        {
+          "name": "vault_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  114,
+                  105,
+                  102,
+                  116,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "min_shares_out",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initialize",
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  114,
+                  105,
+                  102,
+                  116,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "underlying_mint",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "set_unstake_cooldown",
+      "docs": [
+        "Set the unstaking cooldown duration (authority only). Used for testing or",
+        "adapting to protocol parameter changes."
+      ],
+      "discriminator": [
+        207,
+        135,
+        220,
+        96,
+        48,
+        146,
+        197,
+        126
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "vault_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  114,
+                  105,
+                  102,
+                  116,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "cooldown_seconds",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "settle_withdrawal",
+      "docs": [
+        "Settle a pending unstake request after the cooldown has elapsed.",
+        "",
+        "Executes the Drift CPI withdrawal and transfers underlying to the user.",
+        "The `WithdrawalTicket` account is closed and rent returned to the user."
+      ],
+      "discriminator": [
+        107,
+        168,
+        201,
+        20,
+        9,
+        243,
+        200,
+        142
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  114,
+                  105,
+                  102,
+                  116,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_position",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  97,
+                  112,
+                  116,
+                  101,
+                  114,
+                  95,
+                  112,
+                  111,
+                  115,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "ticket",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  114,
+                  105,
+                  102,
+                  116,
+                  95,
+                  116,
+                  105,
+                  99,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user_position"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_token_account",
+          "writable": true
+        },
+        {
+          "name": "vault_token_account",
+          "writable": true
+        },
+        {
+          "name": "vault_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  114,
+                  105,
+                  102,
+                  116,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "toggle_status",
+      "discriminator": [
+        251,
+        215,
+        30,
+        52,
+        226,
+        153,
+        115,
+        130
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "vault_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  114,
+                  105,
+                  102,
+                  116,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "withdraw",
+      "discriminator": [
+        183,
+        18,
+        70,
+        156,
+        148,
+        109,
+        161,
+        34
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  114,
+                  105,
+                  102,
+                  116,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_position",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  97,
+                  112,
+                  116,
+                  101,
+                  114,
+                  95,
+                  112,
+                  111,
+                  115,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "ticket",
+          "docs": [
+            "The withdrawal ticket (initialized in the request phase)."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  114,
+                  105,
+                  102,
+                  116,
+                  95,
+                  116,
+                  105,
+                  99,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user_position"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "min_underlying_out",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "AdapterPosition",
+      "discriminator": [
+        111,
+        146,
+        212,
+        92,
+        30,
+        187,
+        93,
+        29
+      ]
+    },
+    {
+      "name": "DriftVaultState",
+      "discriminator": [
+        37,
+        14,
+        202,
+        44,
+        239,
+        77,
+        121,
+        210
+      ]
+    },
+    {
+      "name": "DriftWithdrawalTicket",
+      "discriminator": [
+        18,
+        142,
+        109,
+        61,
+        143,
+        13,
+        197,
+        158
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 13000,
+      "name": "CooldownNotElapsed",
+      "msg": "Unstaking cooldown has not elapsed (13 days required)"
+    },
+    {
+      "code": 13001,
+      "name": "TicketAlreadyExists",
+      "msg": "A pending withdrawal ticket already exists for this position"
+    },
+    {
+      "code": 13002,
+      "name": "NoPendingTicket",
+      "msg": "No pending withdrawal ticket found for this position"
+    }
+  ],
+  "types": [
+    {
+      "name": "AdapterPosition",
+      "docs": [
+        "Tracks a user's position within this adapter."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "adapter_program_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "deposited_amount",
+            "type": "u64"
+          },
+          {
+            "name": "withdrawn_amount",
+            "type": "u64"
+          },
+          {
+            "name": "receipt_token_balance",
+            "type": "u64"
+          },
+          {
+            "name": "last_updated",
+            "type": "i64"
+          },
+          {
+            "name": "last_withdraw_request",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DriftVaultState",
+      "docs": [
+        "Drift Insurance Fund vault state."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "underlying_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_underlying",
+            "type": "u64"
+          },
+          {
+            "name": "total_shares",
+            "type": "u64"
+          },
+          {
+            "name": "protocol_program_id",
+            "docs": [
+              "Target protocol program (Drift Protocol v2 on mainnet)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "protocol_routed_underlying",
+            "docs": [
+              "Cumulative underlying attested as routed to the protocol layer."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "last_yield_sync_ts",
+            "type": "i64"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "VaultStatus"
+              }
+            }
+          },
+          {
+            "name": "unstake_cooldown_seconds",
+            "docs": [
+              "Unstaking cooldown in seconds (default: 13 days). Set to 0 for instant settlement."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DriftWithdrawalTicket",
+      "docs": [
+        "Per-user withdrawal ticket for the two-phase unstake flow.",
+        "",
+        "Phase 1 (`withdraw`): creates this ticket, locks the shares.",
+        "Phase 2 (`settle_withdrawal`): after `unlock_ts`, executes the CPI and returns underlying."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "position",
+            "docs": [
+              "The AdapterPosition this ticket belongs to."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "shares",
+            "docs": [
+              "Shares being withdrawn (locked from the position)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "min_amount_out",
+            "docs": [
+              "Minimum acceptable underlying out (slippage protection)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "unlock_ts",
+            "docs": [
+              "Unix timestamp when the cooldown expires and settlement is allowed."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "is_settled",
+            "docs": [
+              "Whether this ticket has been settled."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "created_ts",
+            "docs": [
+              "Unix timestamp when the ticket was created."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump."
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VaultStatus",
+      "docs": [
+        "Operational status of an adapter vault.",
+        "",
+        "- `Active` — deposits and withdrawals are allowed.",
+        "- `DepositsPaused` — deposits blocked, withdrawals still allowed.",
+        "- `Paused` — deposits and withdrawals are blocked; config remains intact.",
+        "- `Deprecated` — vault is permanently retired; no operations allowed.",
+        "",
+        "# Serialization order",
+        "`DepositsPaused` is appended **after** `Deprecated` so that the Borsh",
+        "discriminants of the original three variants (`Active` = 0, `Paused` = 1,",
+        "`Deprecated` = 2) remain unchanged — preserving backward compatibility",
+        "with all existing on-chain vault accounts."
+      ],
+      "repr": {
+        "kind": "rust"
+      },
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Paused"
+          },
+          {
+            "name": "Deprecated"
+          },
+          {
+            "name": "DepositsPaused"
+          }
+        ]
+      }
+    }
+  ]
+}

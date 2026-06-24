@@ -1,0 +1,738 @@
+{
+  "address": "jbLUHXvc9P26MpQdGXht4aKnbn68i2GijxsFX6RXahV",
+  "metadata": {
+    "name": "adapter_template",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Template adapter — copy this directory to add a new yield source"
+  },
+  "instructions": [
+    {
+      "name": "current_value",
+      "docs": [
+        "Query the current value of a user's position in underlying token units.",
+        "No tokens are transferred; this is a read-only query."
+      ],
+      "discriminator": [
+        232,
+        199,
+        167,
+        206,
+        247,
+        56,
+        234,
+        20
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "signer": true
+        },
+        {
+          "name": "vault_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  101,
+                  109,
+                  112,
+                  108,
+                  97,
+                  116,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_position",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  97,
+                  112,
+                  116,
+                  101,
+                  114,
+                  95,
+                  112,
+                  111,
+                  115,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "deposit",
+      "docs": [
+        "Deposit `amount` underlying tokens into the yield source.",
+        "The vault authority PDA transfers user tokens, then routes them to the protocol."
+      ],
+      "discriminator": [
+        242,
+        35,
+        198,
+        137,
+        82,
+        225,
+        242,
+        182
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "docs": [
+            "The user making the deposit."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault_state",
+          "docs": [
+            "Vault state — must be Active and use the canonical vault PDA."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  101,
+                  109,
+                  112,
+                  108,
+                  97,
+                  116,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_position",
+          "docs": [
+            "Per-user position tracking account. Created on first deposit."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  97,
+                  112,
+                  116,
+                  101,
+                  114,
+                  95,
+                  112,
+                  111,
+                  115,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_token_account",
+          "docs": [
+            "User's associated token account for the underlying mint."
+          ],
+          "writable": true
+        },
+        {
+          "name": "vault_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  101,
+                  109,
+                  112,
+                  108,
+                  97,
+                  116,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_token_account",
+          "docs": [
+            "Vault's token account holding the underlying tokens."
+          ],
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "min_shares_out",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initialize",
+      "docs": [
+        "Initialize the vault state with the underlying token mint.",
+        "Called once when deploying a new vault for a given yield source."
+      ],
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "docs": [
+            "The vault authority who will own and manage this vault."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault_state",
+          "docs": [
+            "The vault state PDA that stores vault configuration and accounting.",
+            "Initialized once per vault deployment."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  101,
+                  109,
+                  112,
+                  108,
+                  97,
+                  116,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "underlying_mint",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "toggle_status",
+      "docs": [
+        "Toggle vault status between Active ↔ Paused.",
+        "Only the vault authority may call this."
+      ],
+      "discriminator": [
+        251,
+        215,
+        30,
+        52,
+        226,
+        153,
+        115,
+        130
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "vault_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  101,
+                  109,
+                  112,
+                  108,
+                  97,
+                  116,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "withdraw",
+      "docs": [
+        "Withdraw `shares_to_burn` receipt tokens, returning underlying tokens to the user.",
+        "Withdraws from the protocol via CPI, then transfers tokens back to the user."
+      ],
+      "discriminator": [
+        183,
+        18,
+        70,
+        156,
+        148,
+        109,
+        161,
+        34
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "docs": [
+            "The user withdrawing."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault_state",
+          "docs": [
+            "Vault state — must be Active."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  101,
+                  109,
+                  112,
+                  108,
+                  97,
+                  116,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_position",
+          "docs": [
+            "User's position — must exist and belong to this user."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  97,
+                  112,
+                  116,
+                  101,
+                  114,
+                  95,
+                  112,
+                  111,
+                  115,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_token_account",
+          "docs": [
+            "User's token account to receive the withdrawn underlying."
+          ],
+          "writable": true
+        },
+        {
+          "name": "vault_token_account",
+          "docs": [
+            "Vault's token account holding the underlying tokens."
+          ],
+          "writable": true
+        },
+        {
+          "name": "vault_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  101,
+                  109,
+                  112,
+                  108,
+                  97,
+                  116,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "shares_to_burn",
+          "type": "u64"
+        },
+        {
+          "name": "min_underlying_out",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "AdapterPosition",
+      "discriminator": [
+        111,
+        146,
+        212,
+        92,
+        30,
+        187,
+        93,
+        29
+      ]
+    },
+    {
+      "name": "TemplateVaultState",
+      "discriminator": [
+        242,
+        66,
+        192,
+        60,
+        190,
+        68,
+        50,
+        186
+      ]
+    }
+  ],
+  "types": [
+    {
+      "name": "AdapterPosition",
+      "docs": [
+        "Tracks a user's position within this adapter."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "adapter_program_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "deposited_amount",
+            "type": "u64"
+          },
+          {
+            "name": "withdrawn_amount",
+            "type": "u64"
+          },
+          {
+            "name": "receipt_token_balance",
+            "type": "u64"
+          },
+          {
+            "name": "last_updated",
+            "type": "i64"
+          },
+          {
+            "name": "last_withdraw_request",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TemplateVaultState",
+      "docs": [
+        "Per-vault state account for this adapter.",
+        "",
+        "Each vault instance stores:",
+        "- Authority and mint metadata",
+        "- Total underlying tokens and shares in the vault",
+        "- Protocol tracking for CPI routing",
+        "- Operational status (Active / Paused / Deprecated)",
+        "",
+        "### Customizing for your protocol",
+        "Add protocol-specific fields here, for example:",
+        "- `pool_id: Pubkey` — which pool/lending-market this vault targets",
+        "- `strategy_id: u64` — which strategy variant to use",
+        "- `reserve_index: u16` — which reserve in a multi-reserve protocol",
+        "",
+        "Fields you may remove if not needed:",
+        "- `protocol_program_id` — if your adapter has no external CPI (like Maple w/ syrupUSDC)",
+        "- `last_yield_sync_ts` — if your protocol doesn't need periodic yield sync"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "underlying_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_underlying",
+            "type": "u64"
+          },
+          {
+            "name": "total_shares",
+            "type": "u64"
+          },
+          {
+            "name": "protocol_program_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "protocol_routed_underlying",
+            "type": "u64"
+          },
+          {
+            "name": "last_yield_sync_ts",
+            "type": "i64"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "VaultStatus"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VaultStatus",
+      "docs": [
+        "Operational status of an adapter vault.",
+        "",
+        "- `Active` — deposits and withdrawals are allowed.",
+        "- `DepositsPaused` — deposits blocked, withdrawals still allowed.",
+        "- `Paused` — deposits and withdrawals are blocked; config remains intact.",
+        "- `Deprecated` — vault is permanently retired; no operations allowed.",
+        "",
+        "# Serialization order",
+        "`DepositsPaused` is appended **after** `Deprecated` so that the Borsh",
+        "discriminants of the original three variants (`Active` = 0, `Paused` = 1,",
+        "`Deprecated` = 2) remain unchanged — preserving backward compatibility",
+        "with all existing on-chain vault accounts."
+      ],
+      "repr": {
+        "kind": "rust"
+      },
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Paused"
+          },
+          {
+            "name": "Deprecated"
+          },
+          {
+            "name": "DepositsPaused"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,836 @@
+{
+  "address": "8TAhAne1z4chGzuP9EeXFuYsqyGHzACWuD7sURS3ydAq",
+  "metadata": {
+    "name": "adapter_registry",
+    "version": "1.0.0",
+    "spec": "0.1.0",
+    "description": "Governance-gated on-chain registry for Solana Yield Adapter Standard"
+  },
+  "instructions": [
+    {
+      "name": "accept_governance",
+      "docs": [
+        "Step 2 of two-step governance transfer: accept a pending nomination."
+      ],
+      "discriminator": [
+        248,
+        124,
+        36,
+        211,
+        224,
+        191,
+        79,
+        227
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "docs": [
+            "Must be the pending governance authority."
+          ],
+          "signer": true
+        },
+        {
+          "name": "registry_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "approve_adapter",
+      "docs": [
+        "Approve a proposed adapter. Governance-gated."
+      ],
+      "discriminator": [
+        184,
+        202,
+        207,
+        249,
+        78,
+        54,
+        233,
+        227
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "docs": [
+            "Must be the governance authority or guardian."
+          ],
+          "signer": true
+        },
+        {
+          "name": "registry_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "adapter_entry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  97,
+                  112,
+                  116,
+                  101,
+                  114,
+                  95,
+                  101,
+                  110,
+                  116,
+                  114,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "adapter_entry.adapter_program_id",
+                "account": "AdapterEntry"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "force_transfer_governance",
+      "docs": [
+        "Dev/test only: force-transfer governance to a new authority.",
+        "Requires a hardcoded admin key signer."
+      ],
+      "discriminator": [
+        79,
+        87,
+        47,
+        24,
+        1,
+        81,
+        194,
+        76
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "docs": [
+            "Must be the hardcoded admin key."
+          ],
+          "signer": true
+        },
+        {
+          "name": "registry_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "new_authority"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize",
+      "docs": [
+        "Initialize the registry with a governance authority."
+      ],
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "registry_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "nominate_governance",
+      "docs": [
+        "Step 1 of two-step governance transfer: nominate a new authority.",
+        "The current authority sets `pending_authority`; the nominee must call `accept_governance`."
+      ],
+      "discriminator": [
+        151,
+        108,
+        56,
+        83,
+        16,
+        39,
+        93,
+        215
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "docs": [
+            "Must be the current governance authority."
+          ],
+          "signer": true
+        },
+        {
+          "name": "registry_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "new_authority",
+          "docs": [
+            "The new governance authority (nominated)."
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "propose_adapter",
+      "docs": [
+        "Propose a new adapter for inclusion in the registry.",
+        "Anyone can call this instruction."
+      ],
+      "discriminator": [
+        250,
+        105,
+        201,
+        205,
+        6,
+        27,
+        187,
+        139
+      ],
+      "accounts": [
+        {
+          "name": "proposer",
+          "docs": [
+            "Anyone can propose an adapter."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "registry_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "adapter_entry",
+          "docs": [
+            "The adapter entry PDA — created for this adapter program ID."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  97,
+                  112,
+                  116,
+                  101,
+                  114,
+                  95,
+                  101,
+                  110,
+                  116,
+                  114,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "adapter_program"
+              }
+            ]
+          }
+        },
+        {
+          "name": "adapter_program",
+          "docs": [
+            "The adapter program being proposed."
+          ]
+        },
+        {
+          "name": "underlying_mint",
+          "docs": [
+            "The mint of the underlying token this adapter handles."
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "metadata_uri",
+          "type": "string"
+        },
+        {
+          "name": "vault_state_seed",
+          "type": "string"
+        },
+        {
+          "name": "vault_authority_seed",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "revoke_adapter",
+      "docs": [
+        "Revoke an approved adapter. Governance-gated."
+      ],
+      "discriminator": [
+        55,
+        93,
+        39,
+        13,
+        236,
+        32,
+        18,
+        130
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "docs": [
+            "Must be the governance authority or guardian."
+          ],
+          "signer": true
+        },
+        {
+          "name": "registry_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "adapter_entry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  100,
+                  97,
+                  112,
+                  116,
+                  101,
+                  114,
+                  95,
+                  101,
+                  110,
+                  116,
+                  114,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "adapter_entry.adapter_program_id",
+                "account": "AdapterEntry"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "set_guardian",
+      "docs": [
+        "Set or remove the guardian role.",
+        "Authority-only. Pass `Pubkey::default()` to clear the guardian."
+      ],
+      "discriminator": [
+        147,
+        243,
+        50,
+        121,
+        154,
+        164,
+        50,
+        30
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "docs": [
+            "Must be the current governance authority."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "registry_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "new_guardian",
+          "type": "pubkey"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "AdapterEntry",
+      "discriminator": [
+        204,
+        228,
+        11,
+        242,
+        235,
+        250,
+        45,
+        145
+      ]
+    },
+    {
+      "name": "RegistryState",
+      "discriminator": [
+        29,
+        34,
+        224,
+        195,
+        175,
+        183,
+        99,
+        97
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 12200,
+      "name": "Unauthorized",
+      "msg": "Unauthorized: not the governance authority"
+    },
+    {
+      "code": 12201,
+      "name": "NameTooLong",
+      "msg": "Adapter name too long"
+    },
+    {
+      "code": 12202,
+      "name": "UriTooLong",
+      "msg": "Metadata URI too long"
+    },
+    {
+      "code": 12203,
+      "name": "InvalidStatus",
+      "msg": "Invalid adapter status for this operation"
+    },
+    {
+      "code": 12204,
+      "name": "AlreadyRegistered",
+      "msg": "Adapter already registered"
+    },
+    {
+      "code": 12205,
+      "name": "NoPendingTransfer",
+      "msg": "No pending governance transfer"
+    },
+    {
+      "code": 12206,
+      "name": "NotPendingAuthority",
+      "msg": "Not the pending governance authority"
+    },
+    {
+      "code": 12207,
+      "name": "InvalidVaultStateSeed",
+      "msg": "Invalid vault state seed"
+    }
+  ],
+  "types": [
+    {
+      "name": "AdapterEntry",
+      "docs": [
+        "On-chain record for a registered adapter.",
+        "PDA seeded by `[ADAPTER_ENTRY_SEED, adapter_program_id]`."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "adapter_program_id",
+            "docs": [
+              "The adapter program's ID."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "docs": [
+              "Human-readable adapter name."
+            ],
+            "type": "string"
+          },
+          {
+            "name": "status",
+            "docs": [
+              "Current approval status."
+            ],
+            "type": {
+              "defined": {
+                "name": "AdapterStatus"
+              }
+            }
+          },
+          {
+            "name": "underlying_mint",
+            "docs": [
+              "Mint of the underlying token this adapter handles."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "metadata_uri",
+            "docs": [
+              "URI pointing to off-chain metadata (JSON)."
+            ],
+            "type": "string"
+          },
+          {
+            "name": "vault_state_seed",
+            "docs": [
+              "The PDA seed bytes used by this adapter for its vault state account.",
+              "Allows the dispatcher to validate vault state PDAs without hardcoding."
+            ],
+            "type": "bytes"
+          },
+          {
+            "name": "vault_authority_seed",
+            "docs": [
+              "The PDA seed bytes used by this adapter for its vault authority account.",
+              "Allows the dispatcher to validate vault authority PDAs generically."
+            ],
+            "type": "bytes"
+          },
+          {
+            "name": "proposer",
+            "docs": [
+              "The account that proposed this adapter."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "proposed_at",
+            "docs": [
+              "Timestamp when the adapter was proposed."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "approved_at",
+            "docs": [
+              "Timestamp when the adapter was approved (0 if not approved)."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "revoked_at",
+            "docs": [
+              "Timestamp when the adapter was revoked (0 if not revoked)."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "Bump seed for the PDA."
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AdapterStatus",
+      "docs": [
+        "The status of an adapter in the registry."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Proposed"
+          },
+          {
+            "name": "Approved"
+          },
+          {
+            "name": "Revoked"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RegistryState",
+      "docs": [
+        "Global registry configuration. Singleton PDA."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "docs": [
+              "The governance authority who can approve/revoke adapters and transfer governance."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "guardian",
+            "docs": [
+              "Optional guardian with day-to-day approval/revoke powers (authority-only to set)."
+            ],
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "pending_authority",
+            "docs": [
+              "Pending governance authority for two-step transfer."
+            ],
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "total_proposed",
+            "docs": [
+              "Total number of adapters ever proposed."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "total_approved",
+            "docs": [
+              "Total number of currently approved adapters."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "Bump seed for the PDA."
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}
