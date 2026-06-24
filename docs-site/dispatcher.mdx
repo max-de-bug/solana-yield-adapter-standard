@@ -3,11 +3,23 @@ title: Dispatcher
 description: Unified router for deposit, withdraw, and current_value across approved adapters
 ---
 
-The **Yield Dispatcher** is the single entry point for integrators. Users and dApps call the dispatcher; it validates registry approval and CPIs into the target adapter.
+The **Yield Dispatcher** is the single entry point for integrators. Users and dApps call the dispatcher; it validates registry approval, checks the circuit breaker, then CPIs into the target adapter. All position accounting lives in the adapter — the dispatcher is a thin pass-through.
 
 <Info>
 **Devnet program ID:** `8u4YFQiTCR5n5dijVoinXyZ962ngVmFuWKELDUjVCqAR`
 </Info>
+
+## Design Principle
+
+The dispatcher is intentionally **minimal**: it validates, routes, and emits events. It does **not** maintain internal position ledgers or duplicate adapter state. This avoids the "parallel accounting" problem where a dispatcher-level `UserPosition` can diverge from the adapter-level `AdapterPosition`.
+
+The flow for every instruction is:
+
+1. **Check circuit breaker** — `is_paused` gate
+2. **Validate registry** — adapter must have `status == Approved`
+3. **CPI into adapter** — forward accounts and arguments as-is
+4. **Increment counter** — `total_deposits` / `total_withdrawals` (monitoring only)
+5. **Emit event** — indexer surface
 
 ## Instructions
 
@@ -73,21 +85,12 @@ This two-layer safety model matches the pattern used by Kamino (`emergency_mode`
 |---|---|---|
 | `authority` | `Pubkey` | Governance authority (multisig recommended) |
 | `registry_program_id` | `Pubkey` | Trusted registry program |
-| `total_deposits` | `u64` | Cumulative deposits routed |
-| `total_withdrawals` | `u64` | Cumulative withdrawals routed |
+| `total_deposits` | `u64` | Cumulative deposits routed (monitoring only) |
+| `total_withdrawals` | `u64` | Cumulative withdrawals routed (monitoring only) |
 | `is_paused` | `bool` | Emergency pause flag |
 | `bump` | `u8` | PDA bump seed |
 
-### `UserPosition`
-
-| Field | Type | Description |
-|---|---|---|
-| `owner` | `Pubkey` | Position owner |
-| `adapter_program_id` | `Pubkey` | Target adapter program |
-| `deposited_amount` | `u64` | Cumulative underlying deposited |
-| `withdrawn_amount` | `u64` | Cumulative underlying withdrawn |
-| `receipt_token_balance` | `u64` | Tracked receipt balance at dispatcher layer |
-| `bump` | `u8` | PDA bump seed |
+The dispatcher has **no user-level position accounts**. All position tracking is delegated to the adapter's `AdapterPosition` PDAs (see [Adapter Standard](/adapter-standard#44-pda-reference-table)).
 
 ## Events
 
@@ -96,7 +99,7 @@ This two-layer safety model matches the pattern used by Kamino (`emergency_mode`
 | `DispatchDepositEvent` | Indexer signal: deposit routed to adapter |
 | `DispatchWithdrawEvent` | Indexer signal: withdraw routed to adapter |
 
-Adapter-level [`DepositEvent`](/reference/events) / [`WithdrawEvent`](/reference/events) are emitted by the adapter CPI.
+Adapter-level [`DepositEvent`](/reference/events) / [`WithdrawEvent`](/reference/events) are emitted by the adapter CPI and contain the exact number of shares minted or underlying returned.
 
 ## Integration pattern
 
@@ -110,7 +113,8 @@ await dispatcherProgram.methods
     registryProgram: REGISTRY_ID,
     adapterProgram: KAMINO_ADAPTER_ID,
     adapterEntry: kaminoEntryPda,
-    // ... adapter vault accounts, user token accounts
+    // ... adapter vault accounts, user token accounts,
+    // adapterUserPosition (tracked by adapter, not dispatcher)
   })
   .rpc();
 ```

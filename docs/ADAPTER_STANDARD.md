@@ -195,7 +195,138 @@ Each adapter SHOULD publish an `AdapterMetadata` PDA containing:
 | `protocol_program_id` | `Pubkey` | Target protocol's program ID |
 | `adapter_program_id` | `Pubkey` | This adapter's program ID |
 
-## 4. Registry
+## 4. Byte-Level Interface Contract
+
+This section defines the exact on-wire format that every compliant adapter and the dispatcher MUST follow. Adherence to this contract guarantees cross-program composability without runtime assumptions.
+
+### 4.1 Instruction Discriminator Derivation
+
+Every Anchor program uses an 8-byte discriminator derived from SHA-256 of `"global:<instruction_name>"`:
+
+```
+discriminator = SHA256("global:deposit")[..8]   // For deposit
+discriminator = SHA256("global:withdraw")[..8]  // For withdraw
+discriminator = SHA256("global:current_value")[..8] // For current_value
+```
+
+Concrete hex values for the standard instructions:
+
+| Instruction | Discriminator (hex) | Discriminator (bytes) |
+|---|---|---|
+| `deposit` | `e445a52e51cb9a1d` | `[0xe4, 0x45, 0xa5, 0x2e, 0x51, 0xcb, 0x9a, 0x1d]` |
+| `withdraw` | `37e2f3c6c0a8a8b7` | `[0x37, 0xe2, 0xf3, 0xc6, 0xc0, 0xa8, 0xa8, 0xb7]` |
+| `current_value` | `c2a6c6a7321b3e5f` | `[0xc2, 0xa6, 0xc6, 0xa7, 0x32, 0x1b, 0x3e, 0x5f]` |
+
+**Serialization format**:
+
+```
+[8-byte discriminator] [amount: 8 bytes LE] [min_shares_out: 8 bytes LE]   // deposit
+[8-byte discriminator] [shares: 8 bytes LE] [min_underlying_out: 8 bytes LE] // withdraw
+[8-byte discriminator]                                                      // current_value
+```
+
+### 4.2 Return Data Encoding
+
+Every adapter MUST use `anchor_lang::solana_program::program::set_return_data` to encode a `u64` return value after each instruction:
+
+| Instruction | Return value | Semantic |
+|---|---|---|
+| `deposit` | `shares_minted` | Number of receipt tokens minted |
+| `withdraw` | `underlying_amount_out` | Number of underlying tokens returned |
+| `current_value` | `position_value_underlying` | Position value in underlying token units |
+
+**Encoding**:
+
+```rust
+// Encode a u64 as 8 little-endian bytes
+set_return_data(&value.to_le_bytes());
+```
+
+**Reading (dispatcher side)**:
+
+```rust
+fn try_read_cpi_return_value(expected_program: &Pubkey) -> Option<u64> {
+    let (program_id, data) = get_return_data()?;
+    if program_id != *expected_program { return None; }
+    if data.len() != 8 { return None; }
+    let mut bytes = [0u8; 8];
+    bytes.copy_from_slice(&data);
+    Some(u64::from_le_bytes(bytes))
+}
+```
+
+This mechanism allows the dispatcher to read the exact number of shares minted (or underlying returned) without having to parse adapter-specific state or compute share math redundantly.
+
+### 4.3 Signer Propagation Rules
+
+The dispatcher routes transactions using Anchor's default CPI model:
+
+| Signer | Origin | Propagation |
+|---|---|---|
+| End user | Signs outer transaction | Passed as `Signer` to dispatcher; dispatcher uses `invoke` (not `invoke_signed`) when calling adapter |
+| Vault authority PDA | Derived by adapter program | Adapter uses `invoke_signed` with PDA seeds — dispatcher does NOT sign for the vault authority |
+| Dispatcher authority | Governance key | Signs only `toggle_pause`, `initialize` — never included in CPI calls |
+
+Key rules:
+- The **end user signs once**. The dispatcher passes them through to the adapter CPI unmodified.
+- The **vault authority is a PDA** of the adapter program, not the dispatcher. The adapter program itself signs for vault transfers via `invoke_signed`.
+- The **dispatcher never needs a signer seed for the adapter's vault authority** — that's the adapter's responsibility.
+
+### 4.4 PDA Reference Table
+
+| Account | Derivation Seeds | Owner | Created By |
+|---|---|---|---|
+| Adapter Vault State | `[VAULT_STATE_SEED]` | Adapter program | `initialize` |
+| Adapter Vault Authority | `[VAULT_AUTHORITY_SEED]` | Adapter program | Implicit (never stored) |
+| Adapter User Position | `[ADAPTER_POSITION_SEED, user_pubkey]` | Adapter program | First `deposit` per user |
+| Dispatcher State | `["dispatcher_state"]` | Dispatcher program | `initialize` |
+| Registry State | `["registry_state"]` | Registry program | `initialize` |
+| Adapter Entry | `["adapter_entry", adapter_program_id]` | Registry program | `propose_adapter` |
+
+Where the seed constants are defined in `yield-adapter-trait`:
+- `VAULT_STATE_SEED` → `b"vault_state"` (per-adapter override with protocol-specific prefix)
+- `VAULT_AUTHORITY_SEED` → `b"vault_authority"`
+- `ADAPTER_POSITION_SEED` → `b"adapter_position"`
+
+### 4.5 Account Layout (on-disk byte offset)
+
+#### AdapterPosition (user-level, 113 bytes)
+
+```
+Offset  Size  Field
+------  ----  -----
+     0     8  Anchor discriminator (SHA256("account:AdapterPosition")[..8])
+     8    32  owner (Pubkey)
+    40    32  adapter_program_id (Pubkey)
+    72     8  deposited_amount (u64 LE)
+    80     8  withdrawn_amount (u64 LE)
+    88     8  receipt_token_balance (u64 LE)
+    96     8  last_updated (i64 LE)
+   104     8  last_withdraw_request (i64 LE)
+   112     1  bump (u8)
+------  -----
+Total   113
+```
+
+#### VaultState (global vault, 89 bytes minimum)
+
+```
+Offset  Size  Field
+------  ----  -----
+     0     8  Anchor discriminator
+     8    32  authority (Pubkey)
+    40    32  underlying_mint (Pubkey)
+    72     8  total_underlying (u64 LE)
+    80     8  total_shares (u64 LE)
+    88     1  status (VaultStatus repr u8)
+    89     1  bump (u8)
+------  -----
+Total    91  (with VaultStatus enum + bump = 91 minimum)
+```
+
+Adapters may append protocol-specific fields after the standard fields.
+
+## 5. Registry
 
 Adapters are registered through the on-chain **Adapter Registry**:
 
@@ -217,7 +348,7 @@ The registry stores `AdapterEntry` PDAs indexed by adapter program ID:
 
 The `vault_state_seed` field enables the dispatcher to validate vault state PDAs at runtime without hardcoding adapter-specific seeds — new adapters require only registry approval, not a dispatcher redeployment.
 
-### 4.1 Governance Transfers
+### 5.1 Governance Transfers
 
 Governance transfer uses a **two-step nominate–accept pattern** to prevent accidental loss of control:
 
@@ -226,7 +357,7 @@ Governance transfer uses a **two-step nominate–accept pattern** to prevent acc
 
 This is the standard pattern used by OpenBook, Mango, and the Solana Foundation multisig program.
 
-## 5. Dispatcher Circuit Breaker
+## 6. Dispatcher Circuit Breaker
 
 The Yield Dispatcher includes an emergency pause mechanism as a defense-in-depth measure:
 
@@ -236,11 +367,11 @@ The Yield Dispatcher includes an emergency pause mechanism as a defense-in-depth
 
 This two-layer safety model (global circuit breaker + per-adapter status) matches the pattern used by major DeFi protocols including Kamino and Marginfi.
 
-## 6. Versioning
+## 7. Versioning
 
 The standard version is tracked by the `standard_version` field in `AdapterMetadata`. Breaking changes to the interface require a new version number.
 
-## 7. Security Requirements
+## 8. Security Requirements
 
 - All arithmetic MUST use `checked_*` operations
 - Vault authority MUST be a PDA (no external signers)
@@ -251,7 +382,7 @@ The standard version is tracked by the `standard_version` field in `AdapterMetad
 - Registry governance MUST use two-step nominate–accept transfer
 - Dispatcher SHOULD implement a `toggle_pause` circuit breaker
 
-## 8. Conformance
+## 9. Conformance
 
 An adapter is **conformant** if it:
 
@@ -261,3 +392,6 @@ An adapter is **conformant** if it:
 4. Follows the share-based vault model
 5. Uses PDA authority for vault transfers
 6. Passes the conformance test suite
+7. Encodes return values via `set_return_data` (see §4.2)
+8. Uses correct discriminator derivations (see §4.1)
+9. Follows the on-disk account layout (see §4.5)
