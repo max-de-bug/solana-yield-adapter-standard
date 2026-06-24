@@ -21,9 +21,9 @@ bash scripts/run-fork-surfpool.sh  # mainnet fork: 112 tests
 |-------------|---------------|--------|
 | **Core Dispatcher** | `programs/yield-dispatcher/src/lib.rs` — `deposit`, `withdraw`, `current_value` | `cargo test --package yield-dispatcher` |
 | **5 Reference Adapters** | `programs/adapter-{kamino,marginfi,jupiter,maple,drift}/src/lib.rs` | `MAINNET_FORK=1 anchor test` — 112/112 passing |
-| **On-Chain Registry** | `programs/adapter-registry/src/lib.rs` — propose → approve → revoke | Deployed at `3DQGCPAjHcoT7uf9MJDM5ZTL7GEvTKU3MXFzzrHvqSWt` |
+| **On-Chain Registry** | `programs/adapter-registry/src/lib.rs` — propose → approve → revoke | Deployed at `8TAhAne1z4chGzuP9EeXFuYsqyGHzACWuD7sURS3ydAq` |
 | **Mainnet-Fork Tests** | `tests/adapters/{kamino,marginfi,jupiter,maple,drift}.test.ts` + `dispatcher.test.ts` + `registry.test.ts` | `tests/fork/RESULTS.md` — 112/112 passing |
-| **Adapter Standard Spec** | `docs/ADAPTER_STANDARD.md` (261 lines) | Render and review |
+| **Adapter Standard Spec** | `docs/ADAPTER_STANDARD.md` (263 lines) | Render and review |
 | **Build Your Own Adapter Guide** | `docs/BUILD_YOUR_OWN_ADAPTER.md` (316 lines) | Follow steps; template adapter at `programs/adapter-template/` |
 | **TypeScript SDK** | `packages/sdk/` — `AdapterClient`, `RegistryClient`, `DispatcherClient` | `cd packages/sdk && npm run build` |
 | **Docs Site** | `docs-site/` — Mintlify (adapter-standard, registry, dispatcher, guides) | Published at https://syas.mintlify.app |
@@ -73,13 +73,13 @@ All 7 programs deployed at devnet under authority `5FsXjNmmudnBndWPgQWj8uvY7kfs3
 
 | Program | Address | Status |
 |---------|---------|--------|
-| `adapter_registry` | `3DQGCPAjHcoT7uf9MJDM5ZTL7GEvTKU3MXFzzrHvqSWt` | ✅ LIVE |
-| `yield_dispatcher` | `HUGWpAwFyeWrnH7f9pfWX93puZdC2ud4MYZQT8FtEBvH` | ✅ LIVE |
-| `adapter_kamino` | `AjvTbsYhcEehGTSx7yvF4qSiQLWyfeqe3PRhHVyZB3Xe` | ✅ LIVE |
-| `adapter_marginfi` | `5yQiba9TNit1FJx3KqXY5nJM3zuQTreqBFWfeGohBqat` | ✅ LIVE |
-| `adapter_jupiter` | `AwpaZYbeNe3vD17JuGMjsv73b3JuqM3eEoqEVnQk9NMo` | ✅ LIVE |
-| `adapter_maple` | `GohmCi1aDJAfSg4Sp4rELDwku8ptUs8qafF5aju6p5gz` | ✅ LIVE |
-| `adapter_drift` | `4FyuKY2HeXemKoDYoPo1J2xPoeY29YJj7tF7PJLjhS91` | ✅ LIVE |
+| `adapter_registry` | `8TAhAne1z4chGzuP9EeXFuYsqyGHzACWuD7sURS3ydAq` | ✅ LIVE |
+| `yield_dispatcher` | `8u4YFQiTCR5n5dijVoinXyZ962ngVmFuWKELDUjVCqAR` | ✅ LIVE |
+| `adapter_kamino` | `BQMHrbTGx9ruKQN54XzMajLq769ax3e33YJ5FMkowrg9` | ✅ LIVE |
+| `adapter_marginfi` | `LtccLreoDVj2vurvsWpvfC8PvYTnUpTaxz6P9pDg5Y2` | ✅ LIVE |
+| `adapter_jupiter` | `8QdkGAkLvpN7JPxf3dgKFUXVGPS2LWW4BumbNkVkXkux` | ✅ LIVE |
+| `adapter_maple` | `GRyFctNGZFhHnpHFyyB8xtYdVtC58ZuwyC63PrEy3Vrk` | ✅ LIVE |
+| `adapter_drift` | `2zMNZcFzAx9bFNchTWDqiJGt5H3bCDgo8PW1TTskwcLJ` | ✅ LIVE |
 
 ## SDK
 
