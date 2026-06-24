@@ -37,6 +37,7 @@ deploy-keypairs/
 !tests/fixtures/fork-usdc-ata.json
 !tests/fixtures/fork-wallet.json
 !target/deploy/*-keypair.json
+!packages/demo/lib/idl/*.json
 
 # Environment
 .env
