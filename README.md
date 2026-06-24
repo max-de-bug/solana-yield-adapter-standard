@@ -298,14 +298,14 @@ anchor init my-adapter && cd my-adapter
 ### Programs
 
 | Program | Devnet Program ID |
-|---------|------------------|
-| Adapter Registry | [`3DQGCPAjHcoT7uf9MJDM5ZTL7GEvTKU3MXFzzrHvqSWt`](https://explorer.solana.com/address/3DQGCPAjHcoT7uf9MJDM5ZTL7GEvTKU3MXFzzrHvqSWt?cluster=devnet) |
-| Yield Dispatcher | [`HUGWpAwFyeWrnH7f9pfWX93puZdC2ud4MYZQT8FtEBvH`](https://explorer.solana.com/address/HUGWpAwFyeWrnH7f9pfWX93puZdC2ud4MYZQT8FtEBvH?cluster=devnet) |
-| Adapter Kamino | [`AjvTbsYhcEehGTSx7yvF4qSiQLWyfeqe3PRhHVyZB3Xe`](https://explorer.solana.com/address/AjvTbsYhcEehGTSx7yvF4qSiQLWyfeqe3PRhHVyZB3Xe?cluster=devnet) |
-| Adapter MarginFi | [`5yQiba9TNit1FJx3KqXY5nJM3zuQTreqBFWfeGohBqat`](https://explorer.solana.com/address/5yQiba9TNit1FJx3KqXY5nJM3zuQTreqBFWfeGohBqat?cluster=devnet) |
-| Adapter Jupiter | [`AwpaZYbeNe3vD17JuGMjsv73b3JuqM3eEoqEVnQk9NMo`](https://explorer.solana.com/address/AwpaZYbeNe3vD17JuGMjsv73b3JuqM3eEoqEVnQk9NMo?cluster=devnet) |
-| Adapter Maple | [`GohmCi1aDJAfSg4Sp4rELDwku8ptUs8qafF5aju6p5gz`](https://explorer.solana.com/address/GohmCi1aDJAfSg4Sp4rELDwku8ptUs8qafF5aju6p5gz?cluster=devnet) |
-| Adapter Drift | [`4FyuKY2HeXemKoDYoPo1J2xPoeY29YJj7tF7PJLjhS91`](https://explorer.solana.com/address/4FyuKY2HeXemKoDYoPo1J2xPoeY29YJj7tF7PJLjhS91?cluster=devnet) |
+|---|---|
+| Adapter Registry | [`8TAhAne1z4chGzuP9EeXFuYsqyGHzACWuD7sURS3ydAq`](https://explorer.solana.com/address/8TAhAne1z4chGzuP9EeXFuYsqyGHzACWuD7sURS3ydAq?cluster=devnet) |
+| Yield Dispatcher | [`8u4YFQiTCR5n5dijVoinXyZ962ngVmFuWKELDUjVCqAR`](https://explorer.solana.com/address/8u4YFQiTCR5n5dijVoinXyZ962ngVmFuWKELDUjVCqAR?cluster=devnet) |
+| Adapter Kamino | [`BQMHrbTGx9ruKQN54XzMajLq769ax3e33YJ5FMkowrg9`](https://explorer.solana.com/address/BQMHrbTGx9ruKQN54XzMajLq769ax3e33YJ5FMkowrg9?cluster=devnet) |
+| Adapter MarginFi | [`LtccLreoDVj2vurvsWpvfC8PvYTnUpTaxz6P9pDg5Y2`](https://explorer.solana.com/address/LtccLreoDVj2vurvsWpvfC8PvYTnUpTaxz6P9pDg5Y2?cluster=devnet) |
+| Adapter Jupiter | [`8QdkGAkLvpN7JPxf3dgKFUXVGPS2LWW4BumbNkVkXkux`](https://explorer.solana.com/address/8QdkGAkLvpN7JPxf3dgKFUXVGPS2LWW4BumbNkVkXkux?cluster=devnet) |
+| Adapter Maple | [`GRyFctNGZFhHnpHFyyB8xtYdVtC58ZuwyC63PrEy3Vrk`](https://explorer.solana.com/address/GRyFctNGZFhHnpHFyyB8xtYdVtC58ZuwyC63PrEy3Vrk?cluster=devnet) |
+| Adapter Drift | [`2zMNZcFzAx9bFNchTWDqiJGt5H3bCDgo8PW1TTskwcLJ`](https://explorer.solana.com/address/2zMNZcFzAx9bFNchTWDqiJGt5H3bCDgo8PW1TTskwcLJ?cluster=devnet) |
 | Adapter Template | [`jbLUHXvc9P26MpQdGXht4aKnbn68i2GijxsFX6RXahV`](https://explorer.solana.com/address/jbLUHXvc9P26MpQdGXht4aKnbn68i2GijxsFX6RXahV?cluster=devnet) |
 
 ---

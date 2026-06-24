@@ -21,7 +21,7 @@
     "links": [
       {
         "label": "Devnet",
-        "href": "https://explorer.solana.com/address/3DQGCPAjHcoT7uf9MJDM5ZTL7GEvTKU3MXFzzrHvqSWt?cluster=devnet"
+        "href": "https://explorer.solana.com/address/8TAhAne1z4chGzuP9EeXFuYsqyGHzACWuD7sURS3ydAq?cluster=devnet"
       },
       {
         "type": "github",
@@ -45,7 +45,7 @@
         {
           "anchor": "Registry",
           "icon": "list-check",
-          "href": "https://explorer.solana.com/address/3DQGCPAjHcoT7uf9MJDM5ZTL7GEvTKU3MXFzzrHvqSWt?cluster=devnet"
+          "href": "https://explorer.solana.com/address/8TAhAne1z4chGzuP9EeXFuYsqyGHzACWuD7sURS3ydAq?cluster=devnet"
         }
       ]
     },
@@ -145,7 +145,7 @@
           },
           {
             "label": "Registry (devnet)",
-            "href": "https://explorer.solana.com/address/3DQGCPAjHcoT7uf9MJDM5ZTL7GEvTKU3MXFzzrHvqSWt?cluster=devnet"
+            "href": "https://explorer.solana.com/address/8TAhAne1z4chGzuP9EeXFuYsqyGHzACWuD7sURS3ydAq?cluster=devnet"
           }
         ]
       }

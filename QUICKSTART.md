@@ -46,8 +46,8 @@ The Surfpool approach replaces the legacy `solana-test-validator` + manual `--cl
 ## 3. Verify devnet deployment
 
 ```bash
-solana program show 3DQGCPAjHcoT7uf9MJDM5ZTL7GEvTKU3MXFzzrHvqSWt --url devnet
-solana program show HUGWpAwFyeWrnH7f9pfWX93puZdC2ud4MYZQT8FtEBvH --url devnet
+solana program show 8TAhAne1z4chGzuP9EeXFuYsqyGHzACWuD7sURS3ydAq --url devnet
+solana program show 8u4YFQiTCR5n5dijVoinXyZ962ngVmFuWKELDUjVCqAR --url devnet
 ```
 
 All 7 programs (registry, dispatcher, 5 adapters, template) are deployed to devnet. See [README.md](README.md#devnet-deployments) for current program IDs.
