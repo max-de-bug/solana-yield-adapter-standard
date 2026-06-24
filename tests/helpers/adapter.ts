@@ -1719,13 +1719,23 @@ async function drainUserPosition(
 }
 
 /** Raw toggleStatus using sendRawTransaction (no retry — must not double-toggle).
- *  Waits for getTransaction to confirm state propagation. */
+ *  Polls the vault state until the status actually changes on-chain.
+ *  Handles Surfpool state rollback by retrying the toggle if the state reverts. */
 async function rawToggleStatus(
   program: any,
   authority: anchor.Wallet,
   vaultStatePda: PublicKey
 ): Promise<void> {
   const provider = anchor.AnchorProvider.env();
+
+  // Read vault status before toggle to determine the expected status after
+  // (Active → DepositsPaused, DepositsPaused → Paused, Paused → Active)
+  const vaultDataBefore = await (program.account as any).jupiterVaultState.fetch(vaultStatePda).catch(() => null)
+    ?? await (program.account as any).kaminoVaultState.fetch(vaultStatePda).catch(() => null)
+    ?? await (program.account as any).marginfiVaultState.fetch(vaultStatePda).catch(() => null);
+  if (!vaultDataBefore) return;
+  const statusBefore = JSON.stringify(vaultDataBefore.status);
+
   const tIx = await program.methods.toggleStatus()
     .accounts({ authority: authority.publicKey, vaultState: vaultStatePda })
     .instruction();
@@ -1746,10 +1756,35 @@ async function rawToggleStatus(
   } catch (e: unknown) {
     throw new Error(`toggleStatus failed: ${String(e)}`);
   }
-  // Poll until getTransaction returns the logs (confirms state was committed)
+
+  // Poll until vault state actually changes from the previous status.
+  // Surfpool may confirm the transaction but then roll back the state.
+  for (let i = 0; i < 30; i++) {
+    const current = await (program.account as any).jupiterVaultState.fetch(vaultStatePda).catch(() => null)
+      ?? await (program.account as any).kaminoVaultState.fetch(vaultStatePda).catch(() => null)
+      ?? await (program.account as any).marginfiVaultState.fetch(vaultStatePda).catch(() => null);
+    if (current && JSON.stringify(current.status) !== statusBefore) return;
+    await sleep(500);
+  }
+
+  // State still hasn't changed — Surfpool may have rolled back.
+  // Try the toggle again to force the state transition.
+  const retryIx = await program.methods.toggleStatus()
+    .accounts({ authority: authority.publicKey, vaultState: vaultStatePda })
+    .instruction();
+  const retryTx = new anchor.web3.Transaction().add(retryIx);
+  retryTx.feePayer = authority.publicKey;
+  const retryBh = await provider.connection.getLatestBlockhash();
+  retryTx.recentBlockhash = retryBh.blockhash;
+  retryTx.lastValidBlockHeight = retryBh.lastValidBlockHeight + 2000;
+  await authority.signTransaction(retryTx);
+  const retrySig = await provider.connection.sendRawTransaction(retryTx.serialize(), { skipPreflight: true });
+  await provider.connection.confirmTransaction({ signature: retrySig, blockhash: retryBh.blockhash, lastValidBlockHeight: retryBh.lastValidBlockHeight + 2000 });
   for (let i = 0; i < 20; i++) {
-    const txInfo = await provider.connection.getTransaction(tSig, { commitment: "confirmed" });
-    if (txInfo?.meta?.logMessages) return;
+    const current = await (program.account as any).jupiterVaultState.fetch(vaultStatePda).catch(() => null)
+      ?? await (program.account as any).kaminoVaultState.fetch(vaultStatePda).catch(() => null)
+      ?? await (program.account as any).marginfiVaultState.fetch(vaultStatePda).catch(() => null);
+    if (current && JSON.stringify(current.status) !== statusBefore) return;
     await sleep(500);
   }
 }
@@ -1809,14 +1844,23 @@ export async function expectRejected(
       continue;
     }
     try {
-      await provider.connection.confirmTransaction({ signature: sig, blockhash: bh.blockhash, lastValidBlockHeight });
+      const cr = await provider.connection.confirmTransaction({ signature: sig, blockhash: bh.blockhash, lastValidBlockHeight });
+      if (cr.value.err) {
+        // Transaction confirmed with an instruction error — check logs
+        const logs = (await provider.connection.getTransaction(sig, { commitment: "confirmed" }))
+          ?.meta?.logMessages?.join("\n") ?? "";
+        for (const sub of expectedLogSubstrings) {
+          if (logs.includes(sub)) return;
+        }
+      }
+      // Transaction succeeded when it should have been rejected — retry
     } catch {
+      // confirmTransaction threw — check logs for expected error
       const logs = (await provider.connection.getTransaction(sig, { commitment: "confirmed" }))
         ?.meta?.logMessages?.join("\n") ?? "";
       for (const sub of expectedLogSubstrings) {
         if (logs.includes(sub)) return;
       }
-      continue;
     }
     await sleep(2000);
   }
