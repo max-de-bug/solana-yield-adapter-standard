@@ -105,12 +105,14 @@ npm run build
 ### Test
 
 ```bash
-# Run localnet integration tests
+# Run localnet integration tests (32 tests, ~2 min)
 npm test
 
-# Run mainnet-fork integration tests via Surfpool
+# Run mainnet-fork integration tests via Surfpool (112/112 passing, ~5–15 min)
 npm run test:fork
 ```
+
+> See [tests/README.md](tests/README.md) for the complete fork-test runbook with prerequisites, step-by-step `.env` setup, and troubleshooting.
 
 ### Deploy to Devnet
 
